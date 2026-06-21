@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shift Planner — How many hours does your life cost?</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#12161f; --panel2:#1a1f2b; --line:#272e3c;
+    --ink:#eaeff6; --sub:#8392a6; --accent:#5eead4; --accent2:#2dd4bf;
+    --warn:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --violet:#a78bfa;
+    --r:14px;
+    /* category colours */
+    --c-bills:#60a5fa; --c-save:#5eead4; --c-repay:#fbbf24; --c-spend:#a78bfa; --c-tax:#fb7185;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;line-height:1.4}
+  .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
+  .wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px}
+  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px}
+  h1{font-size:clamp(24px,6vw,32px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  .lede{color:var(--sub);margin-top:10px;font-size:15px;max-width:620px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .stack{display:grid;gap:14px}
+  .label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--sub);font-weight:700;display:block}
+  label.label{margin-bottom:7px}
+  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none;-webkit-appearance:none}
+  select{font-family:inherit;cursor:pointer}
+  input:focus,select:focus{border-color:var(--accent2)}
+  .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap}
+  .btn:active{background:var(--panel2)}
+  .btn-go{background:var(--accent2);border-color:var(--accent2);color:#05201b}
+  .btn-sm{padding:7px 10px;font-size:12px}
+  .x{background:none;border:none;color:var(--sub);cursor:pointer;font-size:18px;padding:8px;line-height:1}
+  .row-between{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .inwrap{position:relative}
+  .pre{position:absolute;left:12px;top:13px;color:var(--sub);font-size:14px;pointer-events:none}
+  .post{position:absolute;right:12px;top:13px;color:var(--sub);font-size:14px;pointer-events:none}
+  .pl{padding-left:26px}.pr{padding-right:30px}
+  .hint{font-size:12px;color:var(--sub);margin-top:8px;line-height:1.5}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .stat{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px}
+  .stat .label{margin-bottom:5px}.stat .v{font-size:19px;font-weight:800}
+  .pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:99px}
+  .tag{font-size:11px;padding:8px;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--ink);cursor:pointer;font-family:inherit}
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap}
+  @media(max-width:760px){ .cols{grid-template-columns:1fr} }
+  @media(max-width:480px){ .two{grid-template-columns:1fr} .goalgrid{grid-template-columns:1fr 1fr !important} .goalgrid .gfull{grid-column:1 / -1} }
+  .hero-num{font-size:clamp(38px,12vw,56px);font-weight:800;line-height:1;letter-spacing:-.03em}
+  /* clock */
+  .clockwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  @media(max-width:480px){ .clockwrap{justify-content:center} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header style="margin-bottom:18px">
+    <div class="row-between" style="align-items:flex-start">
+      <div>
+        <div class="eyebrow">Shift Planner</div>
+        <h1>How many hours does your life cost?</h1>
+      </div>
+    </div>
+    <p class="lede">Enter your monthly outgoings and what you earn per hour. See the weekly shifts that cover your life — and exactly where every hour goes. Log each week to see what your real earnings reached, in priority order. Built for varied shifts across more than one job.</p>
+    <div class="toolbar" style="margin-top:14px">
+      <button class="btn btn-sm" id="exportBtn">↓ Export</button>
+      <button class="btn btn-sm" id="importBtn">↑ Import</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="btn btn-sm" id="resetBtn" style="margin-left:auto;color:var(--warn);border-color:#3a2630">Reset all</button>
+    </div>
+  </header>
+
+  <div class="cols" style="margin-bottom:14px">
+    <!-- LEFT: earning -->
+    <div class="stack">
+      <div class="card">
+        <div class="row-between" style="margin-bottom:12px"><span class="label">Your jobs</span><button class="btn" id="addJob">+ Job</button></div>
+        <div id="jobs" class="stack" style="gap:12px"></div>
+        <div class="hint">Hourly rate, typical hours you work there each week (weights your blended rate), and any pension you pay in.</div>
+      </div>
+
+      <div class="card">
+        <span class="label" style="margin-bottom:12px">Working ceiling</span>
+        <div class="two">
+          <div><label class="label">Max days/week</label><input type="number" id="maxDays" min="1" max="7" value="6" inputmode="numeric"></div>
+          <div><label class="label">Max hours/day</label><input type="number" id="hoursPerDay" min="1" max="16" value="10" inputmode="numeric"></div>
+        </div>
+        <div class="hint">Ceiling: <span id="ceiling" style="color:var(--ink);font-weight:700"></span></div>
+      </div>
+
+      <div class="card">
+        <span class="label" style="margin-bottom:12px">Country / deductions</span>
+        <select id="country"></select>
+        <div id="customWrap" style="margin-top:12px;display:none">
+          <label class="label">Flat deduction rate</label>
+          <div class="inwrap"><input type="number" id="customRate" class="pr" value="20" inputmode="decimal"><span class="post">%</span></div>
+        </div>
+        <div class="hint">Estimated tax + social contributions at your projected income. Approximate, not a payslip — rates vary by personal circumstances.</div>
+      </div>
+
+      <div class="card">
+        <span class="label" style="margin-bottom:12px">Other income</span>
+        <div><label class="label">Other net income / month</label><div class="inwrap"><span class="pre" id="s2"></span><input type="number" class="pl" id="otherMo" value="0" inputmode="decimal"></div></div>
+        <div class="hint">Salary, benefits, anything not from these shifts. Reduces the hours your shifts must cover.</div>
+      </div>
+    </div>
+
+    <!-- RIGHT: spending -->
+    <div class="stack">
+      <div class="card">
+        <div class="row-between" style="margin-bottom:4px"><span class="label">Monthly outgoings</span><button class="btn" id="addBill">+ Item</button></div>
+        <div class="hint" style="margin-top:0;margin-bottom:12px">Bills, savings, repayments, spending. Tag each so you can see where the money — and the hours — go.</div>
+        <div id="bills" class="stack" style="gap:9px"></div>
+        <div class="row-between" style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
+          <span style="color:var(--sub);font-size:13px">Total monthly need</span>
+          <span class="mono" style="font-weight:800" id="totalMonthly"></span>
+        </div>
+        <div id="catTotals" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"></div>
+      </div>
+
+      <div class="card">
+        <div class="row-between" style="margin-bottom:4px"><span class="label">One-off goals</span><button class="btn" id="addGoal">+ Goal</button></div>
+        <div class="hint" style="margin-top:0;margin-bottom:12px">A lump sum by a deadline. Adds extra hours on top, only while it runs.</div>
+        <div id="goals" class="stack" style="gap:12px"></div>
+      </div>
+
+      <div class="card">
+        <span class="label" style="margin-bottom:12px">Your real take-home</span>
+        <div class="row-between" style="margin-bottom:9px"><span style="color:var(--sub);font-size:13px">Blended gross/hr</span><span class="mono" id="grossHr"></span></div>
+        <div id="dedBreak" class="stack" style="gap:7px;margin:9px 0;padding:9px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"></div>
+        <div class="row-between" style="padding-top:2px"><span style="font-weight:700">Take-home/hr</span><span class="mono" id="netHr" style="color:var(--accent);font-weight:800;font-size:18px"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADLINE -->
+  <div class="card" id="headline" style="margin-bottom:14px">
+    <span class="label" id="hl-label">This week, to stay on top of everything, work</span>
+    <div class="hero-num mono" id="hl-total" style="margin-top:6px"></div>
+    <div id="hl-break" style="margin-top:14px;display:grid;gap:8px"></div>
+    <div id="hl-burn" style="margin-top:14px"></div>
+  </div>
+
+  <!-- HOUR BREAKDOWN — the signature -->
+  <div class="card" style="margin-bottom:14px">
+    <span class="label" style="margin-bottom:4px">Where every hour goes</span>
+    <div class="hint" style="margin-top:0;margin-bottom:16px">One hour of work, sliced by what it pays for. This is your money turned back into time.</div>
+    <div class="clockwrap">
+      <svg id="clock" width="180" height="180" viewBox="0 0 180 180" style="flex-shrink:0"></svg>
+      <div id="clockLegend" class="stack" style="gap:8px;flex:1;min-width:200px"></div>
+    </div>
+  </div>
+
+  <!-- baseline + goals -->
+  <div class="cols" style="margin-bottom:14px">
+    <div class="card">
+      <span class="label" style="margin-bottom:12px">Baseline — covering monthly life</span>
+      <div class="stack" style="gap:10px">
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Shift hours / month</span><span class="mono" id="bl-hrsMo"></span></div>
+        <div class="row-between" style="border-top:1px solid var(--line);padding-top:10px"><span style="font-weight:700">Baseline hours / week</span><span class="mono" id="bl-hrsWk" style="color:var(--accent);font-weight:800"></span></div>
+      </div>
+      <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
+    </div>
+    <div class="card">
+      <span class="label" style="margin-bottom:12px">Goals — extra hours while they run</span>
+      <div id="goalRows" class="stack" style="gap:6px"></div>
+    </div>
+  </div>
+
+  <!-- reality bar -->
+  <div class="card" style="margin-bottom:14px">
+    <span class="label" style="margin-bottom:12px">Reality check against your ceiling</span>
+    <div id="reality"></div>
+  </div>
+
+  <!-- shift log -->
+  <div class="card">
+    <div class="row-between" style="margin-bottom:6px">
+      <span class="label">This week's shifts</span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" id="newWeek">↻ New week</button>
+        <button class="btn btn-go btn-sm" id="addShift">+ Shift</button>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:0;margin-bottom:14px">Log what you actually worked. Hours and pay compute per job automatically. "New week" banks this week and clears the log.</div>
+    <div id="pace" style="margin-bottom:14px"></div>
+    <div id="shifts" class="stack" style="gap:10px"></div>
+    <div id="history" style="margin-top:16px"></div>
+  </div>
+
+  <p style="font-size:11px;color:var(--sub);margin-top:20px;text-align:center;line-height:1.6">
+    Tax models are simplified effective-rate estimates and ignore many personal factors (allowances, credits, student loans, overtime rules). This plans average hours — it doesn't track when bills are due. Planning guidance, not a payslip. Your data stays in this browser.
+  </p>
+</div>
+
+<script>
+// ── tax models: return {tax components...} so we can break them down ──
+const COUNTRIES={
+  UK:{symbol:"£",name:"United Kingdom",calc:a=>{const pi=12570,up=50270;let it=0,ni=0;
+    if(a>pi){const b=Math.min(a,up)-pi;it+=Math.max(0,b)*.2;if(a>up)it+=(a-up)*.4;}
+    if(a>pi){const b=Math.min(a,up)-pi;ni+=Math.max(0,b)*.08;if(a>up)ni+=(a-up)*.02;}
+    return [["Income tax",it],["National Insurance",ni]];}},
+  IE:{symbol:"€",name:"Ireland",calc:a=>{let it=0;const std=42000;it+=Math.min(a,std)*.2;if(a>std)it+=(a-std)*.4;
+    const credit=4000; it=Math.max(0,it-credit);
+    let usc=0;const u=[[12012,.005],[25760,.02],[70044,.04],[Infinity,.08]];let prev=0;for(const[c,r]of u){if(a>prev){usc+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const prsi=a*.041;
+    return [["Income tax",it],["USC",usc],["PRSI",prsi]];}},
+  DE:{symbol:"€",name:"Germany",calc:a=>{const ta=Math.max(0,a-11604);let it=ta*0.30; // approx blended progressive
+    const soc=Math.min(a,90600)*0.20; // health+pension+care+unemp employee share approx
+    return [["Income tax (approx)",it],["Social contributions",soc]];}},
+  FR:{symbol:"€",name:"France",calc:a=>{let it=0;const br=[[11294,0],[28797,.11],[82341,.30],[177106,.41]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    const soc=a*0.22; return [["Income tax",it],["Cotisations sociales",soc]];}},
+  NL:{symbol:"€",name:"Netherlands",calc:a=>{let it=0;const b1=38441;it+=Math.min(a,b1)*.3697;if(a>b1)it+=(a-b1)*.4950;
+    const credit=Math.max(0,3362-Math.max(0,a-24000)*.06); it=Math.max(0,it-credit);
+    return [["Income tax + NI",it]];}},
+  ES:{symbol:"€",name:"Spain",calc:a=>{let it=0;const br=[[0,.19],[12450,.24],[20200,.30],[35200,.37],[60000,.45]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    const ss=Math.min(a,56646)*0.0635; return [["IRPF",it],["Social security",ss]];}},
+  US:{symbol:"$",name:"United States",calc:a=>{const t=Math.max(0,a-14600);let f=0;const br=[[0,.1],[11600,.12],[47150,.22],[100525,.24],[191950,.32]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    return [["Federal tax",f],["FICA",a*.0765]];}},
+  CA:{symbol:"$",name:"Canada",calc:a=>{const t=Math.max(0,a-15705);let f=0;const br=[[0,.15],[55867,.205],[111733,.26]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    return [["Federal tax",f],["CPP + EI",Math.min(a,68500)*.073]];}},
+  AU:{symbol:"$",name:"Australia",calc:a=>{let it=0;const br=[[18200,0],[45000,.16],[135000,.30],[190000,.37]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    return [["Income tax",it],["Medicare levy",a>27222?a*.02:0]];}},
+  NONE:{symbol:"¤",name:"Flat % (custom)",calc:null},
+};
+const CATS={bills:{label:"Bills",color:"var(--c-bills)"},save:{label:"Savings",color:"var(--c-save)"},repay:{label:"Repayments",color:"var(--c-repay)"},spend:{label:"Spending",color:"var(--c-spend)"}};
+const WPM=4.345;
+const uid=()=>Math.random().toString(36).slice(2,9);
+
+// ── state with persistence ──
+const DEFAULT={
+  jobMode:"x",
+  jobs:[{id:uid(),label:"Door supervisor",wage:14.25,hours:24,pension:0},{id:uid(),label:"Security guard",wage:13.2,hours:12,pension:0}],
+  bills:[{id:uid(),label:"Rent",amount:600,cat:"bills"},{id:uid(),label:"Phone + utilities",amount:120,cat:"bills"},{id:uid(),label:"Savings",amount:200,cat:"save"},{id:uid(),label:"Spending money",amount:200,cat:"spend"}],
+  goals:[{id:uid(),label:"Visa extension",amount:2500,weeks:12}],
+  shifts:[],
+  history:[],
+  settings:{country:"UK",customRate:20,maxDays:6,hoursPerDay:10,otherMo:0}
+};
+const KEY="shiftPlanner.v5";
+let S=load();
+function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+
+const $=id=>document.getElementById(id);
+let sym="£";
+const csel=$("country");
+Object.entries(COUNTRIES).forEach(([k,v])=>{const o=document.createElement("option");o.value=k;o.textContent=v.name;csel.appendChild(o);});
+const fmt=n=>sym+Math.round(n).toLocaleString();
+const fmt2=n=>sym+(Math.round(n*100)/100).toFixed(2);
+
+// hydrate settings inputs
+csel.value=S.settings.country;
+$("customRate").value=S.settings.customRate;
+$("maxDays").value=S.settings.maxDays;
+$("hoursPerDay").value=S.settings.hoursPerDay;
+$("otherMo").value=S.settings.otherMo;
+
+function model(){
+  const country=csel.value;sym=COUNTRIES[country].symbol;
+  const maxDays=+$("maxDays").value||0,hpd=+$("hoursPerDay").value||0,maxWeekly=maxDays*hpd;
+  const otherMo=+$("otherMo").value||0;
+
+  const totH=S.jobs.reduce((s,j)=>s+(+j.hours||0),0);
+  const blended=totH<=0?0:S.jobs.reduce((s,j)=>s+(+j.wage||0)*(+j.hours||0),0)/totH;
+  // weighted pension rate across jobs
+  const pensionRate=totH<=0?0:S.jobs.reduce((s,j)=>s+((+j.pension||0)/100)*(+j.hours||0),0)/totH;
+
+  const grossWeekCap=blended*maxWeekly,annual=grossWeekCap*52;
+  let comps=[],taxTotal=0;
+  if(country==="NONE"){const r=Math.min(.95,Math.max(0,(+$("customRate").value||0)/100));taxTotal=annual*r;comps=[["Deductions",taxTotal]];}
+  else{comps=COUNTRIES[country].calc(annual);taxTotal=comps.reduce((s,c)=>s+c[1],0);}
+  const taxRate=annual>0?taxTotal/annual:0;
+  const pensionAnnual=annual*pensionRate;
+  const effRate=Math.min(.98,taxRate+pensionRate);
+  const net=blended*(1-effRate);
+
+  // per-hour deduction components (annual comp / annual hours)
+  const annualHours=maxWeekly*52||1;
+  const perHrComps=comps.map(([n,v])=>[n,v/annualHours]);
+  if(pensionRate>0)perHrComps.push(["Pension",pensionAnnual/annualHours]);
+
+  const monthlyNeed=S.bills.reduce((s,b)=>s+(+b.amount||0),0);
+  const monthlyFromShifts=Math.max(0,monthlyNeed-otherMo);
+  const baseHrsMo=net>0?monthlyFromShifts/net:Infinity;
+  const baseHrsWk=baseHrsMo/WPM;
+  const baseGrossMo=net>0?monthlyFromShifts/(1-effRate):0;
+
+  const goalCalc=S.goals.map(g=>{const amt=+g.amount||0,wks=Math.max(1,+g.weeks||1);const hrsTotal=net>0?amt/net:Infinity;return {...g,wks,hrsTotal,hrsWk:hrsTotal/wks};});
+  const goalHrsWkNow=goalCalc.reduce((s,g)=>s+(isFinite(g.hrsWk)?g.hrsWk:0),0);
+
+  const totalWk=baseHrsWk+goalHrsWkNow;
+  const dpw=hpd>0?totalWk/hpd:Infinity;
+  const feasible=totalWk<=maxWeekly&&isFinite(totalWk);
+
+  return {country,maxWeekly,hpd,otherMo,blended,net,effRate,taxRate,pensionRate,perHrComps,monthlyNeed,monthlyFromShifts,baseHrsMo,baseHrsWk,baseGrossMo,goalCalc,goalHrsWkNow,totalWk,dpw,feasible};
+}
+
+function shiftHours(s){if(!s.start||!s.end)return 0;const[sh,sm]=s.start.split(":").map(Number),[eh,em]=s.end.split(":").map(Number);let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;m-=(+s.brk||0);return Math.max(0,m/60);}
+function jobRate(id){const j=S.jobs.find(x=>x.id===id);return j?+j.wage||0:0;}
+
+// ── renderers ──
+function renderJobs(){const c=$("jobs");c.innerHTML="";S.jobs.forEach(j=>{
+  const d=document.createElement("div");
+  d.style.cssText="border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)";
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+      <input value="${j.label}" data-id="${j.id}" data-k="label" style="font-family:inherit;flex:1" placeholder="Role">
+      <button class="x" data-del="${j.id}">✕</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+      <div><label class="label" style="font-size:9px;margin-bottom:4px">Rate /hr</label><div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${j.wage}" data-id="${j.id}" data-k="wage" inputmode="decimal"></div></div>
+      <div><label class="label" style="font-size:9px;margin-bottom:4px">Typ. hrs/wk</label><input type="number" value="${j.hours}" data-id="${j.id}" data-k="hours" inputmode="numeric"></div>
+      <div><label class="label" style="font-size:9px;margin-bottom:4px">Pension</label><div class="inwrap"><input class="pr" type="number" value="${j.pension||0}" data-id="${j.id}" data-k="pension" inputmode="decimal"><span class="post">%</span></div></div>
+    </div>`;c.appendChild(d);});}
+
+function renderBills(){const c=$("bills");c.innerHTML="";S.bills.forEach(b=>{
+  const opts=Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${b.cat===k?"selected":""}>${v.label}</option>`).join("");
+  const d=document.createElement("div");d.style.cssText="display:flex;gap:8px;align-items:center";
+  d.innerHTML=`<input value="${b.label}" data-bid="${b.id}" data-k="label" style="font-family:inherit;flex:1">
+    <select data-bid="${b.id}" data-k="cat" style="width:104px;font-size:13px;padding:10px 8px">${opts}</select>
+    <div class="inwrap" style="width:104px"><span class="pre">${sym}</span><input class="pl" type="number" value="${b.amount}" data-bid="${b.id}" data-k="amount" inputmode="decimal"></div>
+    <button class="x" data-delbill="${b.id}">✕</button>`;c.appendChild(d);});}
+
+function renderGoals(){const c=$("goals");c.innerHTML="";if(!S.goals.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:4px">No one-off goals.</div>';return;}
+  S.goals.forEach(g=>{const d=document.createElement("div");d.className="goalgrid";d.style.cssText="display:grid;grid-template-columns:1fr 104px 74px 28px;gap:8px;align-items:center";
+  d.innerHTML=`<input class="gfull" value="${g.label}" data-gid="${g.id}" data-k="label" style="font-family:inherit">
+    <div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${g.amount}" data-gid="${g.id}" data-k="amount" inputmode="decimal"></div>
+    <div class="inwrap"><input class="pr" type="number" value="${g.weeks}" data-gid="${g.id}" data-k="weeks" inputmode="numeric"><span class="post">wk</span></div>
+    <button class="x" data-delgoal="${g.id}">✕</button>`;c.appendChild(d);});}
+
+function renderShifts(){const c=$("shifts");c.innerHTML="";if(!S.shifts.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:6px">No shifts logged this week.</div>';return;}
+  const m=model();S.shifts.forEach((s,i)=>{const hrs=shiftHours(s);const pay=hrs*jobRate(s.jobId)*(1-m.effRate);
+  const opts=S.jobs.map(j=>`<option value="${j.id}" ${j.id===s.jobId?"selected":""}>${j.label}</option>`).join("");
+  const d=document.createElement("div");d.style.cssText="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px";
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><select data-si="${i}" data-k="jobId" style="flex:1">${opts}</select><button class="x" data-delshift="${i}">✕</button></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px"><div><label class="label" style="font-size:9px;margin-bottom:4px">Start</label><input type="time" data-si="${i}" data-k="start" value="${s.start||""}"></div>
+    <div><label class="label" style="font-size:9px;margin-bottom:4px">End</label><input type="time" data-si="${i}" data-k="end" value="${s.end||""}"></div>
+    <div><label class="label" style="font-size:9px;margin-bottom:4px">Break m</label><input type="number" data-si="${i}" data-k="brk" value="${s.brk||0}" inputmode="numeric"></div></div>
+    <div class="row-between" style="margin-top:10px;font-size:13px"><span style="color:var(--sub)">${hrs.toFixed(2)} hrs</span><span class="mono" style="color:var(--accent);font-weight:700">+${fmt2(pay)} net</span></div>`;c.appendChild(d);});}
+
+// Build the weekly coverage waterfall: net earnings pour into weekly obligations in priority order.
+// Weekly obligation = monthly bill / 4.345 (each bill itemised), then goals by their weekly share.
+function weekCoverage(weekNet){
+  const items=[];
+  // bills, in their listed order, each as a weekly slice
+  S.bills.forEach(b=>{const wk=(+b.amount||0)/WPM;if(wk>0)items.push({label:b.label||"Item",need:wk,color:CATS[b.cat]?.color||"var(--c-bills)"});});
+  // goals, by weekly share (amount / weeks)
+  S.goals.forEach(g=>{const wk=(+g.amount||0)/Math.max(1,+g.weeks||1);if(wk>0)items.push({label:g.label||"Goal",need:wk,color:"var(--violet)",goal:true});});
+  let rem=weekNet;
+  return items.map(it=>{const paid=Math.max(0,Math.min(it.need,rem));rem-=paid;return {...it,paid,full:paid>=it.need-0.005,frac:it.need>0?paid/it.need:1};});
+}
+
+function coverageBar(cov,weekNet){
+  // single horizontal stacked bar showing reach across obligations
+  const totalNeed=cov.reduce((s,c)=>s+c.need,0)||1;
+  let segs=cov.map(c=>{const w=(c.need/totalNeed)*100;const fillW=(c.paid/totalNeed)*100;
+    return `<div style="width:${w}%;position:relative;border-right:1px solid var(--bg)"><div style="position:absolute;inset:0;background:${c.color};opacity:${c.full?0.95:(c.paid>0?0.55:0.12)}"></div></div>`;}).join("");
+  return `<div style="height:18px;display:flex;border-radius:6px;overflow:hidden;background:var(--panel)">${segs}</div>`;
+}
+
+function renderHistory(){const c=$("history");if(!S.history.length){c.innerHTML="";return;}
+  const rows=S.history.slice(-6).reverse().map(w=>{
+    const cov=w.coverage||weekCoverage(w.net);
+    const reached=cov.filter(x=>x.full).length, total=cov.length;
+    const legend=cov.map(x=>`<div class="row-between" style="font-size:12px"><span style="display:flex;align-items:center;gap:7px;${x.full?'':'color:var(--sub)'}"><span style="width:9px;height:9px;border-radius:2px;background:${x.color};opacity:${x.full?0.95:(x.paid>0?0.55:0.2)};display:inline-block"></span>${x.label}${x.goal?' <span style="color:var(--violet);font-size:10px">goal</span>':''}</span><span class="mono" style="color:${x.full?'var(--accent)':(x.paid>0?'var(--amber)':'var(--sub)')}">${x.full?'✓ covered':(x.paid>0?Math.round(x.frac*100)+'%':'—')}</span></div>`).join("");
+    return `<div style="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px">
+      <div class="row-between" style="margin-bottom:10px"><span style="font-size:13px;font-weight:700">${w.date}</span><span class="mono" style="font-size:13px;color:var(--sub)">${w.hours.toFixed(1)} hrs · ${fmt(w.net)} net</span></div>
+      ${coverageBar(cov,w.net)}
+      <div class="stack" style="gap:5px;margin-top:10px">${legend}</div>
+      <div style="font-size:11px;color:var(--sub);margin-top:8px">This week reached ${reached} of ${total} obligations in priority order.</div>
+    </div>`;}).join("");
+  c.innerHTML=`<div class="label" style="margin-bottom:8px">Past weeks — what each week's earnings covered</div><div class="stack" style="gap:8px">${rows}</div>`;}
+
+// SVG donut clock for hour breakdown
+function renderClock(m){
+  const svg=$("clock"),leg=$("clockLegend");
+  const net=m.net,gross=m.blended;
+  if(gross<=0){svg.innerHTML="";leg.innerHTML='<div style="color:var(--sub);font-size:13px">Add a job to see the breakdown.</div>';return;}
+  // slices of one hour (gross): deductions first, then each bill category by share of net spend
+  const slices=[];
+  m.perHrComps.forEach(([n,v])=>{if(v>0)slices.push({label:n,val:v,color:"var(--c-tax)",ded:true});});
+  // remaining net hour split across categories by monthly spend share
+  const catSpend={};S.bills.forEach(b=>{catSpend[b.cat]=(catSpend[b.cat]||0)+(+b.amount||0);});
+  const totSpend=Object.values(catSpend).reduce((a,b)=>a+b,0)||1;
+  Object.entries(catSpend).forEach(([k,v])=>{if(v>0)slices.push({label:CATS[k].label,val:net*(v/totSpend),color:CATS[k].color});});
+  const total=gross;
+  // donut
+  let acc=0,R=78,r=48,cx=90,cy=90,paths="";
+  slices.forEach(s=>{const frac=s.val/total;const a0=acc*2*Math.PI-Math.PI/2,a1=(acc+frac)*2*Math.PI-Math.PI/2;acc+=frac;
+    const x0=cx+R*Math.cos(a0),y0=cy+R*Math.sin(a0),x1=cx+R*Math.cos(a1),y1=cy+R*Math.sin(a1);
+    const xi1=cx+r*Math.cos(a1),yi1=cy+r*Math.sin(a1),xi0=cx+r*Math.cos(a0),yi0=cy+r*Math.sin(a0);
+    const large=frac>.5?1:0;
+    paths+=`<path d="M${x0},${y0} A${R},${R} 0 ${large} 1 ${x1},${y1} L${xi1},${yi1} A${r},${r} 0 ${large} 0 ${xi0},${yi0} Z" fill="${s.color}" opacity="0.9"/>`;});
+  svg.innerHTML=paths+`<text x="90" y="86" text-anchor="middle" fill="var(--ink)" font-size="13" font-weight="700">1 hour</text><text x="90" y="103" text-anchor="middle" fill="var(--sub)" font-size="10">= 60 min</text>`;
+  leg.innerHTML=slices.map(s=>{const mins=(s.val/total)*60;return `<div class="row-between"><span style="font-size:13px;display:flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:3px;background:${s.color};display:inline-block"></span>${s.label}${s.ded?' <span style="color:var(--sub);font-size:11px">(deduction)</span>':''}</span><span class="mono" style="font-size:13px;color:var(--sub)">${mins.toFixed(0)} min</span></div>`;}).join("");
+}
+
+function calc(){
+  // persist settings
+  S.settings={country:csel.value,customRate:+$("customRate").value||0,maxDays:+$("maxDays").value||0,hoursPerDay:+$("hoursPerDay").value||0,otherMo:+$("otherMo").value||0};
+  const m=model();
+  $("customWrap").style.display=m.country==="NONE"?"block":"none";
+  $("s2").textContent=sym;
+  $("ceiling").textContent=m.maxWeekly+" hrs/week";
+  $("totalMonthly").textContent=fmt(m.monthlyNeed);
+  $("grossHr").textContent=fmt2(m.blended);
+  $("netHr").textContent=fmt2(m.net);
+
+  // deduction breakdown panel
+  $("dedBreak").innerHTML=m.perHrComps.map(([n,v])=>`<div class="row-between"><span style="color:var(--sub);font-size:12px">${n}</span><span class="mono" style="font-size:12px;color:var(--amber)">-${fmt2(v)}/hr</span></div>`).join("")||`<div style="color:var(--sub);font-size:12px">No deductions</div>`;
+
+  // category totals chips
+  const catSpend={};S.bills.forEach(b=>{catSpend[b.cat]=(catSpend[b.cat]||0)+(+b.amount||0);});
+  $("catTotals").innerHTML=Object.entries(CATS).filter(([k])=>catSpend[k]).map(([k,v])=>`<span class="pill" style="background:color-mix(in srgb, ${v.color} 14%, transparent);color:${v.color}">${v.label} ${fmt(catSpend[k])}</span>`).join("");
+
+  // headline
+  const hl=$("headline");
+  hl.style.background=m.feasible?"linear-gradient(135deg,#0f2420,#12161f)":"linear-gradient(135deg,#241318,#12161f)";
+  hl.style.borderColor=m.feasible?"#1c6b5e":"#7a2f3a";
+  $("hl-total").style.color=m.feasible?"var(--accent)":"var(--warn)";
+  $("hl-total").innerHTML=`${isFinite(m.totalWk)?m.totalWk.toFixed(1):"—"}<span style="font-size:20px;color:var(--sub);font-weight:600"> hrs/week · ${isFinite(m.dpw)?m.dpw.toFixed(1):"—"} days</span>`;
+  $("hl-break").innerHTML=`
+    <div class="row-between"><span class="pill" style="background:rgba(94,234,212,.12);color:var(--accent)">Baseline</span><span class="mono" style="font-size:15px">${isFinite(m.baseHrsWk)?m.baseHrsWk.toFixed(1):"—"} hrs/wk</span></div>
+    <div class="row-between"><span class="pill" style="background:rgba(167,139,250,.14);color:var(--violet)">Goals (now)</span><span class="mono" style="font-size:15px">${m.goalHrsWkNow.toFixed(1)} hrs/wk</span></div>`;
+
+  const burn=$("hl-burn");let msg,col;
+  if(!isFinite(m.totalWk)){msg="";col="";}
+  else if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling — your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
+  else if(m.totalWk>=55){msg=`${m.totalWk.toFixed(0)} hrs/week sustained is brutal on top of getting home at 1am.`;col="var(--warn)";}
+  else if(m.totalWk>=45){msg=`${m.totalWk.toFixed(0)} hrs/week is heavy but workable.`;col="var(--amber)";}
+  else{msg=`${m.totalWk.toFixed(0)} hrs/week is sustainable.`;col="var(--accent)";}
+  burn.innerHTML=msg?`<span style="color:${col};font-size:13px;font-weight:600">${col==="var(--accent)"?"✓":"⚠"} ${msg}</span>`:"";
+
+  // baseline detail
+  $("bl-net").textContent=fmt(m.monthlyFromShifts)+(m.otherMo>0?` (after ${fmt(m.otherMo)} other)`:"");
+  $("bl-gross").textContent=fmt(m.baseGrossMo);
+  $("bl-hrsMo").textContent=isFinite(m.baseHrsMo)?m.baseHrsMo.toFixed(1)+" hrs":"—";
+  $("bl-hrsWk").textContent=isFinite(m.baseHrsWk)?m.baseHrsWk.toFixed(1)+" hrs":"—";
+
+  // goal rows
+  const gr=$("goalRows");gr.innerHTML="";
+  if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals — baseline is your whole number.</div>';
+  m.goalCalc.forEach(g=>{const row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--panel2)";
+    row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label||"Goal"} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span></span><span class="mono" style="font-size:13px;color:var(--violet)">+${isFinite(g.hrsWk)?g.hrsWk.toFixed(1):"—"} h/wk</span>`;gr.appendChild(row);});
+
+  // reality bar
+  const basePct=Math.min(100,(m.baseHrsWk/m.maxWeekly)*100);
+  const goalPct=Math.min(100-basePct,(m.goalHrsWkNow/m.maxWeekly)*100);
+  const over=m.totalWk>m.maxWeekly;
+  $("reality").innerHTML=`<div style="height:26px;background:var(--panel2);border-radius:8px;overflow:hidden;display:flex;border:1px solid var(--line)"><div style="width:${basePct}%;background:var(--accent2)"></div><div style="width:${goalPct}%;background:var(--violet)"></div></div>
+    <div class="row-between" style="margin-top:10px;font-size:12px;color:var(--sub)"><span><span style="color:var(--accent2)">■</span> Baseline ${m.baseHrsWk.toFixed(1)}h &nbsp; <span style="color:var(--violet)">■</span> Goals ${m.goalHrsWkNow.toFixed(1)}h</span><span class="mono" style="color:${over?'var(--warn)':'var(--sub)'}">${m.totalWk.toFixed(1)} / ${m.maxWeekly}h</span></div>
+    ${over?`<div style="color:var(--warn);font-size:12px;font-weight:600;margin-top:8px">⚠ ${(m.totalWk-m.maxWeekly).toFixed(1)} hrs/week over the line.</div>`:`<div style="color:var(--sub);font-size:12px;margin-top:8px">${(m.maxWeekly-m.totalWk).toFixed(1)} hrs/week of headroom left.</div>`}`;
+
+  renderClock(m);
+
+  // pace
+  const p=$("pace");
+  if(S.shifts.length){let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});
+    const need=m.net*m.totalWk;const ahead=net>=need;
+    const cov=weekCoverage(net);
+    const covLegend=cov.map(x=>`<div class="row-between" style="font-size:12px"><span style="display:flex;align-items:center;gap:7px;${x.full?'':'color:var(--sub)'}"><span style="width:9px;height:9px;border-radius:2px;background:${x.color};opacity:${x.full?0.95:(x.paid>0?0.55:0.2)};display:inline-block"></span>${x.label}${x.goal?' <span style="color:var(--violet);font-size:10px">goal</span>':''}</span><span class="mono" style="color:${x.full?'var(--accent)':(x.paid>0?'var(--amber)':'var(--sub)')}">${x.full?'✓':(x.paid>0?Math.round(x.frac*100)+'%':'—')}</span></div>`).join("");
+    p.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div class="stat"><div class="label">Earned this wk</div><div class="v mono" style="color:var(--accent)">${fmt(net)}</div></div><div class="stat"><div class="label">Needed this wk</div><div class="v mono">${fmt(need)}</div></div><div class="stat"><div class="label">Hours worked</div><div class="v mono">${hrs.toFixed(1)}</div></div></div>
+      <div style="font-size:13px;color:${ahead?'var(--accent)':'var(--warn)'};margin-top:10px;font-weight:600">${ahead?'✓ This week is covered.':`⚠ ${fmt(need-net)} short — about ${((need-net)/Math.max(0.01,m.net)).toFixed(1)} more hours.`}</div>
+      <div style="margin-top:14px">${coverageBar(cov,net)}<div class="stack" style="gap:5px;margin-top:10px">${covLegend}</div><div style="font-size:11px;color:var(--sub);margin-top:8px">Where this week's earnings have reached so far, in priority order. Bank it with "New week".</div></div>`;
+  }else p.innerHTML="";
+
+  renderShifts();renderHistory();save();
+}
+
+// ── events ──
+$("jobs").addEventListener("input",e=>{const id=e.target.dataset.id,k=e.target.dataset.k;if(!id)return;S.jobs.find(x=>x.id===id)[k]=e.target.value;calc();});
+$("jobs").addEventListener("click",e=>{const id=e.target.dataset.del;if(id){S.jobs=S.jobs.filter(x=>x.id!==id);renderJobs();calc();}});
+$("bills").addEventListener("input",e=>{const id=e.target.dataset.bid,k=e.target.dataset.k;if(!id)return;S.bills.find(x=>x.id===id)[k]=e.target.value;calc();});
+$("bills").addEventListener("change",e=>{const id=e.target.dataset.bid,k=e.target.dataset.k;if(id&&k==="cat"){S.bills.find(x=>x.id===id).cat=e.target.value;calc();}});
+$("bills").addEventListener("click",e=>{const id=e.target.dataset.delbill;if(id){S.bills=S.bills.filter(x=>x.id!==id);renderBills();calc();}});
+$("goals").addEventListener("input",e=>{const id=e.target.dataset.gid,k=e.target.dataset.k;if(!id)return;S.goals.find(x=>x.id===id)[k]=e.target.value;calc();});
+$("goals").addEventListener("click",e=>{const id=e.target.dataset.delgoal;if(id){S.goals=S.goals.filter(x=>x.id!==id);renderGoals();calc();}});
+$("shifts").addEventListener("input",e=>{const i=e.target.dataset.si,k=e.target.dataset.k;if(i==null)return;S.shifts[+i][k]=k==="brk"?(+e.target.value||0):e.target.value;calc();});
+$("shifts").addEventListener("change",e=>{const i=e.target.dataset.si,k=e.target.dataset.k;if(i==null||k!=="jobId")return;S.shifts[+i].jobId=e.target.value;calc();});
+$("shifts").addEventListener("click",e=>{const i=e.target.dataset.delshift;if(i!=null){S.shifts.splice(+i,1);renderShifts();calc();}});
+$("addJob").onclick=()=>{S.jobs.push({id:uid(),label:"Job "+(S.jobs.length+1),wage:12,hours:0,pension:0});renderJobs();calc();};
+$("addBill").onclick=()=>{S.bills.push({id:uid(),label:"New item",amount:100,cat:"bills"});renderBills();calc();};
+$("addGoal").onclick=()=>{S.goals.push({id:uid(),label:"New goal",amount:500,weeks:8});renderGoals();calc();};
+$("addShift").onclick=()=>{S.shifts.push({id:uid(),jobId:S.jobs[0]?.id,start:"18:00",end:"02:00",brk:0});renderShifts();calc();};
+$("newWeek").onclick=()=>{if(!S.shifts.length){alert("No shifts logged this week yet.");return;}const m=model();let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});S.history.push({date:new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}),hours:hrs,net,coverage:weekCoverage(net)});S.shifts=[];renderShifts();calc();};
+["maxDays","hoursPerDay","country","customRate","otherMo"].forEach(id=>$(id).addEventListener("input",calc));
+
+// export / import / reset
+$("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shift-planner-data.json";a.click();};
+$("importBtn").onclick=()=>$("importFile").click();
+$("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{S=JSON.parse(r.result);save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderJobs();renderBills();renderGoals();renderShifts();calc();}catch(err){alert("Couldn't read that file.");}};r.readAsText(f);};
+$("resetBtn").onclick=()=>{if(confirm("Clear everything and start fresh? This can't be undone.")){S=JSON.parse(JSON.stringify(DEFAULT));save();location.reload();}};
+
+renderJobs();renderBills();renderGoals();renderShifts();calc();
+</script>
+</body>
+</html>

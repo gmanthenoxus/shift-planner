@@ -72,6 +72,18 @@
     </div>
   </header>
 
+  <!-- COUNTRY PICKER: first thing, sets currency for everything below -->
+  <div class="card" style="margin-bottom:14px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <label class="label" style="margin-bottom:7px">Where are you based? <span style="color:var(--accent);font-weight:700">Start here — sets your currency and tax model.</span></label>
+      <select id="country"></select>
+    </div>
+    <div id="customWrap" style="display:none;min-width:160px">
+      <label class="label">Flat deduction rate</label>
+      <div class="inwrap"><input type="number" id="customRate" class="pr" value="20" inputmode="decimal"><span class="post">%</span></div>
+    </div>
+  </div>
+
   <div class="cols" style="margin-bottom:14px">
     <!-- LEFT: earning -->
     <div class="stack">
@@ -88,16 +100,6 @@
           <div><label class="label">Max hours/day</label><input type="number" id="hoursPerDay" min="1" max="16" value="10" inputmode="numeric"></div>
         </div>
         <div class="hint">Ceiling: <span id="ceiling" style="color:var(--ink);font-weight:700"></span></div>
-      </div>
-
-      <div class="card">
-        <span class="label" style="margin-bottom:12px">Country / deductions</span>
-        <select id="country"></select>
-        <div id="customWrap" style="margin-top:12px;display:none">
-          <label class="label">Flat deduction rate</label>
-          <div class="inwrap"><input type="number" id="customRate" class="pr" value="20" inputmode="decimal"><span class="post">%</span></div>
-        </div>
-        <div class="hint">Estimated tax + social contributions at your projected income. Approximate, not a payslip — rates vary by personal circumstances.</div>
       </div>
 
       <div class="card">
@@ -486,7 +488,8 @@ $("addBill").onclick=()=>{S.bills.push({id:uid(),label:"New item",amount:100,cat
 $("addGoal").onclick=()=>{S.goals.push({id:uid(),label:"New goal",amount:500,weeks:8});renderGoals();calc();};
 $("addShift").onclick=()=>{S.shifts.push({id:uid(),jobId:S.jobs[0]?.id,start:"18:00",end:"02:00",brk:0});renderShifts();calc();};
 $("newWeek").onclick=()=>{if(!S.shifts.length){alert("No shifts logged this week yet.");return;}const m=model();let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});S.history.push({date:new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}),hours:hrs,net,coverage:weekCoverage(net)});S.shifts=[];renderShifts();calc();};
-["maxDays","hoursPerDay","country","customRate","otherMo"].forEach(id=>$(id).addEventListener("input",calc));
+["maxDays","hoursPerDay","customRate","otherMo"].forEach(id=>$(id).addEventListener("input",calc));
+$("country").addEventListener("input",()=>{sym=COUNTRIES[csel.value]?.symbol||"¤";sym=COUNTRIES[csel.value]?.symbol||"¤";renderJobs();renderBills();renderGoals();renderShifts();calc();});
 
 // export / import / reset
 $("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shift-planner-data.json";a.click();};

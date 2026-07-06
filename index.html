@@ -256,6 +256,15 @@ const uid=()=>Math.random().toString(36).slice(2,9);
 // replaces the bare "✕" glyph so every icon-only button traces to a real icon library, not an
 // ad hoc character, per the design system's global icon rule.
 const TRASH_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+// Escapes user-controlled strings (job/bill/goal labels) before they reach innerHTML, in either
+// an attribute-value or text-content position -- both are unsafe without this. Every render
+// function below that interpolates a user-entered label runs it through esc() first.
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+// Range-clamps a numeric field at read time (type-confusion was already guarded by `+x||0`
+// throughout; this adds the missing range check standing order 9 requires -- negative/absurd
+// values are clamped to a sane bound rather than rejected, consistent with this app's existing
+// "coerce, don't error" style).
+const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,+v||0));
 
 // ── state with persistence ──
 const DEFAULT={
@@ -272,7 +281,10 @@ const KEY="shiftPlanner.v5";
 // treated as already expired -- generous to existing data, doesn't require a storage-key bump.
 function backfillGoals(state){(state.goals||[]).forEach(g=>{if(!g.addedAt)g.addedAt=Date.now();});return state;}
 let S=backfillGoals(load());
-function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
+// Shape-malformed storage (valid JSON, wrong structure -- a partial write, manual edit, a bug in
+// some other version) must degrade to seed data exactly like syntax-invalid JSON does, not throw
+// on first read. validShape() is defined below (hoisted, available here regardless of order).
+function load(){try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);if(validShape(p))return p;}}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
 const $=id=>document.getElementById(id);
@@ -291,13 +303,13 @@ $("otherMo").value=S.settings.otherMo;
 
 function model(){
   const country=csel.value;sym=COUNTRIES[country].symbol;
-  const maxDays=+$("maxDays").value||0,hpd=+$("hoursPerDay").value||0,maxWeekly=maxDays*hpd;
-  const otherMo=+$("otherMo").value||0;
+  const maxDays=clamp($("maxDays").value,0,7),hpd=clamp($("hoursPerDay").value,0,24),maxWeekly=maxDays*hpd;
+  const otherMo=clamp($("otherMo").value,0,1e7);
 
-  const totH=S.jobs.reduce((s,j)=>s+(+j.hours||0),0);
-  const blended=totH<=0?0:S.jobs.reduce((s,j)=>s+(+j.wage||0)*(+j.hours||0),0)/totH;
+  const totH=S.jobs.reduce((s,j)=>s+clamp(j.hours,0,168),0);
+  const blended=totH<=0?0:S.jobs.reduce((s,j)=>s+clamp(j.wage,0,10000)*clamp(j.hours,0,168),0)/totH;
   // weighted pension rate across jobs
-  const pensionRate=totH<=0?0:S.jobs.reduce((s,j)=>s+((+j.pension||0)/100)*(+j.hours||0),0)/totH;
+  const pensionRate=totH<=0?0:S.jobs.reduce((s,j)=>s+(clamp(j.pension,0,100)/100)*clamp(j.hours,0,168),0)/totH;
 
   // Tax basis is each job's own typical hours (totH), not the working ceiling (maxWeekly) --
   // the ceiling answers "how many hours could this person work", the tax rate answers "what
@@ -317,7 +329,7 @@ function model(){
   const perHrComps=comps.map(([n,v])=>[n,v/annualHours]);
   if(pensionRate>0)perHrComps.push(["Pension",pensionAnnual/annualHours]);
 
-  const monthlyNeed=S.bills.reduce((s,b)=>s+(+b.amount||0),0);
+  const monthlyNeed=S.bills.reduce((s,b)=>s+clamp(b.amount,0,1e7),0);
   const monthlyFromShifts=Math.max(0,monthlyNeed-otherMo);
   const baseHrsMo=net>0?monthlyFromShifts/net:Infinity;
   const baseHrsWk=baseHrsMo/WPM;
@@ -327,7 +339,7 @@ function model(){
   // hint text's own promise ("only while it runs") -- an expired goal stays in S.goals[] and
   // stays visible (marked expired), it just stops contributing hours, per SCOPE v9 feature 4.
   const nowMs=Date.now();
-  const goalCalc=S.goals.map(g=>{const amt=+g.amount||0,wks=Math.max(1,+g.weeks||1);
+  const goalCalc=S.goals.map(g=>{const amt=clamp(g.amount,0,1e7),wks=clamp(g.weeks,1,520);
     const elapsedWks=(nowMs-(g.addedAt||nowMs))/WEEK_MS;const expired=elapsedWks>=wks;
     const hrsTotal=net>0?amt/net:Infinity;return {...g,wks,hrsTotal,hrsWk:expired?0:hrsTotal/wks,expired};});
   const goalHrsWkNow=goalCalc.reduce((s,g)=>s+(isFinite(g.hrsWk)?g.hrsWk:0),0);
@@ -340,14 +352,14 @@ function model(){
 }
 
 function shiftHours(s){if(!s.start||!s.end)return 0;const[sh,sm]=s.start.split(":").map(Number),[eh,em]=s.end.split(":").map(Number);let m=(eh*60+em)-(sh*60+sm);if(m<0)m+=1440;m-=(+s.brk||0);return Math.max(0,m/60);}
-function jobRate(id){const j=S.jobs.find(x=>x.id===id);return j?+j.wage||0:0;}
+function jobRate(id){const j=S.jobs.find(x=>x.id===id);return j?clamp(j.wage,0,10000):0;}
 
 // ── renderers ──
 function renderJobs(){const c=$("jobs");c.innerHTML="";S.jobs.forEach(j=>{
   const d=document.createElement("div");
   d.style.cssText="border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)";
   d.innerHTML=`<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
-      <div style="flex:1"><label class="label" style="font-size:9px;margin-bottom:4px">Role</label><input value="${j.label}" data-id="${j.id}" data-k="label" style="font-family:inherit;width:100%" placeholder="Role"></div>
+      <div style="flex:1"><label class="label" style="font-size:9px;margin-bottom:4px">Role</label><input value="${esc(j.label)}" data-id="${j.id}" data-k="label" style="font-family:inherit;width:100%" placeholder="Role"></div>
       <button class="x" data-del="${j.id}" aria-label="Delete job">${TRASH_ICON}</button></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <div><label class="label" style="font-size:9px;margin-bottom:4px">Rate /hr</label><div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${j.wage}" data-id="${j.id}" data-k="wage" inputmode="decimal"></div></div>
@@ -358,7 +370,7 @@ function renderJobs(){const c=$("jobs");c.innerHTML="";S.jobs.forEach(j=>{
 function renderBills(){const c=$("bills");c.innerHTML="";S.bills.forEach(b=>{
   const opts=Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${b.cat===k?"selected":""}>${v.label}</option>`).join("");
   const d=document.createElement("div");d.style.cssText="display:flex;gap:8px;align-items:center";
-  d.innerHTML=`<input value="${b.label}" data-bid="${b.id}" data-k="label" style="font-family:inherit;flex:1">
+  d.innerHTML=`<input value="${esc(b.label)}" data-bid="${b.id}" data-k="label" style="font-family:inherit;flex:1">
     <select data-bid="${b.id}" data-k="cat" style="width:104px;font-size:13px;padding:10px 8px">${opts}</select>
     <div class="inwrap" style="width:104px"><span class="pre">${sym}</span><input class="pl" type="number" value="${b.amount}" data-bid="${b.id}" data-k="amount" inputmode="decimal"></div>
     <button class="x" data-delbill="${b.id}" aria-label="Delete outgoing">${TRASH_ICON}</button>`;c.appendChild(d);});}
@@ -366,16 +378,16 @@ function renderBills(){const c=$("bills");c.innerHTML="";S.bills.forEach(b=>{
 function renderGoals(){const c=$("goals");c.innerHTML="";if(!S.goals.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:4px">No one-off goals.</div>';return;}
   const nowMs=Date.now();
   S.goals.forEach(g=>{const d=document.createElement("div");d.className="goalgrid";d.style.cssText="display:grid;grid-template-columns:1fr 104px 74px 28px;gap:8px;align-items:center";
-  const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=Math.max(1,+g.weeks||1);
+  const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=clamp(g.weeks,1,520);
   d.style.opacity=expired?"0.6":"1";
-  d.innerHTML=`<div style="display:flex;align-items:center;gap:6px;min-width:0"><input class="gfull" value="${g.label}" data-gid="${g.id}" data-k="label" style="font-family:inherit;min-width:0;flex:1">${expired?'<span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn);flex-shrink:0">Expired</span>':''}</div>
+  d.innerHTML=`<div style="display:flex;align-items:center;gap:6px;min-width:0"><input class="gfull" value="${esc(g.label)}" data-gid="${g.id}" data-k="label" style="font-family:inherit;min-width:0;flex:1">${expired?'<span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn);flex-shrink:0">Expired</span>':''}</div>
     <div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${g.amount}" data-gid="${g.id}" data-k="amount" inputmode="decimal"></div>
     <div class="inwrap"><input class="pr" type="number" value="${g.weeks}" data-gid="${g.id}" data-k="weeks" inputmode="numeric"><span class="post">wk</span></div>
     <button class="x" data-delgoal="${g.id}" aria-label="Delete goal">${TRASH_ICON}</button>`;c.appendChild(d);});}
 
 function renderShifts(){const c=$("shifts");c.innerHTML="";if(!S.shifts.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:6px">No shifts logged this week.</div>';return;}
   const m=model();S.shifts.forEach((s,i)=>{const hrs=shiftHours(s);const pay=hrs*jobRate(s.jobId)*(1-m.effRate);
-  const opts=S.jobs.map(j=>`<option value="${j.id}" ${j.id===s.jobId?"selected":""}>${j.label}</option>`).join("");
+  const opts=S.jobs.map(j=>`<option value="${j.id}" ${j.id===s.jobId?"selected":""}>${esc(j.label)}</option>`).join("");
   const d=document.createElement("div");d.style.cssText="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px";
   d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><select data-si="${i}" data-k="jobId" style="flex:1">${opts}</select><button class="x" data-delshift="${i}" aria-label="Delete shift">${TRASH_ICON}</button></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px"><div><label class="label" style="font-size:9px;margin-bottom:4px">Start</label><input type="time" data-si="${i}" data-k="start" value="${s.start||""}"></div>
@@ -388,12 +400,12 @@ function renderShifts(){const c=$("shifts");c.innerHTML="";if(!S.shifts.length){
 function weekCoverage(weekNet){
   const items=[];
   // bills, in their listed order, each as a weekly slice
-  S.bills.forEach(b=>{const wk=(+b.amount||0)/WPM;if(wk>0)items.push({label:b.label||"Item",need:wk,color:CATS[b.cat]?.color||"var(--c-bills)"});});
+  S.bills.forEach(b=>{const wk=clamp(b.amount,0,1e7)/WPM;if(wk>0)items.push({label:esc(b.label||"Item"),need:wk,color:CATS[b.cat]?.color||"var(--c-bills)"});});
   // goals, by weekly share (amount / weeks) -- expired goals aren't "running", so they don't
   // claim a weekly coverage slot (SCOPE v9 feature 4)
   const nowMs=Date.now();
-  S.goals.forEach(g=>{const wks=Math.max(1,+g.weeks||1);const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=wks;
-    if(expired)return;const wk=(+g.amount||0)/wks;if(wk>0)items.push({label:g.label||"Goal",need:wk,color:"var(--violet)",goal:true});});
+  S.goals.forEach(g=>{const wks=clamp(g.weeks,1,520);const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=wks;
+    if(expired)return;const wk=clamp(g.amount,0,1e7)/wks;if(wk>0)items.push({label:esc(g.label||"Goal"),need:wk,color:"var(--violet)",goal:true});});
   let rem=weekNet;
   return items.map(it=>{const paid=Math.max(0,Math.min(it.need,rem));rem-=paid;return {...it,paid,full:paid>=it.need-0.005,frac:it.need>0?paid/it.need:1};});
 }
@@ -502,7 +514,7 @@ function calc(){
     const gr=$("goalRows");gr.innerHTML="";
     if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals — baseline is your whole number.</div>';
     m.goalCalc.forEach(g=>{const row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--panel2)";row.style.opacity=g.expired?"0.6":"1";
-      row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label||"Goal"} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span>${g.expired?' <span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn)">Expired</span>':''}</span><span class="mono" style="font-size:13px;color:var(--violet)">+${g.hrsWk.toFixed(1)} h/wk</span>`;gr.appendChild(row);});
+      row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.label||"Goal")} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span>${g.expired?' <span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn)">Expired</span>':''}</span><span class="mono" style="font-size:13px;color:var(--violet)">+${g.hrsWk.toFixed(1)} h/wk</span>`;gr.appendChild(row);});
 
     // reality bar -- guard maxWeekly=0 (max days/hours-per-day both blank) separately from the
     // net<=0 case above; both are divide-by-zero sources but this one only affects the bar's
@@ -517,16 +529,20 @@ function calc(){
 
   renderClock(m);
 
-  // pace
+  // pace -- also gated on m.net>0 (BUG-1 fix): `need = m.net*m.totalWk` is `0*Infinity = NaN`
+  // whenever net<=0, since totalWk stays Infinity in that state; this block is a separate,
+  // previously-ungated `if(S.shifts.length)` lower in calc() than the headline/baseline/reality-bar
+  // gate, so it needs the same guard rather than inheriting it.
   const p=$("pace");
-  if(S.shifts.length){let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});
+  if(m.net>0&&S.shifts.length){let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});
     const need=m.net*m.totalWk;const ahead=net>=need;
     const cov=weekCoverage(net);
     const covLegend=cov.map(x=>`<div class="row-between" style="font-size:12px"><span style="display:flex;align-items:center;gap:7px;${x.full?'':'color:var(--sub)'}"><span style="width:9px;height:9px;border-radius:2px;background:${x.color};opacity:${x.full?0.95:(x.paid>0?0.55:0.2)};display:inline-block"></span>${x.label}${x.goal?' <span style="color:var(--violet);font-size:10px">goal</span>':''}</span><span class="mono" style="color:${x.full?'var(--accent)':(x.paid>0?'var(--amber)':'var(--sub)')}">${x.full?'✓':(x.paid>0?Math.round(x.frac*100)+'%':'—')}</span></div>`).join("");
     p.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div class="stat"><div class="label">Earned this wk</div><div class="v mono" style="color:var(--accent)">${fmt(net)}</div></div><div class="stat"><div class="label">Needed this wk</div><div class="v mono">${fmt(need)}</div></div><div class="stat"><div class="label">Hours worked</div><div class="v mono">${hrs.toFixed(1)}</div></div></div>
       <div style="font-size:13px;color:${ahead?'var(--accent)':'var(--warn)'};margin-top:10px;font-weight:600">${ahead?'✓ This week is covered.':`⚠ ${fmt(need-net)} short — about ${((need-net)/Math.max(0.01,m.net)).toFixed(1)} more hours.`}</div>
       <div style="margin-top:14px">${coverageBar(cov,net)}<div class="stack" style="gap:5px;margin-top:10px">${covLegend}</div><div style="font-size:11px;color:var(--sub);margin-top:8px">Where this week's earnings have reached so far, in priority order. Bank it with "New week".</div></div>`;
-  }else p.innerHTML="";
+  }else if(S.shifts.length){p.innerHTML='<div style="color:var(--sub);font-size:13px">Add a job with an hourly rate to see your pace.</div>';}
+  else p.innerHTML="";
 
   renderShifts();renderHistory();save();
 }

@@ -24,8 +24,10 @@ Source: architect (via retroactive ARCHITECTURE.md)
 Verbatim: "Import validates only that the file parses as JSON, not that the parsed object has the expected shape. A parseable-but-malformed file... loads without error and could break rendering."
 
 ## [2026-07-06] Tax bracket constants will drift out of date with no update mechanism
-Source: architect (via retroactive ARCHITECTURE.md)
+Source: architect (via retroactive ARCHITECTURE.md); CONFIRMED with specifics by real tax-law research
 Verbatim: "Tax bracket constants are hardcoded per-country with specific thresholds... that will drift out of date over calendar years, with no update mechanism beyond direct code edits."
+Confirmed and expanded: researched all 9 countries against current official tax sources. Full findings, corrected numbers, and citations in `TAX-ACCURACY-AUDIT.md`. Not just drift — real structural bugs found: France's bracket array is shifted by one row (~55% under-count at €100k gross), US/Canada/Australia are all missing their top 1-2 tax brackets entirely (not just stale thresholds), Germany's flat-30% approximation materially misrepresents the real progressive curve, and Netherlands omits the arbeidskorting labour credit entirely (overstating Dutch tax for exactly the employee use case this app serves).
+ESCALATE: real-money-affecting logic in a tool people use to plan actual work hours — strong candidate for v9's first priority, not routine maintenance.
 
 ## [2026-07-06] No confirmation or undo on deleting a job/bill/goal/shift row
 Source: builder (fresh product review); CONFIRMED + REFINED by UI/UX review (ui-ux-pro-max: `confirmation-dialogs`, `undo-support`)

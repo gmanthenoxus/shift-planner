@@ -28,11 +28,12 @@
   input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none;-webkit-appearance:none}
   select{font-family:inherit;cursor:pointer}
   input:focus,select:focus{border-color:var(--accent2)}
-  .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap}
+  .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
   .btn:active{background:var(--panel2)}
+  .btn:focus-visible,.x:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
   .btn-go{background:var(--accent2);border-color:var(--accent2);color:#05201b}
   .btn-sm{padding:7px 10px;font-size:12px}
-  .x{background:none;border:none;color:var(--sub);cursor:pointer;font-size:18px;padding:8px;line-height:1}
+  .x{background:none;border:none;color:var(--sub);cursor:pointer;padding:8px;line-height:1;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .row-between{display:flex;justify-content:space-between;align-items:center;gap:10px}
   .inwrap{position:relative}
   .pre{position:absolute;left:12px;top:13px;color:var(--sub);font-size:14px;pointer-events:none}
@@ -65,11 +66,12 @@
     </div>
     <p class="lede">Enter your monthly outgoings and what you earn per hour. See the weekly shifts that cover your life — and exactly where every hour goes. Log each week to see what your real earnings reached, in priority order. Built for varied shifts across more than one job.</p>
     <div class="toolbar" style="margin-top:14px">
-      <button class="btn btn-sm" id="exportBtn">↓ Export</button>
-      <button class="btn btn-sm" id="importBtn">↑ Import</button>
+      <button class="btn btn-sm" id="exportBtn" aria-label="Export data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+      <button class="btn btn-sm" id="importBtn" aria-label="Import data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
-      <button class="btn btn-sm" id="resetBtn" style="margin-left:auto;color:var(--warn);border-color:#3a2630">Reset all</button>
+      <button class="btn btn-sm" id="resetBtn" aria-label="Reset all data" style="margin-left:auto;color:var(--warn);border-color:#3a2630">Reset all</button>
     </div>
+    <div id="importMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--warn)"></div>
   </header>
 
   <!-- COUNTRY PICKER: first thing, sets currency for everything below -->
@@ -184,7 +186,7 @@
     <div class="row-between" style="margin-bottom:6px">
       <span class="label">This week's shifts</span>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-sm" id="newWeek">↻ New week</button>
+        <button class="btn btn-sm" id="newWeek" aria-label="Bank this week and start a new one"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg> New week</button>
         <button class="btn btn-go btn-sm" id="addShift">+ Shift</button>
       </div>
     </div>
@@ -201,50 +203,75 @@
 
 <script>
 // ── tax models: return {tax components...} so we can break them down ──
+// Figures verified against official sources as of 2026-07-06 -- see TAX-ACCURACY-AUDIT.md for
+// citations. Every bracket loop below is hand-traced, not just threshold-checked: the original
+// FR and AU arrays both had a shifted-row bug (rate paired with the wrong band) that under-taxed
+// by roughly half -- fixed here by using an explicit leading zero-rate band or a prev-tracking
+// loop, never the bare "lo=br[i][0]" convention without confirming band 0 starts at the right place.
 const COUNTRIES={
-  UK:{symbol:"£",name:"United Kingdom",calc:a=>{const pi=12570,up=50270;let it=0,ni=0;
-    if(a>pi){const b=Math.min(a,up)-pi;it+=Math.max(0,b)*.2;if(a>up)it+=(a-up)*.4;}
+  UK:{symbol:"£",name:"United Kingdom",calc:a=>{const pi=12570,up=50270,top=125140;let it=0,ni=0;
+    if(a>pi){const b=Math.min(a,up)-pi;it+=Math.max(0,b)*.2;if(a>up){it+=(Math.min(a,top)-up)*.4;if(a>top)it+=(a-top)*.45;}}
     if(a>pi){const b=Math.min(a,up)-pi;ni+=Math.max(0,b)*.08;if(a>up)ni+=(a-up)*.02;}
     return [["Income tax",it],["National Insurance",ni]];}},
-  IE:{symbol:"€",name:"Ireland",calc:a=>{let it=0;const std=42000;it+=Math.min(a,std)*.2;if(a>std)it+=(a-std)*.4;
+  IE:{symbol:"€",name:"Ireland",calc:a=>{let it=0;const std=44000;it+=Math.min(a,std)*.2;if(a>std)it+=(a-std)*.4;
     const credit=4000; it=Math.max(0,it-credit);
-    let usc=0;const u=[[12012,.005],[25760,.02],[70044,.04],[Infinity,.08]];let prev=0;for(const[c,r]of u){if(a>prev){usc+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
-    const prsi=a*.041;
+    let usc=0;const u=[[12012,.005],[28700,.02],[70044,.03],[Infinity,.08]];let prev=0;for(const[c,r]of u){if(a>prev){usc+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const prsi=a*.042;
     return [["Income tax",it],["USC",usc],["PRSI",prsi]];}},
-  DE:{symbol:"€",name:"Germany",calc:a=>{const ta=Math.max(0,a-11604);let it=ta*0.30; // approx blended progressive
-    const soc=Math.min(a,90600)*0.20; // health+pension+care+unemp employee share approx
+  DE:{symbol:"€",name:"Germany",calc:a=>{const fb=12348;let it=0;
+    // banded effective-rate approximation of the progressive Einkommensteuer curve, not the exact formula
+    const br=[[40000,.20],[69878,.28],[277825,.38],[Infinity,.45]];let prev=fb;
+    for(const[c,r]of br){if(a>prev){it+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const soc=Math.min(a,85000)*0.21; // blended health+pension+care+unemployment employee share; real law splits into two caps, one blended cap kept for simplicity
     return [["Income tax (approx)",it],["Social contributions",soc]];}},
-  FR:{symbol:"€",name:"France",calc:a=>{let it=0;const br=[[11294,0],[28797,.11],[82341,.30],[177106,.41]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+  FR:{symbol:"€",name:"France",calc:a=>{let it=0;const br=[[11600,0],[29579,.11],[84577,.30],[181917,.41],[Infinity,.45]];let prev=0;
+    for(const[c,r]of br){if(a>prev){it+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
     const soc=a*0.22; return [["Income tax",it],["Cotisations sociales",soc]];}},
-  NL:{symbol:"€",name:"Netherlands",calc:a=>{let it=0;const b1=38441;it+=Math.min(a,b1)*.3697;if(a>b1)it+=(a-b1)*.4950;
-    const credit=Math.max(0,3362-Math.max(0,a-24000)*.06); it=Math.max(0,it-credit);
+  NL:{symbol:"€",name:"Netherlands",calc:a=>{let it=0;const b1=38883,b2=78426;
+    it+=Math.min(a,b1)*.3575;if(a>b1)it+=(Math.min(a,b2)-b1)*.3756;if(a>b2)it+=(a-b2)*.4950;
+    const genCredit=Math.max(0,3115-Math.max(0,a-29736)*.06398);
+    // arbeidskorting (employee labour credit): simplified single-slope plateau+phase-out, not the
+    // real multi-segment build-up/plateau/phase-out formula -- reasonable within the app's own
+    // "effective-rate estimate" scope, but not statutory precision
+    const laborCredit=Math.max(0,Math.min(5685,5685-Math.max(0,a-40000)*(5685/84934)));
+    it=Math.max(0,it-genCredit-laborCredit);
     return [["Income tax + NI",it]];}},
-  ES:{symbol:"€",name:"Spain",calc:a=>{let it=0;const br=[[0,.19],[12450,.24],[20200,.30],[35200,.37],[60000,.45]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
-    const ss=Math.min(a,56646)*0.0635; return [["IRPF",it],["Social security",ss]];}},
-  US:{symbol:"$",name:"United States",calc:a=>{const t=Math.max(0,a-14600);let f=0;const br=[[0,.1],[11600,.12],[47150,.22],[100525,.24],[191950,.32]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
-    return [["Federal tax",f],["FICA",a*.0765]];}},
-  CA:{symbol:"$",name:"Canada",calc:a=>{const t=Math.max(0,a-15705);let f=0;const br=[[0,.15],[55867,.205],[111733,.26]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
-    return [["Federal tax",f],["CPP + EI",Math.min(a,68500)*.073]];}},
-  AU:{symbol:"$",name:"Australia",calc:a=>{let it=0;const br=[[18200,0],[45000,.16],[135000,.30],[190000,.37]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
-    return [["Income tax",it],["Medicare levy",a>27222?a*.02:0]];}},
+  ES:{symbol:"€",name:"Spain",calc:a=>{let it=0;const br=[[0,.19],[12450,.24],[20200,.30],[35200,.37],[60000,.45],[300000,.47]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    const ss=Math.min(a,61214.40)*0.0647; return [["IRPF",it],["Social security",ss]];}},
+  US:{symbol:"$",name:"United States",calc:a=>{const t=Math.max(0,a-16100);let f=0;const br=[[0,.1],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    const fica=Math.min(a,184500)*.062+a*.0145; // Social Security capped at the wage base, Medicare uncapped
+    return [["Federal tax",f],["FICA",fica]];}},
+  CA:{symbol:"$",name:"Canada",calc:a=>{const t=Math.max(0,a-14829);let f=0;const br=[[0,.14],[58523,.205],[117045,.26],[181440,.29],[258482,.33]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    const cpp=Math.min(a,74600)*.0595, cpp2=Math.max(0,Math.min(a,85000)-74600)*.04, ei=Math.min(a,68900)*.0163;
+    return [["Federal tax",f],["CPP + CPP2 + EI",cpp+cpp2+ei]];}},
+  AU:{symbol:"$",name:"Australia",calc:a=>{let it=0;const br=[[0,0],[18200,.15],[45000,.30],[135000,.37],[190000,.45]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    return [["Income tax",it],["Medicare levy",a>29207?a*.02:0]];}},
   NONE:{symbol:"¤",name:"Flat % (custom)",calc:null},
 };
 const CATS={bills:{label:"Bills",color:"var(--c-bills)"},save:{label:"Savings",color:"var(--c-save)"},repay:{label:"Repayments",color:"var(--c-repay)"},spend:{label:"Spending",color:"var(--c-spend)"}};
 const WPM=4.345;
+const WEEK_MS=7*24*60*60*1000;
 const uid=()=>Math.random().toString(36).slice(2,9);
+// One SVG icon set (Lucide-sourced paths), reused everywhere a delete affordance is needed --
+// replaces the bare "✕" glyph so every icon-only button traces to a real icon library, not an
+// ad hoc character, per the design system's global icon rule.
+const TRASH_ICON='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
 
 // ── state with persistence ──
 const DEFAULT={
   jobMode:"x",
   jobs:[{id:uid(),label:"Door supervisor",wage:14.25,hours:24,pension:0},{id:uid(),label:"Security guard",wage:13.2,hours:12,pension:0}],
   bills:[{id:uid(),label:"Rent",amount:600,cat:"bills"},{id:uid(),label:"Phone + utilities",amount:120,cat:"bills"},{id:uid(),label:"Savings",amount:200,cat:"save"},{id:uid(),label:"Spending money",amount:200,cat:"spend"}],
-  goals:[{id:uid(),label:"Visa extension",amount:2500,weeks:12}],
+  goals:[{id:uid(),label:"Visa extension",amount:2500,weeks:12,addedAt:Date.now()}],
   shifts:[],
   history:[],
   settings:{country:"UK",customRate:20,maxDays:6,hoursPerDay:10,otherMo:0}
 };
 const KEY="shiftPlanner.v5";
-let S=load();
+// A goal saved before v9 (or missing addedAt for any reason) is backfilled to "now" rather than
+// treated as already expired -- generous to existing data, doesn't require a storage-key bump.
+function backfillGoals(state){(state.goals||[]).forEach(g=>{if(!g.addedAt)g.addedAt=Date.now();});return state;}
+let S=backfillGoals(load());
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return JSON.parse(JSON.stringify(DEFAULT));}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
 
@@ -272,7 +299,10 @@ function model(){
   // weighted pension rate across jobs
   const pensionRate=totH<=0?0:S.jobs.reduce((s,j)=>s+((+j.pension||0)/100)*(+j.hours||0),0)/totH;
 
-  const grossWeekCap=blended*maxWeekly,annual=grossWeekCap*52;
+  // Tax basis is each job's own typical hours (totH), not the working ceiling (maxWeekly) --
+  // the ceiling answers "how many hours could this person work", the tax rate answers "what
+  // income are they actually being taxed on", and these are deliberately different questions.
+  const annual=blended*totH*52;
   let comps=[],taxTotal=0;
   if(country==="NONE"){const r=Math.min(.95,Math.max(0,(+$("customRate").value||0)/100));taxTotal=annual*r;comps=[["Deductions",taxTotal]];}
   else{comps=COUNTRIES[country].calc(annual);taxTotal=comps.reduce((s,c)=>s+c[1],0);}
@@ -281,8 +311,9 @@ function model(){
   const effRate=Math.min(.98,taxRate+pensionRate);
   const net=blended*(1-effRate);
 
-  // per-hour deduction components (annual comp / annual hours)
-  const annualHours=maxWeekly*52||1;
+  // per-hour deduction components (annual comp / annual hours) -- must share the same basis as
+  // `annual` above (totH, not maxWeekly), or the per-hour breakdown would be self-contradictory
+  const annualHours=totH*52||1;
   const perHrComps=comps.map(([n,v])=>[n,v/annualHours]);
   if(pensionRate>0)perHrComps.push(["Pension",pensionAnnual/annualHours]);
 
@@ -292,7 +323,13 @@ function model(){
   const baseHrsWk=baseHrsMo/WPM;
   const baseGrossMo=net>0?monthlyFromShifts/(1-effRate):0;
 
-  const goalCalc=S.goals.map(g=>{const amt=+g.amount||0,wks=Math.max(1,+g.weeks||1);const hrsTotal=net>0?amt/net:Infinity;return {...g,wks,hrsTotal,hrsWk:hrsTotal/wks};});
+  // Goals auto-expire once their week count has elapsed since they were added, matching the
+  // hint text's own promise ("only while it runs") -- an expired goal stays in S.goals[] and
+  // stays visible (marked expired), it just stops contributing hours, per SCOPE v9 feature 4.
+  const nowMs=Date.now();
+  const goalCalc=S.goals.map(g=>{const amt=+g.amount||0,wks=Math.max(1,+g.weeks||1);
+    const elapsedWks=(nowMs-(g.addedAt||nowMs))/WEEK_MS;const expired=elapsedWks>=wks;
+    const hrsTotal=net>0?amt/net:Infinity;return {...g,wks,hrsTotal,hrsWk:expired?0:hrsTotal/wks,expired};});
   const goalHrsWkNow=goalCalc.reduce((s,g)=>s+(isFinite(g.hrsWk)?g.hrsWk:0),0);
 
   const totalWk=baseHrsWk+goalHrsWkNow;
@@ -309,9 +346,9 @@ function jobRate(id){const j=S.jobs.find(x=>x.id===id);return j?+j.wage||0:0;}
 function renderJobs(){const c=$("jobs");c.innerHTML="";S.jobs.forEach(j=>{
   const d=document.createElement("div");
   d.style.cssText="border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)";
-  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-      <input value="${j.label}" data-id="${j.id}" data-k="label" style="font-family:inherit;flex:1" placeholder="Role">
-      <button class="x" data-del="${j.id}">✕</button></div>
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
+      <div style="flex:1"><label class="label" style="font-size:9px;margin-bottom:4px">Role</label><input value="${j.label}" data-id="${j.id}" data-k="label" style="font-family:inherit;width:100%" placeholder="Role"></div>
+      <button class="x" data-del="${j.id}" aria-label="Delete job">${TRASH_ICON}</button></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
       <div><label class="label" style="font-size:9px;margin-bottom:4px">Rate /hr</label><div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${j.wage}" data-id="${j.id}" data-k="wage" inputmode="decimal"></div></div>
       <div><label class="label" style="font-size:9px;margin-bottom:4px">Typ. hrs/wk</label><input type="number" value="${j.hours}" data-id="${j.id}" data-k="hours" inputmode="numeric"></div>
@@ -324,20 +361,23 @@ function renderBills(){const c=$("bills");c.innerHTML="";S.bills.forEach(b=>{
   d.innerHTML=`<input value="${b.label}" data-bid="${b.id}" data-k="label" style="font-family:inherit;flex:1">
     <select data-bid="${b.id}" data-k="cat" style="width:104px;font-size:13px;padding:10px 8px">${opts}</select>
     <div class="inwrap" style="width:104px"><span class="pre">${sym}</span><input class="pl" type="number" value="${b.amount}" data-bid="${b.id}" data-k="amount" inputmode="decimal"></div>
-    <button class="x" data-delbill="${b.id}">✕</button>`;c.appendChild(d);});}
+    <button class="x" data-delbill="${b.id}" aria-label="Delete outgoing">${TRASH_ICON}</button>`;c.appendChild(d);});}
 
 function renderGoals(){const c=$("goals");c.innerHTML="";if(!S.goals.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:4px">No one-off goals.</div>';return;}
+  const nowMs=Date.now();
   S.goals.forEach(g=>{const d=document.createElement("div");d.className="goalgrid";d.style.cssText="display:grid;grid-template-columns:1fr 104px 74px 28px;gap:8px;align-items:center";
-  d.innerHTML=`<input class="gfull" value="${g.label}" data-gid="${g.id}" data-k="label" style="font-family:inherit">
+  const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=Math.max(1,+g.weeks||1);
+  d.style.opacity=expired?"0.6":"1";
+  d.innerHTML=`<div style="display:flex;align-items:center;gap:6px;min-width:0"><input class="gfull" value="${g.label}" data-gid="${g.id}" data-k="label" style="font-family:inherit;min-width:0;flex:1">${expired?'<span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn);flex-shrink:0">Expired</span>':''}</div>
     <div class="inwrap"><span class="pre">${sym}</span><input class="pl" type="number" value="${g.amount}" data-gid="${g.id}" data-k="amount" inputmode="decimal"></div>
     <div class="inwrap"><input class="pr" type="number" value="${g.weeks}" data-gid="${g.id}" data-k="weeks" inputmode="numeric"><span class="post">wk</span></div>
-    <button class="x" data-delgoal="${g.id}">✕</button>`;c.appendChild(d);});}
+    <button class="x" data-delgoal="${g.id}" aria-label="Delete goal">${TRASH_ICON}</button>`;c.appendChild(d);});}
 
 function renderShifts(){const c=$("shifts");c.innerHTML="";if(!S.shifts.length){c.innerHTML='<div style="color:var(--sub);font-size:13px;text-align:center;padding:6px">No shifts logged this week.</div>';return;}
   const m=model();S.shifts.forEach((s,i)=>{const hrs=shiftHours(s);const pay=hrs*jobRate(s.jobId)*(1-m.effRate);
   const opts=S.jobs.map(j=>`<option value="${j.id}" ${j.id===s.jobId?"selected":""}>${j.label}</option>`).join("");
   const d=document.createElement("div");d.style.cssText="background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px";
-  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><select data-si="${i}" data-k="jobId" style="flex:1">${opts}</select><button class="x" data-delshift="${i}">✕</button></div>
+  d.innerHTML=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><select data-si="${i}" data-k="jobId" style="flex:1">${opts}</select><button class="x" data-delshift="${i}" aria-label="Delete shift">${TRASH_ICON}</button></div>
     <div style="display:grid;grid-template-columns:1fr 1fr 70px;gap:8px"><div><label class="label" style="font-size:9px;margin-bottom:4px">Start</label><input type="time" data-si="${i}" data-k="start" value="${s.start||""}"></div>
     <div><label class="label" style="font-size:9px;margin-bottom:4px">End</label><input type="time" data-si="${i}" data-k="end" value="${s.end||""}"></div>
     <div><label class="label" style="font-size:9px;margin-bottom:4px">Break m</label><input type="number" data-si="${i}" data-k="brk" value="${s.brk||0}" inputmode="numeric"></div></div>
@@ -349,8 +389,11 @@ function weekCoverage(weekNet){
   const items=[];
   // bills, in their listed order, each as a weekly slice
   S.bills.forEach(b=>{const wk=(+b.amount||0)/WPM;if(wk>0)items.push({label:b.label||"Item",need:wk,color:CATS[b.cat]?.color||"var(--c-bills)"});});
-  // goals, by weekly share (amount / weeks)
-  S.goals.forEach(g=>{const wk=(+g.amount||0)/Math.max(1,+g.weeks||1);if(wk>0)items.push({label:g.label||"Goal",need:wk,color:"var(--violet)",goal:true});});
+  // goals, by weekly share (amount / weeks) -- expired goals aren't "running", so they don't
+  // claim a weekly coverage slot (SCOPE v9 feature 4)
+  const nowMs=Date.now();
+  S.goals.forEach(g=>{const wks=Math.max(1,+g.weeks||1);const expired=((nowMs-(g.addedAt||nowMs))/WEEK_MS)>=wks;
+    if(expired)return;const wk=(+g.amount||0)/wks;if(wk>0)items.push({label:g.label||"Goal",need:wk,color:"var(--violet)",goal:true});});
   let rem=weekNet;
   return items.map(it=>{const paid=Math.max(0,Math.min(it.need,rem));rem-=paid;return {...it,paid,full:paid>=it.need-0.005,frac:it.need>0?paid/it.need:1};});
 }
@@ -418,43 +461,59 @@ function calc(){
   const catSpend={};S.bills.forEach(b=>{catSpend[b.cat]=(catSpend[b.cat]||0)+(+b.amount||0);});
   $("catTotals").innerHTML=Object.entries(CATS).filter(([k])=>catSpend[k]).map(([k,v])=>`<span class="pill" style="background:color-mix(in srgb, ${v.color} 14%, transparent);color:${v.color}">${v.label} ${fmt(catSpend[k])}</span>`).join("");
 
-  // headline
+  // headline + baseline + goal rows + reality bar all depend on `net`, which can be 0 (no job
+  // with both a rate and hours entered yet) -- net>0 is what guarantees every hours figure below
+  // is finite (baseHrsMo, baseHrsWk, totalWk), so gate the whole block on it rather than patching
+  // each display point with its own isFinite check. This is the fix for the "Infinity hrs/week
+  // over the line" bug (SCOPE v9 feature 3): the old code guarded the headline number but not the
+  // reality bar's, so `Infinity.toFixed(1)` rendered the literal string "Infinity".
   const hl=$("headline");
-  hl.style.background=m.feasible?"linear-gradient(135deg,#0f2420,#12161f)":"linear-gradient(135deg,#241318,#12161f)";
-  hl.style.borderColor=m.feasible?"#1c6b5e":"#7a2f3a";
-  $("hl-total").style.color=m.feasible?"var(--accent)":"var(--warn)";
-  $("hl-total").innerHTML=`${isFinite(m.totalWk)?m.totalWk.toFixed(1):"—"}<span style="font-size:20px;color:var(--sub);font-weight:600"> hrs/week · ${isFinite(m.dpw)?m.dpw.toFixed(1):"—"} days</span>`;
-  $("hl-break").innerHTML=`
-    <div class="row-between"><span class="pill" style="background:rgba(94,234,212,.12);color:var(--accent)">Baseline</span><span class="mono" style="font-size:15px">${isFinite(m.baseHrsWk)?m.baseHrsWk.toFixed(1):"—"} hrs/wk</span></div>
-    <div class="row-between"><span class="pill" style="background:rgba(167,139,250,.14);color:var(--violet)">Goals (now)</span><span class="mono" style="font-size:15px">${m.goalHrsWkNow.toFixed(1)} hrs/wk</span></div>`;
+  if(m.net<=0){
+    hl.style.background="linear-gradient(135deg,#12161f,#12161f)";hl.style.borderColor="var(--line)";
+    $("hl-total").style.color="var(--sub)";
+    $("hl-total").innerHTML=`<span style="font-size:18px;font-weight:600">Add a job with an hourly rate to see your numbers.</span>`;
+    $("hl-break").innerHTML="";$("hl-burn").innerHTML="";
+    $("bl-net").textContent="—";$("bl-gross").textContent="—";$("bl-hrsMo").textContent="—";$("bl-hrsWk").textContent="—";
+    $("goalRows").innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">Add a job first to see goal hours.</div>';
+    $("reality").innerHTML='<div style="color:var(--sub);font-size:13px">Nothing to check yet — add a job with an hourly rate.</div>';
+  }else{
+    hl.style.background=m.feasible?"linear-gradient(135deg,#0f2420,#12161f)":"linear-gradient(135deg,#241318,#12161f)";
+    hl.style.borderColor=m.feasible?"#1c6b5e":"#7a2f3a";
+    $("hl-total").style.color=m.feasible?"var(--accent)":"var(--warn)";
+    $("hl-total").innerHTML=`${m.totalWk.toFixed(1)}<span style="font-size:20px;color:var(--sub);font-weight:600"> hrs/week · ${isFinite(m.dpw)?m.dpw.toFixed(1):"—"} days</span>`;
+    $("hl-break").innerHTML=`
+      <div class="row-between"><span class="pill" style="background:rgba(94,234,212,.12);color:var(--accent)">Baseline</span><span class="mono" style="font-size:15px">${m.baseHrsWk.toFixed(1)} hrs/wk</span></div>
+      <div class="row-between"><span class="pill" style="background:rgba(167,139,250,.14);color:var(--violet)">Goals (now)</span><span class="mono" style="font-size:15px">${m.goalHrsWkNow.toFixed(1)} hrs/wk</span></div>`;
 
-  const burn=$("hl-burn");let msg,col;
-  if(!isFinite(m.totalWk)){msg="";col="";}
-  else if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling — your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
-  else if(m.totalWk>=55){msg=`${m.totalWk.toFixed(0)} hrs/week sustained is brutal on top of getting home at 1am.`;col="var(--warn)";}
-  else if(m.totalWk>=45){msg=`${m.totalWk.toFixed(0)} hrs/week is heavy but workable.`;col="var(--amber)";}
-  else{msg=`${m.totalWk.toFixed(0)} hrs/week is sustainable.`;col="var(--accent)";}
-  burn.innerHTML=msg?`<span style="color:${col};font-size:13px;font-weight:600">${col==="var(--accent)"?"✓":"⚠"} ${msg}</span>`:"";
+    const burn=$("hl-burn");let msg,col;
+    if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling — your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
+    else if(m.totalWk>=55){msg=`${m.totalWk.toFixed(0)} hrs/week sustained is brutal on top of getting home at 1am.`;col="var(--warn)";}
+    else if(m.totalWk>=45){msg=`${m.totalWk.toFixed(0)} hrs/week is heavy but workable.`;col="var(--amber)";}
+    else{msg=`${m.totalWk.toFixed(0)} hrs/week is sustainable.`;col="var(--accent)";}
+    burn.innerHTML=`<span style="color:${col};font-size:13px;font-weight:600">${col==="var(--accent)"?"✓":"⚠"} ${msg}</span>`;
 
-  // baseline detail
-  $("bl-net").textContent=fmt(m.monthlyFromShifts)+(m.otherMo>0?` (after ${fmt(m.otherMo)} other)`:"");
-  $("bl-gross").textContent=fmt(m.baseGrossMo);
-  $("bl-hrsMo").textContent=isFinite(m.baseHrsMo)?m.baseHrsMo.toFixed(1)+" hrs":"—";
-  $("bl-hrsWk").textContent=isFinite(m.baseHrsWk)?m.baseHrsWk.toFixed(1)+" hrs":"—";
+    // baseline detail
+    $("bl-net").textContent=fmt(m.monthlyFromShifts)+(m.otherMo>0?` (after ${fmt(m.otherMo)} other)`:"");
+    $("bl-gross").textContent=fmt(m.baseGrossMo);
+    $("bl-hrsMo").textContent=m.baseHrsMo.toFixed(1)+" hrs";
+    $("bl-hrsWk").textContent=m.baseHrsWk.toFixed(1)+" hrs";
 
-  // goal rows
-  const gr=$("goalRows");gr.innerHTML="";
-  if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals — baseline is your whole number.</div>';
-  m.goalCalc.forEach(g=>{const row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--panel2)";
-    row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label||"Goal"} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span></span><span class="mono" style="font-size:13px;color:var(--violet)">+${isFinite(g.hrsWk)?g.hrsWk.toFixed(1):"—"} h/wk</span>`;gr.appendChild(row);});
+    // goal rows
+    const gr=$("goalRows");gr.innerHTML="";
+    if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals — baseline is your whole number.</div>';
+    m.goalCalc.forEach(g=>{const row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--panel2)";row.style.opacity=g.expired?"0.6":"1";
+      row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${g.label||"Goal"} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span>${g.expired?' <span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn)">Expired</span>':''}</span><span class="mono" style="font-size:13px;color:var(--violet)">+${g.hrsWk.toFixed(1)} h/wk</span>`;gr.appendChild(row);});
 
-  // reality bar
-  const basePct=Math.min(100,(m.baseHrsWk/m.maxWeekly)*100);
-  const goalPct=Math.min(100-basePct,(m.goalHrsWkNow/m.maxWeekly)*100);
-  const over=m.totalWk>m.maxWeekly;
-  $("reality").innerHTML=`<div style="height:26px;background:var(--panel2);border-radius:8px;overflow:hidden;display:flex;border:1px solid var(--line)"><div style="width:${basePct}%;background:var(--accent2)"></div><div style="width:${goalPct}%;background:var(--violet)"></div></div>
-    <div class="row-between" style="margin-top:10px;font-size:12px;color:var(--sub)"><span><span style="color:var(--accent2)">■</span> Baseline ${m.baseHrsWk.toFixed(1)}h &nbsp; <span style="color:var(--violet)">■</span> Goals ${m.goalHrsWkNow.toFixed(1)}h</span><span class="mono" style="color:${over?'var(--warn)':'var(--sub)'}">${m.totalWk.toFixed(1)} / ${m.maxWeekly}h</span></div>
-    ${over?`<div style="color:var(--warn);font-size:12px;font-weight:600;margin-top:8px">⚠ ${(m.totalWk-m.maxWeekly).toFixed(1)} hrs/week over the line.</div>`:`<div style="color:var(--sub);font-size:12px;margin-top:8px">${(m.maxWeekly-m.totalWk).toFixed(1)} hrs/week of headroom left.</div>`}`;
+    // reality bar -- guard maxWeekly=0 (max days/hours-per-day both blank) separately from the
+    // net<=0 case above; both are divide-by-zero sources but this one only affects the bar's
+    // percentage widths, not the hours text, which stays finite regardless (net>0 guarantees it)
+    const basePct=m.maxWeekly>0?Math.min(100,(m.baseHrsWk/m.maxWeekly)*100):0;
+    const goalPct=m.maxWeekly>0?Math.min(100-basePct,(m.goalHrsWkNow/m.maxWeekly)*100):0;
+    const over=m.totalWk>m.maxWeekly;
+    $("reality").innerHTML=`<div style="height:26px;background:var(--panel2);border-radius:8px;overflow:hidden;display:flex;border:1px solid var(--line)"><div style="width:${basePct}%;background:var(--accent2)"></div><div style="width:${goalPct}%;background:var(--violet)"></div></div>
+      <div class="row-between" style="margin-top:10px;font-size:12px;color:var(--sub)"><span><span style="color:var(--accent2)">■</span> Baseline ${m.baseHrsWk.toFixed(1)}h &nbsp; <span style="color:var(--violet)">■</span> Goals ${m.goalHrsWkNow.toFixed(1)}h</span><span class="mono" style="color:${over?'var(--warn)':'var(--sub)'}">${m.totalWk.toFixed(1)} / ${m.maxWeekly}h</span></div>
+      ${over?`<div style="color:var(--warn);font-size:12px;font-weight:600;margin-top:8px">⚠ ${(m.totalWk-m.maxWeekly).toFixed(1)} hrs/week over the line.</div>`:`<div style="color:var(--sub);font-size:12px;margin-top:8px">${(m.maxWeekly-m.totalWk).toFixed(1)} hrs/week of headroom left.</div>`}`;
+  }
 
   renderClock(m);
 
@@ -474,27 +533,47 @@ function calc(){
 
 // ── events ──
 $("jobs").addEventListener("input",e=>{const id=e.target.dataset.id,k=e.target.dataset.k;if(!id)return;S.jobs.find(x=>x.id===id)[k]=e.target.value;calc();});
-$("jobs").addEventListener("click",e=>{const id=e.target.dataset.del;if(id){S.jobs=S.jobs.filter(x=>x.id!==id);renderJobs();calc();}});
+$("jobs").addEventListener("click",e=>{const id=e.target.closest("[data-del]")?.dataset.del;if(id){S.jobs=S.jobs.filter(x=>x.id!==id);renderJobs();calc();}});
 $("bills").addEventListener("input",e=>{const id=e.target.dataset.bid,k=e.target.dataset.k;if(!id)return;S.bills.find(x=>x.id===id)[k]=e.target.value;calc();});
 $("bills").addEventListener("change",e=>{const id=e.target.dataset.bid,k=e.target.dataset.k;if(id&&k==="cat"){S.bills.find(x=>x.id===id).cat=e.target.value;calc();}});
-$("bills").addEventListener("click",e=>{const id=e.target.dataset.delbill;if(id){S.bills=S.bills.filter(x=>x.id!==id);renderBills();calc();}});
+$("bills").addEventListener("click",e=>{const id=e.target.closest("[data-delbill]")?.dataset.delbill;if(id){S.bills=S.bills.filter(x=>x.id!==id);renderBills();calc();}});
 $("goals").addEventListener("input",e=>{const id=e.target.dataset.gid,k=e.target.dataset.k;if(!id)return;S.goals.find(x=>x.id===id)[k]=e.target.value;calc();});
-$("goals").addEventListener("click",e=>{const id=e.target.dataset.delgoal;if(id){S.goals=S.goals.filter(x=>x.id!==id);renderGoals();calc();}});
+$("goals").addEventListener("click",e=>{const id=e.target.closest("[data-delgoal]")?.dataset.delgoal;if(id){S.goals=S.goals.filter(x=>x.id!==id);renderGoals();calc();}});
 $("shifts").addEventListener("input",e=>{const i=e.target.dataset.si,k=e.target.dataset.k;if(i==null)return;S.shifts[+i][k]=k==="brk"?(+e.target.value||0):e.target.value;calc();});
 $("shifts").addEventListener("change",e=>{const i=e.target.dataset.si,k=e.target.dataset.k;if(i==null||k!=="jobId")return;S.shifts[+i].jobId=e.target.value;calc();});
-$("shifts").addEventListener("click",e=>{const i=e.target.dataset.delshift;if(i!=null){S.shifts.splice(+i,1);renderShifts();calc();}});
+$("shifts").addEventListener("click",e=>{const i=e.target.closest("[data-delshift]")?.dataset.delshift;if(i!=null){S.shifts.splice(+i,1);renderShifts();calc();}});
 $("addJob").onclick=()=>{S.jobs.push({id:uid(),label:"Job "+(S.jobs.length+1),wage:12,hours:0,pension:0});renderJobs();calc();};
 $("addBill").onclick=()=>{S.bills.push({id:uid(),label:"New item",amount:100,cat:"bills"});renderBills();calc();};
-$("addGoal").onclick=()=>{S.goals.push({id:uid(),label:"New goal",amount:500,weeks:8});renderGoals();calc();};
+$("addGoal").onclick=()=>{S.goals.push({id:uid(),label:"New goal",amount:500,weeks:8,addedAt:Date.now()});renderGoals();calc();};
 $("addShift").onclick=()=>{S.shifts.push({id:uid(),jobId:S.jobs[0]?.id,start:"18:00",end:"02:00",brk:0});renderShifts();calc();};
-$("newWeek").onclick=()=>{if(!S.shifts.length){alert("No shifts logged this week yet.");return;}const m=model();let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});S.history.push({date:new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}),hours:hrs,net,coverage:weekCoverage(net)});S.shifts=[];renderShifts();calc();};
+// No alert() when there are no shifts to bank -- renderShifts() already shows "No shifts logged
+// this week." inline whenever S.shifts is empty, so the click is just a silent no-op; a second,
+// separate message would duplicate what's already on screen (SCOPE v9 feature 5).
+$("newWeek").onclick=()=>{if(!S.shifts.length)return;const m=model();let net=0,hrs=0;S.shifts.forEach(s=>{const h=shiftHours(s);hrs+=h;net+=h*jobRate(s.jobId)*(1-m.effRate);});S.history.push({date:new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}),hours:hrs,net,coverage:weekCoverage(net)});S.shifts=[];renderShifts();calc();};
 ["maxDays","hoursPerDay","customRate","otherMo"].forEach(id=>$(id).addEventListener("input",calc));
 $("country").addEventListener("input",()=>{sym=COUNTRIES[csel.value]?.symbol||"¤";sym=COUNTRIES[csel.value]?.symbol||"¤";renderJobs();renderBills();renderGoals();renderShifts();calc();});
 
 // export / import / reset
 $("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shift-planner-data.json";a.click();};
 $("importBtn").onclick=()=>$("importFile").click();
-$("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{S=JSON.parse(r.result);save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderJobs();renderBills();renderGoals();renderShifts();calc();}catch(err){alert("Couldn't read that file.");}};r.readAsText(f);};
+// Shape validation beyond "does it parse" (SCOPE v9 feature 5): the five array fields and
+// `settings` must be present with the right top-level type, or the import is rejected outright
+// and S is left completely untouched -- no partial merge of whichever fields happen to look
+// valid. Per-field validation inside each array isn't added; every existing reader already
+// coerces individual values defensively (e.g. `+j.wage||0`), so the real crash risk was always
+// the top-level shape, since render functions call .forEach directly on these fields.
+function validShape(o){
+  if(!o||typeof o!=="object")return false;
+  for(const k of ["jobs","bills","goals","shifts","history"])if(!Array.isArray(o[k]))return false;
+  if(!o.settings||typeof o.settings!=="object")return false;
+  return true;
+}
+function showImportMsg(text){const el=$("importMsg");el.textContent=text;el.style.display=text?"block":"none";}
+$("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;showImportMsg("");const r=new FileReader();r.onload=()=>{
+  let parsed;try{parsed=JSON.parse(r.result);}catch(err){showImportMsg("Couldn't read that file — it isn't valid JSON.");return;}
+  if(!validShape(parsed)){showImportMsg("That file doesn't look like a Shift Planner export — nothing was changed.");return;}
+  S=backfillGoals(parsed);save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderJobs();renderBills();renderGoals();renderShifts();calc();
+  };r.readAsText(f);};
 $("resetBtn").onclick=()=>{if(confirm("Clear everything and start fresh? This can't be undone.")){S=JSON.parse(JSON.stringify(DEFAULT));save();location.reload();}};
 
 renderJobs();renderBills();renderGoals();renderShifts();calc();

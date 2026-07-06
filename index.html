@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Shift Planner — How many hours does your life cost?</title>
+<title>Shift Planner: How many hours does your life cost?</title>
 <style>
   :root{
     --bg:#0b0e13; --panel:#12161f; --panel2:#1a1f2b; --line:#272e3c;
@@ -64,7 +64,7 @@
         <h1>How many hours does your life cost?</h1>
       </div>
     </div>
-    <p class="lede">Enter your monthly outgoings and what you earn per hour. See the weekly shifts that cover your life — and exactly where every hour goes. Log each week to see what your real earnings reached, in priority order. Built for varied shifts across more than one job.</p>
+    <p class="lede">Enter what you earn per hour and what your month actually costs. See how many shifts that takes, and exactly where every hour goes. Log each week to track what you really earned, in priority order. Built for anyone juggling more than one job and shifts that change every week.</p>
     <div class="toolbar" style="margin-top:14px">
       <button class="btn btn-sm" id="exportBtn" aria-label="Export data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
       <button class="btn btn-sm" id="importBtn" aria-label="Import data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import</button>
@@ -77,7 +77,7 @@
   <!-- COUNTRY PICKER: first thing, sets currency for everything below -->
   <div class="card" style="margin-bottom:14px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
     <div style="flex:1;min-width:200px">
-      <label class="label" style="margin-bottom:7px">Where are you based? <span style="color:var(--accent);font-weight:700">Start here — sets your currency and tax model.</span></label>
+      <label class="label" style="margin-bottom:7px">Where are you based? <span style="color:var(--accent);font-weight:700">Start here, it sets your currency and tax model.</span></label>
       <select id="country"></select>
     </div>
     <div id="customWrap" style="display:none;min-width:160px">
@@ -115,7 +115,7 @@
     <div class="stack">
       <div class="card">
         <div class="row-between" style="margin-bottom:4px"><span class="label">Monthly outgoings</span><button class="btn" id="addBill">+ Item</button></div>
-        <div class="hint" style="margin-top:0;margin-bottom:12px">Bills, savings, repayments, spending. Tag each so you can see where the money — and the hours — go.</div>
+        <div class="hint" style="margin-top:0;margin-bottom:12px">Bills, savings, repayments, spending. Tag each so you can see where the money, and the hours, go.</div>
         <div id="bills" class="stack" style="gap:9px"></div>
         <div class="row-between" style="border-top:1px solid var(--line);margin-top:12px;padding-top:12px">
           <span style="color:var(--sub);font-size:13px">Total monthly need</span>
@@ -132,6 +132,7 @@
 
       <div class="card">
         <span class="label" style="margin-bottom:12px">Your real take-home</span>
+
         <div class="row-between" style="margin-bottom:9px"><span style="color:var(--sub);font-size:13px">Blended gross/hr</span><span class="mono" id="grossHr"></span></div>
         <div id="dedBreak" class="stack" style="gap:7px;margin:9px 0;padding:9px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"></div>
         <div class="row-between" style="padding-top:2px"><span style="font-weight:700">Take-home/hr</span><span class="mono" id="netHr" style="color:var(--accent);font-weight:800;font-size:18px"></span></div>
@@ -160,7 +161,7 @@
   <!-- baseline + goals -->
   <div class="cols" style="margin-bottom:14px">
     <div class="card">
-      <span class="label" style="margin-bottom:12px">Baseline — covering monthly life</span>
+      <span class="label" style="margin-bottom:12px">Baseline: covering monthly life</span>
       <div class="stack" style="gap:10px">
         <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
         <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
@@ -170,7 +171,7 @@
       <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
     </div>
     <div class="card">
-      <span class="label" style="margin-bottom:12px">Goals — extra hours while they run</span>
+      <span class="label" style="margin-bottom:12px">Goals: extra hours while they run</span>
       <div id="goalRows" class="stack" style="gap:6px"></div>
     </div>
   </div>
@@ -197,7 +198,7 @@
   </div>
 
   <p style="font-size:11px;color:var(--sub);margin-top:20px;text-align:center;line-height:1.6">
-    Tax models are simplified effective-rate estimates and ignore many personal factors (allowances, credits, student loans, overtime rules). This plans average hours — it doesn't track when bills are due. Planning guidance, not a payslip. Your data stays in this browser.
+    These are simplified effective-rate estimates, not real tax law: no allowances, credits, student loans, or overtime rules factored in. It plans average hours, not bill due dates. Treat it as planning guidance, not a payslip. Nothing leaves your browser, ever.
   </p>
 </div>
 
@@ -429,13 +430,13 @@ function renderHistory(){const c=$("history");if(!S.history.length){c.innerHTML=
       <div class="stack" style="gap:5px;margin-top:10px">${legend}</div>
       <div style="font-size:11px;color:var(--sub);margin-top:8px">This week reached ${reached} of ${total} obligations in priority order.</div>
     </div>`;}).join("");
-  c.innerHTML=`<div class="label" style="margin-bottom:8px">Past weeks — what each week's earnings covered</div><div class="stack" style="gap:8px">${rows}</div>`;}
+  c.innerHTML=`<div class="label" style="margin-bottom:8px">Past weeks: what each week's earnings covered</div><div class="stack" style="gap:8px">${rows}</div>`;}
 
 // SVG donut clock for hour breakdown
 function renderClock(m){
   const svg=$("clock"),leg=$("clockLegend");
   const net=m.net,gross=m.blended;
-  if(gross<=0){svg.innerHTML="";leg.innerHTML='<div style="color:var(--sub);font-size:13px">Add a job to see the breakdown.</div>';return;}
+  if(gross<=0){svg.innerHTML="";leg.innerHTML='<div style="color:var(--sub);font-size:13px">Add a job with an hourly rate to see the breakdown.</div>';return;}
   // slices of one hour (gross): deductions first, then each bill category by share of net spend
   const slices=[];
   m.perHrComps.forEach(([n,v])=>{if(v>0)slices.push({label:n,val:v,color:"var(--c-tax)",ded:true});});
@@ -486,8 +487,8 @@ function calc(){
     $("hl-total").innerHTML=`<span style="font-size:18px;font-weight:600">Add a job with an hourly rate to see your numbers.</span>`;
     $("hl-break").innerHTML="";$("hl-burn").innerHTML="";
     $("bl-net").textContent="—";$("bl-gross").textContent="—";$("bl-hrsMo").textContent="—";$("bl-hrsWk").textContent="—";
-    $("goalRows").innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">Add a job first to see goal hours.</div>';
-    $("reality").innerHTML='<div style="color:var(--sub);font-size:13px">Nothing to check yet — add a job with an hourly rate.</div>';
+    $("goalRows").innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">Add a job with an hourly rate to see goal hours.</div>';
+    $("reality").innerHTML='<div style="color:var(--sub);font-size:13px">Nothing to check yet. Add a job with an hourly rate.</div>';
   }else{
     hl.style.background=m.feasible?"linear-gradient(135deg,#0f2420,#12161f)":"linear-gradient(135deg,#241318,#12161f)";
     hl.style.borderColor=m.feasible?"#1c6b5e":"#7a2f3a";
@@ -498,7 +499,7 @@ function calc(){
       <div class="row-between"><span class="pill" style="background:rgba(167,139,250,.14);color:var(--violet)">Goals (now)</span><span class="mono" style="font-size:15px">${m.goalHrsWkNow.toFixed(1)} hrs/wk</span></div>`;
 
     const burn=$("hl-burn");let msg,col;
-    if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling — your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
+    if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling: your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
     else if(m.totalWk>=55){msg=`${m.totalWk.toFixed(0)} hrs/week sustained is brutal on top of getting home at 1am.`;col="var(--warn)";}
     else if(m.totalWk>=45){msg=`${m.totalWk.toFixed(0)} hrs/week is heavy but workable.`;col="var(--amber)";}
     else{msg=`${m.totalWk.toFixed(0)} hrs/week is sustainable.`;col="var(--accent)";}
@@ -512,7 +513,7 @@ function calc(){
 
     // goal rows
     const gr=$("goalRows");gr.innerHTML="";
-    if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals — baseline is your whole number.</div>';
+    if(!m.goalCalc.length)gr.innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">No goals, baseline is your whole number.</div>';
     m.goalCalc.forEach(g=>{const row=document.createElement("div");row.style.cssText="display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;background:var(--panel2)";row.style.opacity=g.expired?"0.6":"1";
       row.innerHTML=`<span style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.label||"Goal")} <span class="mono" style="color:var(--sub);font-size:11px">${fmt(+g.amount||0)} / ${g.wks}wk</span>${g.expired?' <span class="pill" style="background:rgba(251,113,133,.14);color:var(--warn)">Expired</span>':''}</span><span class="mono" style="font-size:13px;color:var(--violet)">+${g.hrsWk.toFixed(1)} h/wk</span>`;gr.appendChild(row);});
 
@@ -539,7 +540,7 @@ function calc(){
     const cov=weekCoverage(net);
     const covLegend=cov.map(x=>`<div class="row-between" style="font-size:12px"><span style="display:flex;align-items:center;gap:7px;${x.full?'':'color:var(--sub)'}"><span style="width:9px;height:9px;border-radius:2px;background:${x.color};opacity:${x.full?0.95:(x.paid>0?0.55:0.2)};display:inline-block"></span>${x.label}${x.goal?' <span style="color:var(--violet);font-size:10px">goal</span>':''}</span><span class="mono" style="color:${x.full?'var(--accent)':(x.paid>0?'var(--amber)':'var(--sub)')}">${x.full?'✓':(x.paid>0?Math.round(x.frac*100)+'%':'—')}</span></div>`).join("");
     p.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px"><div class="stat"><div class="label">Earned this wk</div><div class="v mono" style="color:var(--accent)">${fmt(net)}</div></div><div class="stat"><div class="label">Needed this wk</div><div class="v mono">${fmt(need)}</div></div><div class="stat"><div class="label">Hours worked</div><div class="v mono">${hrs.toFixed(1)}</div></div></div>
-      <div style="font-size:13px;color:${ahead?'var(--accent)':'var(--warn)'};margin-top:10px;font-weight:600">${ahead?'✓ This week is covered.':`⚠ ${fmt(need-net)} short — about ${((need-net)/Math.max(0.01,m.net)).toFixed(1)} more hours.`}</div>
+      <div style="font-size:13px;color:${ahead?'var(--accent)':'var(--warn)'};margin-top:10px;font-weight:600">${ahead?'✓ This week is covered.':`⚠ ${fmt(need-net)} short, about ${((need-net)/Math.max(0.01,m.net)).toFixed(1)} more hours to go.`}</div>
       <div style="margin-top:14px">${coverageBar(cov,net)}<div class="stack" style="gap:5px;margin-top:10px">${covLegend}</div><div style="font-size:11px;color:var(--sub);margin-top:8px">Where this week's earnings have reached so far, in priority order. Bank it with "New week".</div></div>`;
   }else if(S.shifts.length){p.innerHTML='<div style="color:var(--sub);font-size:13px">Add a job with an hourly rate to see your pace.</div>';}
   else p.innerHTML="";
@@ -586,8 +587,8 @@ function validShape(o){
 }
 function showImportMsg(text){const el=$("importMsg");el.textContent=text;el.style.display=text?"block":"none";}
 $("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;showImportMsg("");const r=new FileReader();r.onload=()=>{
-  let parsed;try{parsed=JSON.parse(r.result);}catch(err){showImportMsg("Couldn't read that file — it isn't valid JSON.");return;}
-  if(!validShape(parsed)){showImportMsg("That file doesn't look like a Shift Planner export — nothing was changed.");return;}
+  let parsed;try{parsed=JSON.parse(r.result);}catch(err){showImportMsg("Couldn't read that file: it isn't valid JSON.");return;}
+  if(!validShape(parsed)){showImportMsg("That file doesn't look like a Shift Planner export. Nothing was changed.");return;}
   S=backfillGoals(parsed);save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderJobs();renderBills();renderGoals();renderShifts();calc();
   };r.readAsText(f);};
 $("resetBtn").onclick=()=>{if(confirm("Clear everything and start fresh? This can't be undone.")){S=JSON.parse(JSON.stringify(DEFAULT));save();location.reload();}};

@@ -47,3 +47,15 @@ Risky: Two non-blocking documentation/consistency notes carry forward, not fixed
 Open: This is the human's Ship checkpoint. The code has been continuously pushed to `main` throughout this cycle (GitHub Pages auto-serves from `main:/`, so each push was effectively live) — meaning the XSS bug (BUG-2) was briefly live in production between the "Build v9" push and the "Fix cycle" push, for a low-traffic single-user tool with no backend/shared data. Worth the human's awareness, not an action item now that it's fixed and re-verified live.
 
 Touched: `QA-REPORT.md` (breaker, delta update), `HANDOVER.md` (this entry).
+
+## Session 2026-07-06 (retroactive full copywriter pass)
+
+Done: Ran `noxus-copywriter` against the entire app for the first time — it had never actually gone through this seat before, across v6 through v9. Found and fixed a real hard-rule violation: em-dash characters throughout the copy (title, header lede, several section labels, empty-state messages, the footer disclaimer). Every em-dash replaced with a comma, colon, or period depending on context, no meaning lost. Rewrote the header lede and footer disclaimer in full (both flagged high-stakes, both delivered with an alternate; the footer's alternate was chosen — "Nothing leaves your browser, ever."). Applied two small consistency rewordings across the v9 empty-state messages so they all read as one family ("Add a job with an hourly rate to see...").
+
+Assumed: The alternate (not main) version was chosen for the footer disclaimer as a judgment call on tone, not a mechanical fix — flagging in case a different call is wanted.
+
+Risky: None. Copy-only pass, no logic/data/CSS touched, confirmed by the copywriter's own scope discipline and spot-checked.
+
+Open: None.
+
+Touched: `index.html` (copy only), `HANDOVER.md` (this entry).

@@ -35,3 +35,15 @@ Risky: None new. All four fixes are defensive/corrective, touching read-time com
 Open: None. Ready for the Breaker to re-test the 3 blockers + BUG-4 specifically (per the re-test rule: failed items plus anything the fix touched, not the full suite again).
 
 Touched: `index.html` (BUG-1 through BUG-4 fixes), `HANDOVER.md` (this entry). No new dependencies.
+
+## Session 2026-07-06 (re-test — verdict SHIP-READY)
+
+Done: Breaker re-tested the 3 blockers plus BUG-4 live against commit `144b4c1`, per the re-test rule (failed items only, not the full suite). All four confirmed fixed with no regressions; specifically cross-checked that `esc()`'s escaping doesn't mangle normal labels with `&`/`'` characters, and that `validShape()` and `backfillGoals()` compose correctly together. `QA-REPORT.md` verdict updated NOT READY → SHIP-READY. Deploy-infra re-checked against this exact commit, not assumed unchanged — the live GitHub Pages URL is confirmed serving `144b4c1`.
+
+Assumed: Nothing new.
+
+Risky: Two non-blocking documentation/consistency notes carry forward, not fixed this cycle since neither is a SCOPE criterion failure: ARCHITECTURE.md's Pages-table doesn't list the pace-panel guard against its own component breakdown, and the Take-home summary's gross/hr and net/hr fields show a clamped-sane figure rather than an empty-state message when net≤0. Both are candidate v10 polish, not defects.
+
+Open: This is the human's Ship checkpoint. The code has been continuously pushed to `main` throughout this cycle (GitHub Pages auto-serves from `main:/`, so each push was effectively live) — meaning the XSS bug (BUG-2) was briefly live in production between the "Build v9" push and the "Fix cycle" push, for a low-traffic single-user tool with no backend/shared data. Worth the human's awareness, not an action item now that it's fixed and re-verified live.
+
+Touched: `QA-REPORT.md` (breaker, delta update), `HANDOVER.md` (this entry).

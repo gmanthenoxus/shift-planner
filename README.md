@@ -42,6 +42,14 @@ Your data stays in your browser. Export/import JSON anytime.
 - **Responsive** — works on mobile, tablet, desktop
 - **No account needed** — all data stays local in your browser
 
+## Project documentation
+
+Root holds only what a session reads every time: `CLAUDE.md` (standing orders), `SCOPE.md` (frozen
+scope), `ARCHITECTURE.md`, `PARKING.md`, `HANDOVER.md`.
+
+Everything else is under `docs/`, split by what it is for: `governance/`, `process/`, `research/`,
+`design/`, `archive/`. See `docs/FILING.md` for the rule and the full index.
+
 ## Browser support
 
 Modern browsers with ES6 support and localStorage. Works offline once loaded.

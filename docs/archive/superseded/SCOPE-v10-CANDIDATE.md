@@ -1,7 +1,17 @@
-# SCOPE: Shift Planner v10
-<!-- Approved and frozen by the human 2026-07-06. Supersedes v8's SCOPE.md, preserved in git
-     history at commit 77c4788. Two forks left open in the original draft (tax-rate basis,
-     goal-expiry behavior) were resolved by the human before freeze — see Features 2 and 4. -->
+# SCOPE CANDIDATE: Shift Planner v10 — "Put it in hands, learn something"
+
+Date: 2026-08-15
+Status: **CANDIDATE. NOT FROZEN. NOT APPROVED.**
+
+<!-- The Builder does not own SCOPE.md and has not touched it. This is a draft for the human to
+     accept, edit, cut or reject, and then freeze into SCOPE.md themselves. No code gets written
+     against this file. Per CLAUDE.md's two checkpoints: no build before a freeze line exists in
+     SCOPE.md, no deploy without the human pressing it.
+
+     Derived from REQUIREMENTS.md §7 phase 1, plus the human's decisions of 2026-08-15:
+     PWA yes · local stats AND cookieless analytics ("Both") · four decisions to serve. -->
+
+---
 
 ## Problem
 
@@ -149,6 +159,10 @@ important thing in this version, and the easiest to under-build.
 
 ## Freeze
 
-FROZEN: 2026 - 08 - 18
+NOT FROZEN. No build may begin against this file.
+
+`FROZEN: <date>` to be added by the human, in `SCOPE.md`, after editing.
 
 ## Changelog
+
+<!-- None. -->

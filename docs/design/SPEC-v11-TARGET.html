@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shift Planner v11 — end-to-end spec</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#f9f9f7; --surface:#fcfcfb; --surface2:#f2f1ed; --border:#e1e0d9; --rule:#c3c2b7;
+    --text:#0b0b0b; --text2:#52514e; --muted:#898781;
+    --action:#2a78d6; --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+    --ring:rgba(11,11,11,.10);
+  }
+  @media (prefers-color-scheme:dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme:dark;
+      --bg:#0d0d0d; --surface:#1a1a19; --surface2:#232322; --border:#2c2c2a; --rule:#383835;
+      --text:#fff; --text2:#c3c2b7; --muted:#898781; --action:#3987e5; --ring:rgba(255,255,255,.10);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --surface2:#232322; --border:#2c2c2a; --rule:#383835;
+    --text:#fff; --text2:#c3c2b7; --muted:#898781; --action:#3987e5; --ring:rgba(255,255,255,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:400 15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:40px 24px 88px}
+  header{border-bottom:1px solid var(--rule);padding-bottom:24px;margin-bottom:40px;
+    display:flex;justify-content:space-between;align-items:flex-start;gap:24px;flex-wrap:wrap}
+  h1{font-size:22px;font-weight:600;letter-spacing:-.015em;margin:0 0 6px}
+  .sub{color:var(--muted);font-size:13px}
+  .toggle{background:none;border:1px solid var(--rule);color:var(--text2);border-radius:6px;
+    padding:6px 14px;font:inherit;font-size:12px;cursor:pointer}
+  .banner{background:var(--surface);border:1px solid var(--ring);border-left:3px solid var(--warn);
+    border-radius:6px;padding:16px 20px;margin-bottom:40px;font-size:13.5px;color:var(--text2)}
+  .banner b{color:var(--text)}
+  h2{font-size:12px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);
+    margin:56px 0 8px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+  h2:first-of-type{margin-top:0}
+  .lede{color:var(--text2);font-size:14px;max-width:66ch;margin:0 0 24px}
+
+  /* screen flow */
+  .flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .screen{background:var(--surface);border:1px solid var(--ring);border-radius:8px;overflow:hidden;
+    display:flex;flex-direction:column}
+  .screen-hd{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;
+    align-items:center;justify-content:space-between;gap:12px;background:var(--surface2)}
+  .step{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .badge{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    padding:3px 7px;border-radius:4px;border:1px solid currentColor;white-space:nowrap}
+  .b-new{color:var(--action)} .b-ship{color:var(--good)} .b-chg{color:var(--warn)}
+  .screen-bd{padding:16px;flex:1}
+  .screen-ft{padding:12px 16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+  .screen h3{font-size:15px;font-weight:600;margin:0 0 10px}
+
+  /* fake UI bits */
+  .ui-label{font-size:11px;color:var(--muted);letter-spacing:.03em;margin:12px 0 5px}
+  .ui-input{background:var(--bg);border:1px solid var(--border);border-radius:5px;
+    padding:9px 11px;font-size:13px;color:var(--text2);display:flex;justify-content:space-between;gap:8px}
+  .ui-input.filled{color:var(--text)}
+  .ui-btn{background:var(--action);color:#fff;border-radius:5px;padding:9px 14px;font-size:13px;
+    font-weight:600;text-align:center;margin-top:14px}
+  .ui-btn.ghost{background:none;border:1px solid var(--rule);color:var(--text2);font-weight:400}
+  .ui-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .ui-chip{display:inline-block;font-size:11px;padding:3px 9px;border-radius:999px;
+    background:var(--surface2);border:1px solid var(--border);color:var(--text2);margin:0 5px 5px 0}
+  .ui-chip.on{background:var(--action);border-color:var(--action);color:#fff}
+  .ui-stat{font-size:32px;font-weight:600;letter-spacing:-.025em;line-height:1;margin:4px 0}
+  .ui-meter{height:7px;background:var(--border);border-radius:999px;overflow:hidden;margin:8px 0}
+  .ui-meter i{display:block;height:100%}
+  .ui-line{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;
+    border-bottom:1px solid var(--border);color:var(--text2)}
+  .ui-line:last-child{border-bottom:none}
+  .ui-line b{color:var(--text);font-weight:600}
+  .note{font-size:12px;color:var(--muted);margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+  .note b{color:var(--text2)}
+
+  /* gap table */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin-top:8px}
+  th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);
+    font-weight:600;padding:0 14px 9px 0;border-bottom:1px solid var(--rule)}
+  td{padding:13px 14px 13px 0;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text2)}
+  td b{color:var(--text);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  code{background:var(--surface2);border:1px solid var(--border);border-radius:4px;
+    padding:1px 5px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
+  .card{background:var(--surface);border:1px solid var(--ring);border-radius:8px;padding:20px}
+  .card h3{font-size:14px;font-weight:600;margin:0 0 4px}
+  .card .why{font-size:12px;color:var(--muted);margin:0 0 14px}
+  ol.crit{margin:0;padding-left:18px;font-size:13px;color:var(--text2)}
+  ol.crit li{margin-bottom:8px}
+  footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--rule);font-size:12px;
+    color:var(--muted);line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <h1>Shift Planner v11 — end-to-end spec</h1>
+    <div class="sub">Design target for the rebuild &middot; Engineer style &middot; drafted 18 Aug 2026</div>
+  </div>
+  <button class="toggle" id="themeBtn" type="button">Dark</button>
+</header>
+
+<div class="banner">
+  <b>This is a spec, not a frozen scope.</b> It is the design target the prompt set builds toward.
+  Nothing here is buildable until it has been cut down, argued with, and frozen into
+  <code>SCOPE.md</code> v11 with a freeze line — that is prompt 1's job, and it is the human's
+  signature, not the Builder's.
+</div>
+
+<!-- =============== FLOW =============== -->
+<h2>The end-to-end flow</h2>
+<p class="lede">
+  Every screen a first-time user passes through, in order, from cold open to banked week.
+  <span class="badge b-ship">shipped</span> exists today.
+  <span class="badge b-chg">changed</span> exists but must change.
+  <span class="badge b-new">new</span> does not exist.
+</p>
+
+<div class="flow">
+
+  <!-- 1 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">01 · Cold open</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>Empty, not someone else's life</h3>
+      <div class="ui-stat" style="color:var(--muted)">—</div>
+      <div style="font-size:13px;color:var(--text2)">
+        No jobs. No bills. No goals. One sentence explaining what the app answers, and one button.
+      </div>
+      <div class="ui-btn">Set up in 2 minutes</div>
+      <div class="ui-btn ghost">I have a backup file</div>
+      <div class="note"><b>Replaces:</b> the seed data that currently shows every stranger
+        the builder's own jobs and visa goal. Unresolved since 6 July; resolved here.</div>
+    </div>
+    <div class="screen-ft">Kills the oldest open item in PARKING.md</div>
+  </div>
+
+  <!-- 2 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">02 · Onboarding</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>Five questions, one per screen</h3>
+      <div class="ui-label">Step 2 of 5 · Where do you work?</div>
+      <div class="ui-input filled">United Kingdom<span style="color:var(--muted)">▾</span></div>
+      <div class="ui-label">Currency you are paid in</div>
+      <div class="ui-input filled">GBP £<span style="color:var(--muted)">▾</span></div>
+      <div class="ui-meter"><i style="width:40%;background:var(--action)"></i></div>
+      <div class="ui-btn">Continue</div>
+      <div class="note"><b>Order:</b> country → jobs → outgoings → ceiling → goals.
+        Each step writes to state immediately, so a drop-out mid-flow is resumable, not lost.</div>
+    </div>
+    <div class="screen-ft">Must survive a refresh at any step</div>
+  </div>
+
+  <!-- 3 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">03 · Profile · jobs</span><span class="badge b-chg">changed</span></div>
+    <div class="screen-bd">
+      <h3>One job, several rates</h3>
+      <div class="ui-input filled">Guardhouse (Security Scotland)</div>
+      <div class="ui-label">Rates at this employer</div>
+      <div class="ui-line"><span>Events &amp; Stadiums L2</span><b>£14.25</b></div>
+      <div class="ui-line"><span>SG Retail</span><b>£13.20</b></div>
+      <div class="ui-line"><span>DS Licensed Premises</span><b>£14.75</b></div>
+      <div class="ui-line"><span>Supervision L2</span><b>£16.75</b></div>
+      <div class="ui-btn ghost">+ Add rate</div>
+      <div class="note"><b>Gap it closes:</b> the app models one rate per job. Real agency work
+        pays by site position, so a "job" is an employer with a rate card, and a logged shift
+        picks which rate applied.</div>
+    </div>
+    <div class="screen-ft">Blended rate becomes a weighted average of shifts actually worked</div>
+  </div>
+
+  <!-- 4 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">04 · Profile · outgoings</span><span class="badge b-chg">changed</span></div>
+    <div class="screen-bd">
+      <h3>Obligations that have dates</h3>
+      <div class="ui-input filled">Rent + council tax<span>£440 / mo</span></div>
+      <div class="ui-input filled" style="margin-top:8px">Capital One<span>£590</span></div>
+      <div class="ui-label">Type</div>
+      <div><span class="ui-chip on">Credit commitment</span><span class="ui-chip">Bill</span><span class="ui-chip">Savings</span></div>
+      <div class="ui-label">Hard date (optional)</div>
+      <div class="ui-input filled">18 Feb 2027 — promo rate ends</div>
+      <div class="note"><b>Gap it closes:</b> only goals carry deadlines today. A 0% promo expiry
+        and a land payment deadline are both dated obligations, and the app cannot see either.</div>
+    </div>
+    <div class="screen-ft">Credit typing is frozen v10 feature 6 — carried forward intact</div>
+  </div>
+
+  <!-- 5 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">05 · Profile · ceiling</span><span class="badge b-chg">changed</span></div>
+    <div class="screen-bd">
+      <h3>Protected time, not just max hours</h3>
+      <div class="ui-row">
+        <div><div class="ui-label">Max days/wk</div><div class="ui-input filled">6</div></div>
+        <div><div class="ui-label">Max hrs/day</div><div class="ui-input filled">12</div></div>
+      </div>
+      <div class="ui-label">Blocked out — never available</div>
+      <div><span class="ui-chip on">Mon eve</span><span class="ui-chip on">Fri night</span>
+           <span class="ui-chip on">Sat AM</span><span class="ui-chip">Sun</span></div>
+      <div class="note"><b>Gap it closes:</b> the ceiling is a number, so the app can tell you
+        you need 34 hours without knowing three of your slots are gone. Protected blocks reduce
+        the real ceiling and make the over-ceiling verdict honest.</div>
+    </div>
+    <div class="screen-ft">Turns "brutal" from a judgement into a fact</div>
+  </div>
+
+  <!-- 6 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">06 · The number</span><span class="badge b-chg">changed</span></div>
+    <div class="screen-bd">
+      <h3>Hours to close the gap</h3>
+      <div class="ui-label">This week you need</div>
+      <div class="ui-stat">6.1 <span style="font-size:15px;font-weight:400;color:var(--muted)">extra hrs</span></div>
+      <div class="ui-meter"><i style="width:72%;background:var(--warn)"></i></div>
+      <div class="ui-line"><span>Baseline to cover life</span><b>28.4 h</b></div>
+      <div class="ui-line"><span>Dated obligations</span><b>+9.8 h</b></div>
+      <div class="ui-line"><span>Real ceiling after blocks</span><b>44.0 h</b></div>
+      <div class="note"><b>Gap it closes:</b> the app shows hours needed. It does not show
+        <b>extra hours beyond current commitment</b> — which is the only number that tells you
+        whether to accept another shift.</div>
+    </div>
+    <div class="screen-ft">The headline. Everything else supports this one figure.</div>
+  </div>
+
+  <!-- 7 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">07 · Log a shift</span><span class="badge b-ship">shipped</span></div>
+    <div class="screen-bd">
+      <h3>Start, end, break, rate</h3>
+      <div class="ui-row">
+        <div><div class="ui-label">Start</div><div class="ui-input filled">18:00</div></div>
+        <div><div class="ui-label">End</div><div class="ui-input filled">02:00</div></div>
+      </div>
+      <div class="ui-label">Rate applied</div>
+      <div class="ui-input filled">Supervision L2 — £16.75<span style="color:var(--muted)">▾</span></div>
+      <div class="ui-line" style="margin-top:12px"><span>8.0 h &minus; 30 min break</span><b>£125.63</b></div>
+      <div class="note"><b>Change:</b> the rate picker is new; overnight-shift maths is already
+        confirmed correct and must stay correct. Add a duplicate-shift action — parked since July.</div>
+    </div>
+    <div class="screen-ft">Regression risk: overnight maths was verified clean once already</div>
+  </div>
+
+  <!-- 8 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">08 · Bank the week</span><span class="badge b-chg">changed</span></div>
+    <div class="screen-bd">
+      <h3>Coverage, in your order, no ranking</h3>
+      <div class="ui-line"><span>Rent pot</span><b style="color:var(--good)">covered</b></div>
+      <div class="ui-line"><span>Savings £20</span><b style="color:var(--good)">covered</b></div>
+      <div class="ui-line"><span>Financial targets</span><b style="color:var(--warn)">£38 short</b></div>
+      <div class="ui-line"><span>Operations &amp; living</span><b style="color:var(--muted)">not reached</b></div>
+      <div class="note"><b>Hard constraint:</b> states which obligations the earnings reached,
+        in the user's own order. Never reorders, ranks, recommends or evaluates. Stating a
+        shortfall is fine; suggesting what to do about it is a regulated activity.</div>
+    </div>
+    <div class="screen-ft">art. 39E RAO / PERG 17 — record the reason in ARCHITECTURE.md</div>
+  </div>
+
+  <!-- 9 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">09 · Multi-currency</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>An obligation in another currency</h3>
+      <div class="ui-input filled">El-Shulem land — plot 1<span>₦3,000,000</span></div>
+      <div class="ui-label">Rate used</div>
+      <div class="ui-input filled">₦1,882 / £ — entered manually</div>
+      <div class="ui-line" style="margin-top:12px"><span>Cost today</span><b>£1,594</b></div>
+      <div class="note"><b>Gap it closes:</b> currency is tied to the tax model, so one currency
+        per user. Parked since July. <b>No live FX API</b> — the user enters the rate, the app
+        stamps the date and warns when it is stale. A live rate is a network dependency in a
+        tool that must work offline.</div>
+    </div>
+    <div class="screen-ft">Offline-first is non-negotiable; FX must degrade to a stored number</div>
+  </div>
+
+  <!-- 10 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">10 · Install &amp; return</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>PWA, offline, on the home screen</h3>
+      <div class="ui-line"><span>Manifest + icon set</span><b>required</b></div>
+      <div class="ui-line"><span>Service worker, app shell cached</span><b>required</b></div>
+      <div class="ui-line"><span>Stale-cache update strategy</span><b style="color:var(--crit)">highest risk</b></div>
+      <div class="ui-line"><span><code>shiftPlanner.v5</code> survives install</span><b>required</b></div>
+      <div class="note"><b>Carried from frozen v10 feature 1.</b> A single-file app behind a
+        service worker can pin a user to old tax maths forever with no way to know. This is the
+        top technical risk in the whole rebuild.</div>
+    </div>
+    <div class="screen-ft">Architect decision, not a Builder decision</div>
+  </div>
+
+  <!-- 11 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">11 · Feedback</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>The actual instrument</h3>
+      <div class="ui-label">About to be shared — review before sending</div>
+      <div class="ui-line"><span>Weeks used</span><b>6</b></div>
+      <div class="ui-line"><span>Distinct weeks banked</span><b>4</b></div>
+      <div class="ui-line"><span>Ever lost data</span><b>no</b></div>
+      <div class="ui-btn">Open in email</div>
+      <div class="note"><b>Three of the four questions are answered by asking, not measuring.</b>
+        This is the most important feature in the version and the easiest to under-build.
+        Copy routes through <code>noxus-copywriter</code>, never the Builder.</div>
+    </div>
+    <div class="screen-ft">Sends nothing itself — hands off to the user's own client</div>
+  </div>
+
+  <!-- 12 -->
+  <div class="screen">
+    <div class="screen-hd"><span class="step">12 · Compliance</span><span class="badge b-new">new</span></div>
+    <div class="screen-bd">
+      <h3>Required before real users</h3>
+      <div class="ui-line"><span>Privacy notice</span><b>published</b></div>
+      <div class="ui-line"><span>s.164A complaints route</span><b>30-day ack</b></div>
+      <div class="ui-line"><span>ICO registration</span><b style="color:var(--warn)">open</b></div>
+      <div class="ui-line"><span>18+ statement at point of use</span><b>required</b></div>
+      <div class="ui-line"><span>Not-debt-advice + free advice pointer</span><b>required</b></div>
+      <div class="note"><b>Analytics cut.</b> It answered part of one question out of four and was
+        the only feature pulling toward obligations you would otherwise carry lightly. The
+        feedback inbox already triggers ICO registration, so cutting it saves surface, not the fee.</div>
+    </div>
+    <div class="screen-ft">Sourced legal reading, not legal advice — §3.6 sits at 65% confidence</div>
+  </div>
+
+</div>
+
+<!-- =============== GAP TABLE =============== -->
+<h2>Where the shipped app breaks on a real situation</h2>
+<p class="lede">
+  Each row is a thing the current app cannot represent, discovered by trying to model an
+  actual multi-rate agency worker with a dated foreign-currency obligation and a 0% promo
+  running out. This is what makes the spec evidence-based rather than a wish list.
+</p>
+<table>
+  <thead><tr><th>Real situation</th><th>What the app does now</th><th>Consequence</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><b>Rate varies by site position</b><br>£13.20 to £16.75 at one employer</td>
+      <td>One hourly rate per job. Four rates means four fake "jobs".</td>
+      <td>Blended rate is wrong, so every hours figure downstream is wrong.</td>
+    </tr>
+    <tr>
+      <td><b>Obligation in naira</b><br>₦3m with a hard date</td>
+      <td>Currency is tied to the tax model. One currency, full stop.</td>
+      <td>The single largest obligation cannot be entered at all. <em>Parked 6 Jul.</em></td>
+    </tr>
+    <tr>
+      <td><b>0% promo expiring</b><br>debt cheap now, expensive in six months</td>
+      <td>Bills are flat monthly amounts. No rate, no expiry.</td>
+      <td>App cannot distinguish a cliff from a steady cost. Silent on the only thing that matters.</td>
+    </tr>
+    <tr>
+      <td><b>Protected time</b><br>three fixed blocks plus two gym sessions</td>
+      <td>Ceiling is max days &times; max hours. Nothing is blocked.</td>
+      <td>"You need 44 hours" is arithmetically true and practically useless.</td>
+    </tr>
+    <tr>
+      <td><b>"Should I take this shift?"</b></td>
+      <td>Shows total hours needed, not hours beyond what is already committed.</td>
+      <td>The user does the subtraction by hand — which is the job the app exists to do.</td>
+    </tr>
+    <tr>
+      <td><b>Top-up work at a second agency</b><br>cleaning via Blue Arrow, irregular</td>
+      <td>Supported — multi-job blending already works.</td>
+      <td>None. This one is fine.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- =============== NOT DOING =============== -->
+<h2>Not in v11, and why</h2>
+<div class="cards">
+  <div class="card">
+    <h3>Accounts, sync, any backend</h3>
+    <p class="why">Gated on Q1 returning a positive answer.</p>
+    <ol class="crit">
+      <li>The gate is 20 real users with week-two return.</li>
+      <li>Building it before the gate answers a question nobody has asked.</li>
+      <li>It also converts a localStorage tool into a data controller with a breach surface.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Cookieless analytics</h3>
+    <p class="why">Cut deliberately, 18 Aug 2026.</p>
+    <ol class="crit">
+      <li>Answers part of one of the four questions and none of the other three.</li>
+      <li>Below ~100 users it is ceremony.</li>
+      <li>Re-add when volume justifies the privacy-notice surface.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Live FX rates</h3>
+    <p class="why">Rejected on the offline-first constraint.</p>
+    <ol class="crit">
+      <li>Core loop must run with no network. An FX call breaks that.</li>
+      <li>User-entered rate + date stamp + staleness warning is honest and offline.</li>
+      <li>Revisit only if a backend exists — which is itself gated.</li>
+    </ol>
+  </div>
+  <div class="card">
+    <h3>Any ranking of obligations</h3>
+    <p class="why">Permanently out. Not a version decision.</p>
+    <ol class="crit">
+      <li>"Pay this first" is debt counselling under art. 39E RAO / PERG 17.</li>
+      <li>Stating a shortfall is fine. Suggesting what to do about it is not.</li>
+      <li>Must be in ARCHITECTURE.md <em>with the reason</em>, so a future session cannot helpfully improve the app into a regulated activity.</li>
+    </ol>
+  </div>
+</div>
+
+<footer>
+  Legal readings are sourced, not advised — §3.6's debt-counselling reading sits at 65% confidence
+  and is unreviewed by a solicitor. Tax models remain simplified effective-rate estimates.
+  This document is a design target and carries no freeze line; nothing here is buildable until
+  it is cut down and frozen into SCOPE.md v11.
+</footer>
+
+</div>
+<script>
+  var b=document.getElementById("themeBtn");
+  b.addEventListener("click",function(){
+    var d=document.documentElement.getAttribute("data-theme")==="dark";
+    document.documentElement.setAttribute("data-theme",d?"light":"dark");
+    b.textContent=d?"Dark":"Light";
+  });
+</script>
+</body>
+</html>

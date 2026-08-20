@@ -25,10 +25,45 @@ which is the only figure that answers "should I take this shift?"
 v11 rebuilds the model end to end, from cold open to banked week, and adds the install, feedback
 and compliance surfaces that let it go into a stranger's hands lawfully.
 
-**Honest sizing note for the human before freezing:** this is thirteen features and a data
-migration. That is a rebuild, not a version. `PROMPTS.md` §6 already flags that the middle third
-of a rebuild typically takes longer than the first and last combined. Cutting features 5, 6 or 9
-to a v12 is the obvious relief valve and would not damage the rest.
+## What v11 is, and what it is not (D7)
+
+**v11 is the model rebuild plus install. It is publicly usable, but it does not learn.**
+
+| Feature | Version |
+|---|---|
+| 1. Storage schema v6 and migration | **v11** |
+| 2. Empty state and guided onboarding | **v11** |
+| 3. Employers with rate cards | **v11** |
+| 4. Outgoings: type, hard date, optional rate | **v11** |
+| 5. Second-currency obligations | v12 |
+| 6. Protected time and the real ceiling | v12 |
+| 7. The headline: extra hours needed this week | **v11** |
+| 8. Shift logging | **v11** |
+| 9. Bank the week and coverage | **v11** |
+| 10. PWA: installable, offline, returnable | **v11** |
+| 11. Local stats and the feedback route | v12 |
+| 12. Compliance surface | **split — see below** |
+| 13. Copy pass | **v11** (v12 gets its own) |
+
+**Feature 12 does not move as a block, and the reason matters.** The privacy notice, ICO
+registration and s.164A complaints route exist *because a feedback inbox makes you a data
+controller*. Feature 11 is deferred, so that trigger does not fire in v11, and those three items
+defer with it. But three obligations are triggered by the activity rather than by data, and
+**ship in v11**:
+
+- the not-debt-advice statement with a pointer to free regulated debt advice (it must ship
+  alongside feature 4's credit-commitment typing, not after it);
+- the "simplified effective-rate estimates" tax disclaimer, kept accurate;
+- WCAG 2.2 AA conformance, per the Equality Act duty, which applies to any public service
+  regardless of whether it collects anything.
+
+**Consequence to accept knowingly:** v11 can be handed to anyone, but it has no instrument. The
+four questions in `PROJECT.md` stay open until v12, and learning happens by asking people directly.
+Do not publish an in-app contact route in v11 — an informal conversation with a colleague is not
+the app collecting data; a published feedback channel wired into the app is.
+
+**Sizing note:** the split brings v11 to nine features plus a migration. Still large. `PROMPTS.md`
+§6's warning about the middle third of a rebuild still applies.
 
 ---
 
@@ -42,6 +77,10 @@ to a v12 is the obvious relief valve and would not damage the rest.
 | D4 | ICO registration identity — research first (`ICO-DECISION.md`, prompt 1a) | 18 Aug |
 | D5 | Feedback goes to a dedicated project email, not a personal number | 18 Aug |
 | D6 | Visual direction: minimal and calm, Emma-informed. See §"Visual direction" | 19 Aug |
+| D7 | **Scope split.** v11 = model work + PWA. v12 = FX, protected time, feedback route, controller-triggered compliance | 19 Aug |
+| D8 | Rate deletion solved by **snapshotting rate name and value onto each shift at log time**. History never points at the rate card | 19 Aug |
+| D9 | "Hours already committed" = **shifts logged, including ones dated later this week** | 19 Aug |
+| D10 | Visual style: **Guide**, not Engineer | 19 Aug |
 
 ---
 
@@ -85,7 +124,8 @@ Ordered so that anything changing the shape of stored data comes before anything
 
 - Criteria: an employer holds one or more named rates, e.g. "Events & Stadiums L2 — £14.25".
 - Criteria: rates can be added, edited and removed.
-- Criteria: removing a rate referenced by historical shifts does not corrupt those shifts. **Behaviour on removal is an open question — see below. Do not invent it.**
+- Criteria: **each logged shift stores the rate name and value it was paid at, snapshotted at log time** (D8). Historical shifts never reference the rate card.
+- Criteria: consequently, deleting or editing a rate has no effect on any shift already logged. Verified by deleting a rate that historical shifts were paid at and confirming their computed pay is unchanged.
 - Criteria: the blended rate is a weighted average of shifts actually worked, not of declared typical hours, and the working is visible to the user.
 - Criteria: pension % stays per employer.
 - Criteria: for a single-rate employer, tax output is identical before and after this change. Verified, not assumed.
@@ -118,7 +158,9 @@ Ordered so that anything changing the shape of stored data comes before anything
 ### 7. The headline: extra hours needed this week
 
 - Criteria: the headline figure is **hours needed to meet the target minus hours already committed this week**, not total hours needed.
-- Criteria: the breakdown is visible — baseline to cover life, dated obligations falling in range, against the real ceiling after blocks.
+- Criteria: **"committed" means shifts logged for the current week, including shifts dated later in that week** (D9). A shift agreed for Friday and logged on Tuesday counts on Tuesday.
+- Criteria: a shift dated later this week contributes to committed hours but not to earnings actually banked. The two must not be conflated.
+- Criteria: the breakdown is visible — baseline to cover life, dated obligations falling in range, against the ceiling.
 - Criteria: when extra hours exceed the remaining real ceiling, the app states that as a fact and says nothing about what to do.
 - Criteria: no combination of inputs — no employer, no rate, no outgoings, zero ceiling — renders `Infinity`, `NaN`, or a fabricated figure.
 - Criteria: the formula is written as a comment and confirmed by the human before implementation.
@@ -191,10 +233,24 @@ affiliate. **That monetisation is a s21 FSMA financial promotion, which is a cri
 an unauthorised person** (`REQUIREMENTS.md` §3.7). The surface you like and the business model that
 funds it are separable, and only one of them is available to you.
 
-**Open:** the existing spec was drafted in the design system's **Engineer** style (dense, bordered,
-utilitarian). Emma is closer to **Guide** (calm, spacious, consumer). These are deliberately
-incompatible and the design system says switching mid-build means restarting the architecture, not
-nudging values. Pick one before the architect pass, not during it.
+**Resolved (D10): Guide.** Both directions were rendered as the headline screen and compared.
+Engineer fits more on screen and uses borders as landmarks; Guide gives one number and gets out of
+the way, which matches the actual moment of use — checking one figure to answer one question, not
+auditing finances. `SPEC-v11-TARGET.html` was drafted in Engineer tokens and is now a layout
+reference only, **not a token source**. Its palette does not carry forward.
+
+Guide's constraints, per the design system: 3-4 warm tones plus a soft neutral background · 1-2
+human-scale typefaces · medium-high whitespace · gentle motion · voice plain and never patronising ·
+build the component library first, with the minimal deliverable being onboarding card, empty state
+and error state done right. That last point lines up exactly with feature 2.
+
+**One open deviation to record rather than drift into:** Guide specifies warm earth tones. Emma's
+calm comes partly from a *cool* palette. If the cool accent is wanted, it is a deliberate,
+documented deviation from the style file, decided in the architect pass and written into
+`ARCHITECTURE.md`'s decisions log with its reason. It is not a thing to quietly nudge.
+
+A design token document must be produced from the `noxus-design-system` Guide reference before the
+architect pass, per that skill's own default deliverable. It does not exist yet.
 
 ---
 
@@ -213,13 +269,24 @@ nudging values. Pick one before the architect pass, not during it.
 
 ## Open questions — must be answered before freeze
 
-1. **Feature 3:** what happens when a rate referenced by historical shifts is deleted? Options: block deletion, soft-delete and keep the historical reference, or snapshot the rate onto each shift at log time. Recommended default is snapshot-on-log, because it makes history immutable and removes the problem permanently — but this is a data-model decision, not a Builder call.
-2. **Feature 5:** which currencies, and does the second currency apply to goals as well as outgoings?
-3. **Feature 6:** are protected blocks named slots (Mon eve, Fri night) or a generic count of reserved sessions? The spec shows both.
-4. **Feature 7:** "hours already committed this week" — does that mean shifts logged, shifts rostered but not yet worked, or both? The headline is wrong if this is wrong.
-5. **Visual direction:** Engineer or Guide. See above.
-6. **Sizing:** does anything get cut to v12 before freezing? Recommended cuts if you want one: features 5 and 6.
-7. **Carried and still unanswered:** `PROJECT.md` acceptance, `REQUIREMENTS.md` acceptance, and amending `CLAUDE.md`'s read-only list to name both.
+Resolved on 19 Aug and recorded as D7-D10: rate deletion (snapshot-on-log), committed hours
+(logged including future-dated), visual style (Guide), and sizing (the v11/v12 split). Features 5
+and 6 move to v12, so their open questions move with them.
+
+Still open:
+
+1. **Warm or cool accent** within Guide. See "Visual direction" — a cool accent is a documented
+   deviation, not a nudge. Architect pass, recorded with its reason.
+2. **A Guide design token document does not exist.** It is the `noxus-design-system` skill's
+   default deliverable and the architect pass needs it as an input. Produce before, not during.
+3. **Feature 2:** validation rules are unstated — minimum employer count to leave onboarding,
+   whether goals can be skipped, what an empty outgoings list does. The Builder must not invent
+   these (standing order 2).
+4. **Feature 9:** with second currency deferred to v12, does coverage need any change in v11 at
+   all beyond the dated-obligation horizon? Possibly a smaller feature than drafted.
+5. **Carried and still unanswered:** `PROJECT.md` acceptance, `REQUIREMENTS.md` acceptance,
+   amending `CLAUDE.md`'s read-only list to name both, amending `CLAUDE.md` order 11 to name
+   `shift-planner-copywriter`, and appending the missing v10 line to `SCOPE-HISTORY.md`.
 
 ## Freeze
 

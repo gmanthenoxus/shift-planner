@@ -27,6 +27,13 @@ confidently wrong number with no symptom. It is the failure mode `ARCHITECTURE.m
 service-worker strategy exists to prevent, and the strategy does not help if the version stamp
 lies.
 
+## Only when a design token changes
+
+- [ ] `docs/design/DESIGN-TOKENS.md` updated. It is authoritative.
+- [ ] `ARCHITECTURE.md` §1's verbatim copy updated **in the same commit**. It has drifted once already.
+- [ ] Full contrast sweep re-run: every foreground against every surface, both modes, not just the documented pairs.
+- [ ] If a category colour changed, re-run the colour-vision check.
+
 ## Only when storage shape changes
 
 - [ ] Schema number bumped in the blob and in `validShape()`.

@@ -44,10 +44,12 @@ docs/
     PROJECT.md                    problem, audience, strategy, money. Version-independent
     REQUIREMENTS.md               full-app requirements + the legal trigger map
     SCOPE-HISTORY.md              append-only, one line per frozen version
-    SCOPE-v11-CANDIDATE.md        draft awaiting the human's freeze
   process/
     PROMPTS.md                    the v11 run-book, prompt by prompt
     RELEASE-CHECKLIST.md          run before every deploy
+    migration-assertions.js       TEMPORARY, delete after the v11 Breaker pass
+    render-tests.js               TEMPORARY, jsdom. Needs `npm i jsdom`
+    dst-and-colour-checks.js      TEMPORARY, DST + colour-vision
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Still referenced by index.html
@@ -62,6 +64,7 @@ docs/
     superseded/
       LANDSCAPE.md                Jul 2026 scan, extended and replaced by COMPETITION-UK.md
       SCOPE-v10-CANDIDATE.md      frozen into SCOPE.md v10 on 18 Aug. Draft is dead
+      SCOPE-v11-CANDIDATE.md      frozen into SCOPE.md v11 on 19 Aug. Draft is dead
 ```
 
 ## Conventions

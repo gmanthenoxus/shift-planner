@@ -24,8 +24,11 @@
     --amber:#8A5B0E; --covered:#47663F; --covered-soft:#E4EADF;
     --r:14px;
     /* category colours: warm-leaning, separated by hue AND luminance so the donut survives a
-       colour-vision deficiency; every slice also carries a text label in the legend. */
-    --c-bills:#A84E29; --c-save:#47663F; --c-repay:#8A5B0E; --c-spend:#7D5A52; --c-tax:#6E665C;
+       colour-vision deficiency. The first attempt at this ramp FAILED a protanopia/deuteranopia/
+       tritanopia simulation: warm hues plus similar lightness collapse into each other. Because the
+       warm family limits hue separation, LIGHTNESS does the work here, stepped deliberately wide.
+       Every slice also carries a text label, which stays the real guarantee. */
+    --c-bills:#5C2410; --c-save:#3A5A31; --c-repay:#8A5B0E; --c-spend:#8E6A60; --c-tax:#4A443C;
   }
   @media (prefers-color-scheme:dark){
     :root{
@@ -36,9 +39,12 @@
       --warn:#E0AC4E; --warn-soft:#302516;
       --error:#E89184; --error-soft:#33201C;
       --amber:#E0AC4E; --covered:#9DBE93; --covered-soft:#222A1E;
-      --c-bills:#E2825A; --c-save:#9DBE93; --c-repay:#E0AC4E; --c-spend:#C0A199; --c-tax:#B5ADA3;
+      --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
     }
   }
+  /* Cards carry no border in light mode; Guide separates with space. In dark, fill alone stops
+     separating surfaces, so a hairline comes back (DESIGN-TOKENS "Space"). */
+  @media (prefers-color-scheme:dark){ .card,.panel{border:1px solid var(--line)} }
   @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}

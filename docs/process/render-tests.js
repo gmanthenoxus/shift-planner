@@ -1,6 +1,9 @@
 // TEMPORARY. jsdom render tests for the v6 switchover. Run: node docs/process/render-tests.js
 // Requires: npm i jsdom. Delete once the Breaker has passed v11.
-const fs=require("fs"),{JSDOM}=require("jsdom");
+const fs=require("fs");
+let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){
+  console.error("jsdom not installed. Run:  npm i jsdom   (dev-only, not an app dependency)");
+  process.exit(2);}
 const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
 let pass=0,fail=0;
 const vis=d=>{const c=d.body.cloneNode(true);c.querySelectorAll("script,style").forEach(n=>n.remove());return c.textContent;};

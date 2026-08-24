@@ -12,19 +12,26 @@ Architect pass, 2026-08-19, against `SCOPE.md` v11 (FROZEN 2026-08-19, 10 featur
 ## 1. Design tokens — verbatim
 
 Copied in full from `docs/design/DESIGN-TOKENS.md` so the Builder never opens a second file.
-Every pair is contrast-verified at 4.5:1 or better in both modes. `--muted` was darkened from
-`#7D7367` to `#736A5E` because the original measured 4.09:1 against `--bg` and failed AA.
+Every pair is contrast-verified at 4.5:1 or better in both modes, and the category ramp is verified
+against simulated protanopia, deuteranopia and tritanopia.
+
+**`DESIGN-TOKENS.md` IS AUTHORITATIVE. This is a copy, and a copy drifts.** It already did once,
+within hours: `--muted` changed twice for AA failures and this block kept the stale value. The
+architect seat requires the verbatim copy so the Builder never opens two files, so the duplication
+stays, and `docs/process/RELEASE-CHECKLIST.md` now carries a re-sync item as the mitigation. Any
+token change means editing both, in the same commit.
 
 ```css
 :root {
   color-scheme: light;
   --bg:#F4F0E9; --surface:#FFFDFA; --surface-2:#EDE7DD;
-  --text:#2A241F; --text-2:#5E5449; --muted:#736A5E;
+  --text:#2A241F; --text-2:#5E5449; --muted:#6D6458;
   --line:#E3DACE; --line-strong:#CFC3B2;
   --accent:#A84E29; --accent-ink:#FFFDFA; --accent-soft:#F2E4DA;
   --covered:#47663F; --covered-soft:#E4EADF;
   --attention:#8A5B0E; --attention-soft:#F7EBD5;
   --error:#93342A; --error-soft:#F7E3DF;
+  --c-bills:#5C2410; --c-save:#3A5A31; --c-repay:#8A5B0E; --c-spend:#8E6A60; --c-tax:#4A443C;
   --r-card:16px; --r-control:14px; --r-pill:999px;
   --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px;
   --s-5:20px; --s-6:28px; --s-7:40px; --s-8:56px;
@@ -40,6 +47,7 @@ Every pair is contrast-verified at 4.5:1 or better in both modes. `--muted` was 
   --covered:#9DBE93; --covered-soft:#222A1E;
   --attention:#E0AC4E; --attention-soft:#302516;
   --error:#E89184; --error-soft:#33201C;
+  --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
 }}
 @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 ```
@@ -300,18 +308,22 @@ New for v11:
 Beyond `breaker-protocol`'s standard menu. Listed here because they come from architectural calls
 made in this document, and would otherwise be nobody's job.
 
-1. **Colour-vision deficiency.** Simulate protanopia, deuteranopia and tritanopia across the
-   coverage list and the headline verdict. Sage and ochre separate by luminance for a typical
-   viewer; that is an assumption, not a measurement.
+1. **Colour-vision deficiency.** ~~Assumption~~ **MEASURED 2026-08-19** and the first ramp FAILED
+   all three simulations. Rebuilt around lightness; worst-case separation now 0.0162 against a 0.01
+   floor. Script: `docs/process/dst-and-colour-checks.js`. Breaker should re-run it, and extend it
+   to the coverage list and headline verdict, which were not covered.
 2. **Hairline is never the only signal.** `--line` and `--line-strong` measure under 3:1 and are
    documented as decorative. Verify no boundary or state is conveyed by a rule alone.
 3. **Colour is never the only signal.** Every state using a semantic colour must also carry a text
    label. Decision 15 states it; nothing enforces it.
-4. **Service-worker update, on iOS Safari specifically.** Load, deploy a change, reload. iOS is
+4. **DST.** ~~Not listed~~ **ADDED AND PASSING**: `mondayISO` verified at five times of day across
+   both 2026 UK clock changes and the year boundary. Same script. It underpins the headline, the
+   shift list and banking, so a bug there would have been three bugs.
+5. **Service-worker update, on iOS Safari specifically.** Load, deploy a change, reload. iOS is
    where PWA behaviour diverges most and where much of this audience is.
-5. **The rate swing.** Log the first shift of a week and confirm the net/hr change is accompanied
+6. **The rate swing.** Log the first shift of a week and confirm the net/hr change is accompanied
    by the C7 string, not silent.
-6. **Schema refusal.** A blob with `schema: 7` must be refused, left untouched, and reported. It
+7. **Schema refusal.** A blob with `schema: 7` must be refused, left untouched, and reported. It
    must not be migrated and must not be discarded.
 
 ---

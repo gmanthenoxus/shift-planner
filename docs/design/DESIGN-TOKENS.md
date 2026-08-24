@@ -82,13 +82,17 @@ Every pair below is measured, not estimated. See "Verified contrast".
   --error-soft:  #F7E3DF;
 
   /* spend categories. Warm-leaning, separated by hue AND luminance so the donut survives a
-     colour-vision deficiency. Every slice also carries a text label in the legend, because
-     colour is never the only channel. Tax is neutral grey on purpose: it is not a choice. */
-  --c-bills:  #A84E29;
-  --c-save:   #47663F;
+     colour-vision deficiency. The first version of this ramp FAILED a simulated protanopia,
+     deuteranopia and tritanopia check: warm hues at similar lightness collapse into one another,
+     and the claim that they were "separated by hue AND luminance" was simply wrong. Since the warm
+     family caps hue separation, LIGHTNESS carries the load, stepped wide on purpose. Measured
+     worst-case separation after simulation: 0.0162 relative luminance, against a 0.01 floor.
+     Every slice still carries a text label, which remains the real guarantee. */
+  --c-bills:  #5C2410;
+  --c-save:   #3A5A31;
   --c-repay:  #8A5B0E;
-  --c-spend:  #7D5A52;
-  --c-tax:    #6E665C;
+  --c-spend:  #8E6A60;
+  --c-tax:    #4A443C;
 
   /* shape */
   --r-card:      16px;
@@ -127,6 +131,15 @@ Every pair below is measured, not estimated. See "Verified contrast".
     --attention-soft:#302516;
     --error:       #E89184;
     --error-soft:  #33201C;
+
+    /* dark category ramp. Verified separately: a light-mode ramp inverted is not automatically
+       safe, and this one was missing from this document entirely while the app carried values.
+       Worst-case CVD separation 0.0384, all five at 4.5:1+ on --surface. */
+    --c-bills:  #DD7C55;
+    --c-save:   #A3C79A;
+    --c-repay:  #D19B3B;
+    --c-spend:  #D8C2BA;
+    --c-tax:    #8E8578;
   }
 }
 

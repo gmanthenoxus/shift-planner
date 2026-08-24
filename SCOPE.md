@@ -201,4 +201,23 @@ FROZEN: 2026-08-19
 
 ## Changelog
 
-<!-- None. -->
+<!-- Additions made AFTER the freeze. Each one is a scope change, recorded rather than absorbed. -->
+
+**[2026-08-19] Guide palette applied app-wide.** Feature 2 named only the onboarding card, empty
+state and error state as the Guide proof, leaving the rest of the app in the v9 dark palette. That
+would have shipped an app half in each. Authorised by the human 2026-08-19. Carried with it, because
+they were found while in the file rather than sought:
+
+- `--warn` was doing double duty for "over your ceiling" and "the import failed". Split: ochre for
+  facts about the user's position, rust reserved for app faults (ARCHITECTURE.md decision 15).
+- The headline card tinted **red** when the plan did not fit. Now ochre. Colour may not pass
+  judgement on a financial position where the copy is forbidden to.
+- All four headline verdict strings replaced. One was a **Rule 0 violation shipping in production**:
+  "Cut outgoings, extend goal deadlines, or lift the ceiling" is advice about what to do about a
+  shortfall, a regulated activity under art. 39E RAO. The other three judged the user's life
+  ("brutal", "heavy but workable", "sustainable"). Recorded as COPY-DECK C4 and C8.
+- The category colour ramp failed a simulated colour-vision-deficiency check and was rebuilt around
+  lightness separation. Two AA contrast failures found and fixed in the same sweep.
+
+None of this adds a feature. It corrects the app's colour and copy to the standards ARCHITECTURE.md
+and COPY-DECK.md already set, and closes a legal exposure that predates v11.

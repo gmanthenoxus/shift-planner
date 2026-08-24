@@ -1,139 +1,164 @@
-# TECH-PACK: Shift Planner v9
+# TECH PACK: Shift Planner v11
 
-<!-- RETROACTIVE. This seat (Design Translator) did not exist when v8 or v9 shipped -- v9 shipped
-     without a human ever seeing it rendered, and the pre-build UI/UX skills ran once, before the
-     build, never against the finished result. This document is written now, for the record, to
-     match what would have been produced BEFORE the v9 build, reconstructed from SCOPE.md (frozen
-     v9, 6 features), ARCHITECTURE.md's verbatim token extraction (§1) and Pages table (§2), and a
-     direct read of the shipped index.html -- same retroactive convention ARCHITECTURE.md already
-     uses for its own base sections. It is not a forward spec; nothing here should be read as
-     "build this," it documents what a Tech Pack would have said had it existed first. -->
+Design Translator, pre-build, 2026-08-19. Against `SCOPE.md` v11 (frozen, plus three changelog
+amendments) and `DESIGN-TOKENS.md` (Guide, warm).
 
-## 0. Inputs consumed (not duplicated here)
+<!-- LAYOUT AND VISUAL SPEC ONLY. Data model, storage schema, computation and file structure live
+     in ARCHITECTURE.md and are referenced here, never copied. The v9 Tech Pack is archived at
+     docs/archive/v9/TECH-PACK.md. Read-only to everyone but this seat at the next retro. -->
 
-- `SCOPE.md` (frozen 2026-07-06, 6 features) -- feature numbers below refer to it directly.
-- `ARCHITECTURE.md` §1 (design tokens, verbatim from `index.html :root`), §2 (Pages table, which
-  v9 feature touches each section), §4 (state shape, file layout). This document adds the
-  layout/arrangement and state-by-state visual detail ARCHITECTURE.md doesn't cover; it does not
-  re-list `S`'s data shape, `model()`'s math, or the file tree -- see ARCHITECTURE.md for those.
-- No separate design-token doc exists (predates the noxus-design-system skill) -- tokens are
-  taken as extracted in ARCHITECTURE.md §1, not re-derived or re-picked here.
+---
 
-## 1. Layout, per section (scroll order) -- and which SCOPE feature it serves
+## 0. Why this document replaces the v9 one
 
-Single scrolling page, `.wrap` max-width 980px. Two responsive breakpoints: `.cols` (the two-column
-earn/spend grid) collapses to one column under 760px; `.two` and `.goalgrid` collapse under 480px.
-All panels are `.card` (`--panel` bg, `--r` 14px radius, 1px `--line` border, 18px padding).
+v9's Tech Pack documented a single scrolling page of fifteen sections. v11 kept that structure and
+changed only its colours, and the human rejected the result on sight. The palette was not the
+problem. **Fifteen things competing on one scroll is the problem**, and no palette fixes it.
 
-| # | Section | Arrangement | Feature(s) |
+The fix is architectural: one scroll becomes four screens, each holding two or three cards. The
+headline gets a screen rather than a slot.
+
+---
+
+## 1. Navigation
+
+**Four tabs, persistent, bottom-anchored.** Plus one settings surface reached from the header, not
+a tab, because it is visited rarely and a fifth tab would dilute the four that matter.
+
+| Tab | Answers | SCOPE features |
+|---|---|---|
+| **Now** | "How many more hours do I need, and what have I done?" | 5, 6 |
+| **Work** | "Who do I work for, at what rates, and what does an hour actually pay?" | 3 |
+| **Money** | "What do I owe, and where do my hours go?" | 4 |
+| **Weeks** | "Did last week's work cover what it was for?" | 7 |
+| _Settings (header)_ | Country, data export/import/reset, compliance text, version | 9 |
+
+Tab bar: `--surface` fill, `--r-card` radius, 8px vertical padding, four equal columns, 11px labels,
+active in `--accent` at weight 500, inactive in `--muted` at 400. **Labels, not icons alone** —
+four abstract icons would need learning, and this is used tired. Each tab target is at least
+44×44px. Bar sits above the safe-area inset, never overlapping content.
+
+**Only one tab's content is in the DOM at a time.** Not `display:none` on all four — a screen
+reader should not encounter three hidden screens. See States, below, for the switch behaviour.
+
+---
+
+## 2. Screens
+
+Shared: page `--bg`, content max-width 720px, page padding 16px (24px above 480px), card gap 12px,
+section gap 28px. Cards are `--surface`, `--r-card`, `--pad-card`, **no border in light mode**,
+1px `--line` in dark. Never more than three cards per screen.
+
+### Cold open — feature 2
+Full viewport, no tab bar. One line naming what the app answers. Two actions stacked: **Set up**
+(`--accent` fill, `--accent-ink` text, `--r-control`, full width) and **I have a backup file**
+(text-only, `--accent`, no fill). No hero image, no feature list, no numbers. A cold open showing
+fabricated figures is the seed-data problem in a different costume.
+
+### Onboarding — feature 2
+Full viewport, no tab bar, one question per screen. Five steps: country/currency → employers →
+outgoings → ceiling → goals. Top: step count, 13px `--muted`. Middle: the question, 20px/500, and
+its input. Bottom: progress meter (4px, `--surface-2` track, `--accent` fill) then **Continue**.
+Goals step carries **Skip** as text-only alongside Continue. Each step writes to storage on
+Continue, so a drop-out resumes.
+
+### Now — features 5, 6
+1. **Headline card.** Centred. Label 13px `--muted`; figure 52px/500, `-.03em`, `--text`; unit 15px
+   `--muted` **under** the figure, never beside it; meter; then one line of context. Nothing else on
+   this card. It is the reason the app exists and it gets the room.
+2. **This week card.** Two rows: shifts logged, earned so far. Label `--text-2` 14px left, value
+   `--text` 15px/500 right.
+3. **Log a shift** — `--accent` fill, full width. Below it, this week's shift rows.
+
+### Work — feature 3
+1. **Employer cards**, one per employer. Name 15px/500, then one row per rate (name left, value
+   right), then **Add rate** as text-only `--accent`. Typical hrs/wk and pension sit at the card
+   foot as a two-column pair.
+2. **Ceiling card.** Max days and max hours as a two-column pair, computed ceiling below.
+3. **Take-home card.** Gross/hr, deduction rows, net/hr emphasised in `--accent`. **The C7 string
+   sits here**, 12px `--muted`, only when the current week holds one or two shifts.
+
+### Money — feature 4
+1. **Outgoings card.** One row per item: label, category, amount, delete. Running total at the foot.
+   A dated item shows its date under the label in 12px `--muted`; a lump sum also shows its
+   per-week contribution. **Rows render in the user's stored order and are never re-sorted.**
+2. **Goals card.** One row per goal. Expired rows at 0.6 opacity with the existing pill.
+3. **Where your hours go.** Donut plus legend. Legend is a list, each entry a swatch, a label and a
+   figure. **Every slice carries its text label** — the category ramp is separated by lightness and
+   the labels are the actual guarantee, not the colours.
+
+### Weeks — feature 7
+1. **Bank this week** — button, `--accent`, disabled-looking but still pressable when no shifts
+   exist (per CDS restraint: respond on use rather than disabling).
+2. **Week rows**, newest first. Date, hours, net, then the frozen coverage bar and "reached N of M".
+   Legacy migrated rows show their stored label and no date sort.
+
+### Settings — feature 9
+Reached from a header control. Country/currency, export, import, reset, and the compliance block:
+tax disclaimer, not-debt-advice statement with a pointer to free regulated debt advice, version
+stamp (`appVersion`, `taxDataVersion`). Reset is the only destructive action and keeps its
+confirmation.
+
+---
+
+## 3. States
+
+Every component that can be in more than one. Anything absent here has exactly one state.
+
+| Component | Empty | Error | Normal |
 |---|---|---|---|
-|1| Header | Eyebrow + H1 + lede, left-aligned; toolbar row below (Export / Import / Reset, Reset pushed right via `margin-left:auto`); inline import-error slot beneath, collapsed by default | 5, 6 |
-|2| Country/currency picker | Full-width card, label + `<select>` left, conditional "Flat rate %" field right (only when country = "Flat % (custom)") | 1, 2 |
-|3| Two-column grid: **left stack** = Jobs, Working ceiling, Other income; **right stack** = Outgoings, Goals, Take-home summary | Each stack is `.stack` (14px gap) of full-width `.card`s, one column on mobile | see rows 4-9 |
-|4| Jobs panel | Header row (label + "+ Job" button) then one card per job: role field + trash icon on one row, rate/hrs/pension as a 3-col grid below | 2, 6 |
-|5| Working ceiling panel | 2-col grid (max days / max hrs) + computed ceiling line below | -- |
-|6| Other income panel | Single currency input | -- |
-|7| Outgoings panel | Header row + "+ Item" then one row per bill (label / category select / amount / trash), running total, category chips below | 6 |
-|8| Goals panel | Header row + "+ Goal" then one row per goal (label / amount / weeks / trash) in a 4-col grid | 4, 6 |
-|9| Take-home summary | Gross/hr row, deduction-breakdown list (bordered top+bottom), net/hr row emphasized (accent colour, larger size) | 1, 2, 3 |
-|10| Headline / feasibility panel | Full-width card, label, large `.hero-num` figure, two-pill breakdown (Baseline / Goals), one-line coloured verdict | 3 |
-|11| Hour-breakdown donut ("where every hour goes") | Full-width card, inline SVG donut + legend list side-by-side (stacks vertically, centered, under 480px) | 1, 2 |
-|12| Baseline + Goals, two-column | Left: 4 stat rows + emphasized hours/week row. Right: one row per goal with its hrs/wk contribution | 1-4 |
-|13| Reality bar | Full-width card, single stacked horizontal bar (baseline segment + goal segment) + legend/percentage line below | 3 |
-|14| Shift log | Header row ("This week's shifts" + New-week/+Shift buttons) → pace stats block → shift cards → banked-week history, all nested in one card | 4, 5, 6 |
-|15| Footer disclaimer | Centered small muted text, fixed copy | 1 |
+| Tab bar | — | — | One active tab; switching swaps DOM content, moves focus to the new screen's heading, and preserves scroll position per tab |
+| Headline | net ≤ 0, or no employer: "Add an employer and an hourly rate to see your numbers." No figure, no meter | Infinity/NaN prevented upstream, never rendered | Figure + meter + context line |
+| This week | Hidden entirely when no shifts logged | — | Two rows |
+| Shift list | "No shifts logged this week." | — | One row per shift |
+| Employer list | "Add an employer and an hourly rate to see your numbers." | — | One card per employer |
+| Rate list | An employer with zero rates shows "Add a rate" only | — | One row per rate |
+| Take-home | "No deductions" when none | — | Rows + emphasised net/hr |
+| C7 line | Hidden at 0 shifts and at 3+ | — | Visible at 1–2 shifts this week |
+| Outgoings | "Add what you pay each month to see hours needed." | — | Rows + total |
+| Goals | "No one-off goals." | — | Rows, expired distinguished |
+| Donut | gross ≤ 0: "Add an employer and an hourly rate to see the breakdown." | — | Donut + labelled legend |
+| Weeks | "No weeks banked yet." | — | Rows, newest first |
+| Import | Slot hidden | `--error` inline: invalid JSON / wrong shape / **blob from a newer version** | Silent success, re-render is the confirmation |
+| Update banner | Hidden | — | Inline, dismissible, "New version ready. Reload" |
 
-## 2. States
+**No loading states anywhere.** Storage is read synchronously and nothing fetches. Omitted
+deliberately rather than forgotten.
 
-This app has no async data fetching (localStorage only, read synchronously on load) -- **no
-component in this app has a genuine "loading" state**; that column is intentionally omitted below
-rather than invented. Every component below has real Empty and/or Error states beyond its happy
-path; anything not listed has exactly one visual state (e.g. Working ceiling, Other income).
+---
 
-| Component | Empty | Error | Normal/success |
-|---|---|---|---|
-| Import toolbar | inline slot hidden (`display:none`) | inline `--warn`-coloured text: "Couldn't read that file: it isn't valid JSON." / "That file doesn't look like a Shift Planner export. Nothing was changed." (feature 5) | slot stays hidden, no confirmation toast (a successful import is silent, re-render is the confirmation) |
-| Reset | -- | -- | native `confirm()` dialog gate (only non-inline confirmation pattern in the app -- flagged, see Assumed) |
-| Country picker | -- | -- | custom-rate field hidden unless country = "Flat %", else shown |
-| Jobs list | **gap**: zero jobs renders an empty grid with no message (no "add your first job" empty state exists) -- see Risky | -- | one card per job |
-| Outgoings list | **gap**: same as jobs -- zero bills renders nothing, no message | -- | one row per item + running total + category chips |
-| Goals list | "No one-off goals." centered muted text (feature 4 area, pre-existing) | -- | one row per goal; **expired sub-state**: row opacity 0.6 + "Expired" `.pill` (`--warn`-tinted bg/text), reusing existing pill primitive, feature 4 |
-| Take-home summary | "No deductions" muted text when `perHrComps` is empty | -- | deduction list + emphasized net/hr figure |
-| Headline panel | **net<=0**: neutral flat background, muted "Add a job with an hourly rate to see your numbers.", no hours/verdict shown at all (feature 3's empty-state fix) | (Infinity/NaN guarded, not a visible error state -- prevented from ever rendering, feature 3) | 3-tier verdict by hours/week: sustainable (teal/`--accent`), heavy (`--amber`), brutal/over-ceiling (`--warn`), each with matching card background tint |
-| Hour-breakdown donut | **gross<=0**: empty SVG, muted "Add a job with an hourly rate to see the breakdown." | -- | donut + legend, deduction slices first then category slices |
-| Baseline panel | **net<=0**: all four stat values show "—" | -- | 4 stat rows + emphasized hrs/week |
-| Goals panel (`goalRows`) | **net<=0**: "Add a job with an hourly rate to see goal hours." / **no goals**: "No goals, baseline is your whole number." | -- | one row per goal, hrs/wk contribution; expired rows show the same pill + 0.6 opacity + "0.0 h/wk" (feature 4) |
-| Reality bar | **net<=0**: "Nothing to check yet. Add a job with an hourly rate." | -- | stacked bar, headroom text (muted) vs over-ceiling text (`--warn`, bold) |
-| Shift log | "No shifts logged this week." centered muted text (feature 5: `alert()` removed, this pre-existing message is the answer) | -- | one card per shift, computed hrs + net pay per card |
-| Pace panel | hidden entirely when no shifts logged | -- | **net<=0 with shifts logged**: "Add a job with an hourly rate to see your pace." / normal: 3 stats + ahead (`--accent`) / short (`--warn`) verdict + coverage bar |
-| Week-history panel | renders nothing (no message) when `S.history` is empty | -- | one card per banked week, frozen coverage bar + legend + "reached N of M obligations" line |
+## 4. Forking decisions — flag, do not resolve here
 
-## 3. Forking decisions flagged (not resolved here)
+Per this seat's multi-prototype rule, these have more than one reasonable answer and should go
+through `noxus-design-prototypes` rather than being settled by one agent:
 
-Per this agent's own non-responsibilities: a design-translator seat existing pre-build would have
-flagged these as multi-prototype forks rather than letting the Builder settle them alone. Both were
-in fact settled solo (no seat existed) -- named here for the record, not re-opened:
+1. **Where the take-home summary lives.** Placed on Work because it derives from rates. It is also
+   defensible on Now, since "what does an hour pay" is part of "should I take this shift".
+2. **Whether the donut belongs on Money or Now.** Placed on Money as an explanation of obligations.
+   It is arguably the answer to "where do my hours go", which is a Now question.
+3. **Tab labels.** "Now / Work / Money / Weeks" is one naming. "This week / Jobs / Bills / History"
+   is plainer and longer. Copy call, routes through `shift-planner-copywriter`.
 
-1. **Expired-goal visual treatment** (feature 4). Landed as: 60%-opacity row + reused `.pill`
-   component in `--warn`. Reasonable, but genuinely one of several directions (strikethrough,
-   separate "expired" sub-list, a dedicated banner) -- ARCHITECTURE.md's own Decisions log item 6
-   already flags this as "closest existing pattern," not a forced reading of SCOPE. This is exactly
-   a `noxus-design-prototypes` candidate.
-2. **Delete-icon choice, trash vs. plain X** (feature 6). Landed as: trash icon (Lucide-sourced
-   inline SVG). A reasonable, narrow call, but still a style pick beyond SCOPE's literal wording
-   (ARCHITECTURE.md Assumed item 2) -- lower-stakes than #1, still a fork in principle.
+The four-tab split itself is **not** a fork: the human chose it on 2026-08-19 after seeing a
+rendered comparison.
 
-## 4. Gaps found relative to what a pre-build Tech Pack should have required
+---
 
-Two true empty states are missing from the shipped build and were never called out because no
-Tech Pack existed to name them as required deliverables: **Jobs list with zero jobs**, and
-**Outgoings list with zero items** both render silently blank rather than a message (contrast with
-Goals list and Shift log, which do have one). Neither maps to any of SCOPE v9's six features, so
-this is not a v9 defect to send back to the Builder -- it's a pre-existing v8-era gap this
-retroactive pass surfaces for a future version's scope, not something to act on now.
+## 5. What this document does not cover
+
+Data model, storage schema, migration, computation, service-worker strategy and file layout:
+`ARCHITECTURE.md`. Voice and string content: `COPY-DECK.md`. Token values: `DESIGN-TOKENS.md`.
 
 ---
 
 ## Handover
 
-**Done:** Reconstructed `TECH-PACK.md` at `/Users/noxus/Builds/Shift Planner/TECH-PACK.md`,
-retroactively, from frozen `SCOPE.md` v9, `ARCHITECTURE.md` (tokens §1, Pages table §2), and a full
-read of the shipped `index.html`. Covers all 15 scroll-order sections, states for every component
-that has more than one, SCOPE-feature mapping per section, two forking decisions flagged (expired-
-goal treatment, delete-icon choice) that should have gone through `noxus-design-prototypes` had this
-seat existed pre-build, and two pre-existing empty-state gaps (Jobs/Outgoings with zero rows) found
-while cataloguing states, out of v9's scope.
+**Done:** Replaced the v9 Tech Pack with a v11 layout spec built on the four-screen structure the human approved. Covers navigation, six screens, per-screen card composition sourced from the token doc's spacing and type scale, a full state table, SCOPE feature mapping per screen, and three flagged forking decisions. Archived the v9 Tech Pack. Wrote the SCOPE changelog entry recording the layout rebuild as the third post-freeze amendment, including a process note that the freeze is weakening.
 
-**Assumed:** (1) The Reset button's native `confirm()` dialog is the app's only non-inline
-confirmation pattern; documented as a state but not flagged as a defect since SCOPE v9's criteria
-only call out `alert()` for bad-import and no-shifts, not `confirm()` for destructive reset -- worth
-the human's awareness, not treated as in-scope. (2) "Loading" states are genuinely inapplicable
-(no async fetch anywhere) rather than an oversight on my part -- confirmed by reading `load()`
-(synchronous `localStorage.getItem` + `JSON.parse`) directly. (3) Read `index.html` as the
-ground truth for realized layout over ARCHITECTURE.md's prose where the two could be read slightly
-differently (e.g. exact grid column counts) -- ARCHITECTURE.md is data/behavior-focused and wasn't
-trying to be a layout spec, so no conflict, just a different lens.
+**Assumed:** (1) Settings belongs behind a header control rather than a fifth tab; a rarely-visited surface would dilute four tabs that matter. (2) Tab labels are text, not icons alone, because four abstract icons need learning and this is used tired. (3) Only the active tab's content is in the DOM, rather than all four hidden with CSS, so a screen reader does not walk three invisible screens. That is an accessibility call with a real implementation cost and it belongs to the Builder to confirm as feasible. (4) Scroll position is preserved per tab. (5) "Bank this week" stays pressable with no shifts and responds on use rather than being disabled.
 
-**Risky:** (1) Jobs-list and Outgoings-list zero-state gap: cosmetic today (a near-empty grid, not
-a crash), but if a future version's scope ever removes `DEFAULT`'s seed data (ARCHITECTURE.md
-Decisions log item 5, still open) a genuinely empty state becomes reachable on first load for every
-new user, not just an edge case -- worth surfacing before that decision is made, not after. (2)
-This document is written after the fact against a codebase that already reflects the "post-build"
-outcome; because there was no independent pre-build layout intent to check the shipped result
-against, this Tech Pack cannot by itself catch a mismatch between "what was designed" and "what
-shipped" the way it would on a forward project -- it can only document what shipped and flag gaps
-found along the way, which is a materially weaker guarantee than the seat's normal pre/post pairing
-provides.
+**Risky:** (1) **THIS SPEC HAS NEVER BEEN RENDERED.** The four-screen structure was approved from a single static mockup of two screens. Money and Weeks have not been drawn at all, and the card counts on them are a guess about density. (2) The tab bar adds a persistent element to a phone viewport that already loses room to browser chrome; on a small device the headline card plus tab bar may not leave the breathing room the whole rebuild exists to create. Untested. (3) Moving to tabs means the app can no longer be scanned in one scroll, which is a genuine loss for anyone who used it that way. The one real external user has never been asked. (4) Three forking decisions are flagged but the `noxus-design-prototypes` workflow has not been run, and the Builder session is the only one that can run it. (5) Onboarding's five full-viewport steps are specified but never drawn; step density is unverified.
 
-**Open:** (1) Whether the two flagged forking decisions (expired-goal treatment, delete-icon
-choice) are worth a retroactive multi-prototype pass now, or simply carried forward as documented
-precedent for v10 -- human's call. (2) Whether the Jobs/Outgoings zero-row gap should be added to
-v10's candidate list (alongside the items already in SCOPE v9's "NOT doing" section) or left as
-documented-but-unscheduled. (3) This retroactive Tech Pack has not been walked through with the
-human against the live build (that's the post-build role's job, gated on a SHIP-READY
-`QA-REPORT.md`, which does not yet exist for v9 in this workspace) -- no design sign-off has been
-sought or obtained here; this document is the pre-build half only.
+**Open:** (1) Run `noxus-design-prototypes` for the three forks in §4, or accept the placements as drafted and record that. (2) Tab labels need `shift-planner-copywriter`. (3) Money and Weeks need drawing before build, or built and then judged. (4) Post-build, this seat owes a live walkthrough and the human owes explicit sign-off; that gate is not satisfied by approving a mockup. (5) `SPEC-v11-TARGET.html` in `docs/design/` now describes a layout that no longer exists and should be archived.
 
-**Touched:** `/Users/noxus/Builds/Shift Planner/TECH-PACK.md` (created). Read-only inputs:
-`/Users/noxus/Builds/Shift Planner/SCOPE.md`, `/Users/noxus/Builds/Shift Planner/ARCHITECTURE.md`,
-`/Users/noxus/Builds/Shift Planner/index.html`. No code modified.
+**Touched:** `docs/design/TECH-PACK.md` (rewritten for v11), `docs/archive/v9/TECH-PACK.md` (moved), `SCOPE.md` (changelog, authorised). Read-only inputs: `SCOPE.md`, `DESIGN-TOKENS.md`, `COPY-DECK.md`, `ARCHITECTURE.md`. No code written.

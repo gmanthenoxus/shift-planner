@@ -56,15 +56,16 @@ docs/
   design/
     COPY-DECK.md                  voice, register, resolved copy decisions
     DESIGN-TOKENS.md              Guide (warm), contrast-verified
-    TECH-PACK.md                  v9 layout and states
-    SPEC-v11-TARGET.html          v11 design target, screen by screen
+    TECH-PACK.md                  v11 layout, states, four-screen structure
   archive/
     v9/
       QA-REPORT.md                v9 breaker report. Superseded when v11's is written
+      TECH-PACK.md                v9 layout, single-scroll. Superseded by the v11 rebuild
     superseded/
       LANDSCAPE.md                Jul 2026 scan, extended and replaced by COMPETITION-UK.md
       SCOPE-v10-CANDIDATE.md      frozen into SCOPE.md v10 on 18 Aug. Draft is dead
       SCOPE-v11-CANDIDATE.md      frozen into SCOPE.md v11 on 19 Aug. Draft is dead
+      SPEC-v11-TARGET.html        Engineer-token design target. Superseded by Guide + the rebuild
 ```
 
 ## Conventions

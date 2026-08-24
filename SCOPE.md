@@ -221,3 +221,16 @@ they were found while in the file rather than sought:
 
 None of this adds a feature. It corrects the app's colour and copy to the standards ARCHITECTURE.md
 and COPY-DECK.md already set, and closes a legal exposure that predates v11.
+
+**[2026-08-19] Layout rebuilt: one scroll becomes four screens.** The human opened the app and
+rejected it. Diagnosis: the palette was fine, the structure was not. v11 had repainted v8's layout
+rather than redesigning it, so fifteen sections still competed on a single scroll, which is the
+opposite of the spaciousness the Emma reference was pointing at. Remaining v11 features are built
+into the new structure rather than retrofitted onto the old one, because retrofitting costs more.
+Spec: `docs/design/TECH-PACK.md` (v11). The v9 Tech Pack is archived.
+
+**Process note, recorded rather than buried:** this is the THIRD amendment to a scope frozen on
+2026-08-19. Each was reasonable alone. Collectively the freeze is doing less work than it was
+meant to, and the Breaker will test against a target that moved three times after signing. Worth
+weighing before a fourth.
+

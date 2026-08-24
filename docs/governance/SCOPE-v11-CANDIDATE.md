@@ -209,7 +209,6 @@ default that is right.**
 
 ## Freeze
 
-NOT FROZEN. No build may begin against this file.
 
 `FROZEN: <date>` to be added by the human, in `SCOPE.md`.
 

@@ -7,13 +7,39 @@
 <style>
   .empty{color:var(--sub);font-size:13px;text-align:center;padding:10px 4px;line-height:1.5}
   :root{
-    --bg:#0b0e13; --panel:#12161f; --panel2:#1a1f2b; --line:#272e3c;
-    --ink:#eaeff6; --sub:#8392a6; --accent:#5eead4; --accent2:#2dd4bf;
-    --warn:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --violet:#a78bfa;
+    color-scheme:light;
+    /* Guide (warm) -- docs/design/DESIGN-TOKENS.md, verbatim via ARCHITECTURE.md §1.
+       Legacy variable NAMES are kept (--panel, --ink, --sub...) so ~100 call sites keep working;
+       only the values change. Renaming them is churn with no reader benefit. */
+    --bg:#F4F0E9; --panel:#FFFDFA; --panel2:#EDE7DD; --line:#E3DACE; --line-strong:#CFC3B2;
+    --ink:#2A241F; --sub:#6D6458;
+    --accent:#A84E29; --accent2:#8E4222; --accent-ink:#FFFDFA; --accent-soft:#F2E4DA;
+    /* Semantic split. --warn previously meant BOTH "over your ceiling" and "the import failed";
+       the token doc separates them, because a colour that says failure about a person's financial
+       position is the palette editorialising where the copy may not (decision 15).
+       --warn  = attention/ochre, facts about the user's position.
+       --error = rust, APP faults only. Never a financial position. */
+    --warn:#8A5B0E; --warn-soft:#F7EBD5;
+    --error:#93342A; --error-soft:#F7E3DF;
+    --amber:#8A5B0E; --covered:#47663F; --covered-soft:#E4EADF;
     --r:14px;
-    /* category colours */
-    --c-bills:#60a5fa; --c-save:#5eead4; --c-repay:#fbbf24; --c-spend:#a78bfa; --c-tax:#fb7185;
+    /* category colours: warm-leaning, separated by hue AND luminance so the donut survives a
+       colour-vision deficiency; every slice also carries a text label in the legend. */
+    --c-bills:#A84E29; --c-save:#47663F; --c-repay:#8A5B0E; --c-spend:#7D5A52; --c-tax:#6E665C;
   }
+  @media (prefers-color-scheme:dark){
+    :root{
+      color-scheme:dark;
+      --bg:#16120E; --panel:#211C17; --panel2:#2C251E; --line:#322A22; --line-strong:#443A2F;
+      --ink:#F4F0E9; --sub:#9B8F80;
+      --accent:#E2825A; --accent2:#C96A44; --accent-ink:#16120E; --accent-soft:#33231A;
+      --warn:#E0AC4E; --warn-soft:#302516;
+      --error:#E89184; --error-soft:#33201C;
+      --amber:#E0AC4E; --covered:#9DBE93; --covered-soft:#222A1E;
+      --c-bills:#E2825A; --c-save:#9DBE93; --c-repay:#E0AC4E; --c-spend:#C0A199; --c-tax:#B5ADA3;
+    }
+  }
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
   *{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;line-height:1.4}
@@ -32,7 +58,7 @@
   .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
   .btn:active{background:var(--panel2)}
   .btn:focus-visible,.x:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
-  .btn-go{background:var(--accent2);border-color:var(--accent2);color:#05201b}
+  .btn-go{background:var(--accent2);border-color:var(--accent2);color:var(--accent-ink)}
   .btn-sm{padding:7px 10px;font-size:12px}
   .x{background:none;border:none;color:var(--sub);cursor:pointer;padding:8px;line-height:1;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
   .row-between{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -70,9 +96,9 @@
       <button class="btn btn-sm" id="exportBtn" aria-label="Export data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
       <button class="btn btn-sm" id="importBtn" aria-label="Import data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg> Import</button>
       <input type="file" id="importFile" accept="application/json" style="display:none">
-      <button class="btn btn-sm" id="resetBtn" aria-label="Reset all data" style="margin-left:auto;color:var(--warn);border-color:#3a2630">Reset all</button>
+      <button class="btn btn-sm" id="resetBtn" aria-label="Reset all data" style="margin-left:auto;color:var(--error);border-color:var(--line-strong)">Reset all</button>
     </div>
-    <div id="importMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--warn)"></div>
+    <div id="importMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--error)"></div>
   </header>
 
   <!-- COUNTRY PICKER: first thing, sets currency for everything below -->
@@ -599,7 +625,7 @@ function calc(){
   // reality bar's, so `Infinity.toFixed(1)` rendered the literal string "Infinity".
   const hl=$("headline");
   if(m.net<=0){
-    hl.style.background="linear-gradient(135deg,#12161f,#12161f)";hl.style.borderColor="var(--line)";
+    hl.style.background="linear-gradient(135deg,var(--panel),var(--panel))";hl.style.borderColor="var(--line)";
     $("hl-total").style.color="var(--sub)";
     $("hl-total").innerHTML=`<span style="font-size:18px;font-weight:600">Add a job with an hourly rate to see your numbers.</span>`;
     $("hl-break").innerHTML="";$("hl-burn").innerHTML="";
@@ -607,8 +633,8 @@ function calc(){
     $("goalRows").innerHTML='<div style="color:var(--sub);font-size:13px;padding:4px">Add a job with an hourly rate to see goal hours.</div>';
     $("reality").innerHTML='<div style="color:var(--sub);font-size:13px">Nothing to check yet. Add a job with an hourly rate.</div>';
   }else{
-    hl.style.background=m.feasible?"linear-gradient(135deg,#0f2420,#12161f)":"linear-gradient(135deg,#241318,#12161f)";
-    hl.style.borderColor=m.feasible?"#1c6b5e":"#7a2f3a";
+    hl.style.background=m.feasible?"var(--covered-soft)":"var(--warn-soft)";
+    hl.style.borderColor=m.feasible?"var(--covered)":"var(--warn)";
     $("hl-total").style.color=m.feasible?"var(--accent)":"var(--warn)";
     $("hl-total").innerHTML=`${m.totalWk.toFixed(1)}<span style="font-size:20px;color:var(--sub);font-weight:600"> hrs/week · ${isFinite(m.dpw)?m.dpw.toFixed(1):"—"} days</span>`;
     $("hl-break").innerHTML=`
@@ -616,10 +642,17 @@ function calc(){
       <div class="row-between"><span class="pill" style="background:rgba(167,139,250,.14);color:var(--violet)">Goals (now)</span><span class="mono" style="font-size:15px">${m.goalHrsWkNow.toFixed(1)} hrs/wk</span></div>`;
 
     const burn=$("hl-burn");let msg,col;
-    if(m.totalWk>m.maxWeekly){msg=`Over your ${m.maxWeekly} hr ceiling: your life costs more hours than you've allowed yourself. Cut outgoings, extend goal deadlines, or lift the ceiling.`;col="var(--warn)";}
-    else if(m.totalWk>=55){msg=`${m.totalWk.toFixed(0)} hrs/week sustained is brutal on top of getting home at 1am.`;col="var(--warn)";}
-    else if(m.totalWk>=45){msg=`${m.totalWk.toFixed(0)} hrs/week is heavy but workable.`;col="var(--amber)";}
-    else{msg=`${m.totalWk.toFixed(0)} hrs/week is sustainable.`;col="var(--accent)";}
+    // COPY: shift-planner-copywriter, 2026-08-19. All four previous strings failed the deck.
+    // The over-ceiling one ("Cut outgoings, extend goal deadlines, or lift the ceiling") was a
+    // RULE 0 VIOLATION -- direct advice about what to do about a shortfall, which is a regulated
+    // activity under art. 39E RAO. The others carried judgements about the user's life
+    // ("brutal", "heavy but workable", "sustainable"; COPY-DECK C4). Replaced with the same fact
+    // in both branches: hours against the ceiling THEY set. Colour still tiers; words do not.
+    const _hrs=m.totalWk.toFixed(0),_gap=Math.abs(m.totalWk-m.maxWeekly).toFixed(0);
+    if(m.totalWk>m.maxWeekly){msg=`${_hrs} hrs/week. That is ${_gap} hrs more than the ${m.maxWeekly} hr ceiling you set.`;col="var(--warn)";}
+    else if(m.totalWk>=55){msg=`${_hrs} hrs/week. That leaves ${_gap} hrs of the ${m.maxWeekly} hr ceiling you set.`;col="var(--warn)";}
+    else if(m.totalWk>=45){msg=`${_hrs} hrs/week. That leaves ${_gap} hrs of the ${m.maxWeekly} hr ceiling you set.`;col="var(--amber)";}
+    else{msg=`${_hrs} hrs/week. That leaves ${_gap} hrs of the ${m.maxWeekly} hr ceiling you set.`;col="var(--accent)";}
     burn.innerHTML=`<span style="color:${col};font-size:13px;font-weight:600">${col==="var(--accent)"?"✓":"⚠"} ${msg}</span>`;
 
     // baseline detail

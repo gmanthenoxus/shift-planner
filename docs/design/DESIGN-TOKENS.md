@@ -61,7 +61,7 @@ Every pair below is measured, not estimated. See "Verified contrast".
   /* ink */
   --text:        #2A241F;   /* primary */
   --text-2:      #5E5449;   /* secondary, row labels */
-  --muted:       #736A5E;   /* hints, "not reached", timestamps. Darkened from #7D7367,
+  --muted:       #6D6458;   /* hints, "not reached", timestamps. Darkened from #7D7367,
                                which failed AA at 4.09:1 against --bg. See "Verified contrast" */
 
   /* lines — used sparingly. Guide separates with space, not rules */
@@ -80,6 +80,15 @@ Every pair below is measured, not estimated. See "Verified contrast".
   --attention-soft:#F7EBD5;
   --error:       #93342A;   /* rust. App faults only */
   --error-soft:  #F7E3DF;
+
+  /* spend categories. Warm-leaning, separated by hue AND luminance so the donut survives a
+     colour-vision deficiency. Every slice also carries a text label in the legend, because
+     colour is never the only channel. Tax is neutral grey on purpose: it is not a choice. */
+  --c-bills:  #A84E29;
+  --c-save:   #47663F;
+  --c-repay:  #8A5B0E;
+  --c-spend:  #7D5A52;
+  --c-tax:    #6E665C;
 
   /* shape */
   --r-card:      16px;
@@ -205,9 +214,17 @@ Measured with the WCAG 2.1 relative-luminance formula, not estimated. AA needs 4
 | `--error` on `--surface` | 7.5:1 | 7.1:1 | 4.5 |
 | `--line-strong` on `--surface` | 1.7:1 | 1.5:1 | decorative only |
 
-Every pair passes AA at 4.5:1 in both modes. One value was changed to get there: `--muted` was
-`#7D7367`, which measured 4.09:1 against `--bg` and failed. It is now `#736A5E`. This is the
-concrete case of "contrast beats warmth" — the token got darker, the hue stayed warm.
+**Swept 2026-08-19 when the palette was applied to the app: every foreground against every surface,
+both modes, not just the documented pairs. All pass.** Three values were changed to get there:
+
+- `--muted` was `#7D7367` (4.09:1 on `--bg`), then `#736A5E` (4.32:1 on `--surface-2`). Now `#6D6458`.
+- `--c-tax` was `#8C8378`, measuring 3.67:1 on `--surface`. Now `#6E665C`.
+
+The second `--muted` failure is the instructive one. The first table verified `--muted` against
+`--surface` and `--bg` but **not against `--surface-2`**, which is the inset background every
+employer and shift card uses, paired with `--muted` labels. Verifying documented pairs is not the
+same as verifying composed ones, and the gap only surfaced when real markup put the two together.
+Any new surface or foreground token means re-running the full sweep, not adding one row.
 
 `--line` and `--line-strong` do not meet 3:1 and **must never be the only means of conveying a
 boundary or a state.** They are decoration. Structure is carried by fill and space.

@@ -94,10 +94,11 @@ correct, not by being likeable.
 | C1 | Footer disclaimer reads "Nothing leaves your browser, ever." | 6 Jul 2026 | Alternate chosen over main on tone. It is the trust proposition, stated flatly |
 | C2 | Em-dashes removed throughout, replaced by comma/colon/period per context | 6 Jul 2026 | Hard rule violation found in a retroactive full copy pass |
 | C3 | Empty states read as one family: "Add a job with an hourly rate to see..." | 6 Jul 2026 | Consistency across v9's new empty states |
-| C4 | The three-tier verdict must stop using "brutal" | 19 Aug 2026 | It is a judgement about the user's life, made by a tool that knows their bills and nothing else. Replace with facts about the ceiling. **Live rewrite target, not yet applied** |
+| C4 | The three-tier verdict must stop using "brutal" | 19 Aug 2026 | It is a judgement about the user's life, made by a tool that knows their bills and nothing else. Replace with facts about the ceiling. **APPLIED 19 Aug 2026** |
 | C5 | "Credit commitment", never "debt" | 19 Aug 2026 | Neutral, and matches the v11 data model |
 | C6 | "Not reached", never "missed" or "failed" | 19 Aug 2026 | Both alternatives assign fault to the user |
 | C7 | Moving blended rate is explained, not hidden. String: **"Based on {n} shift logged this week. It moves as more are logged."** Shown beside net/hr only when 1-2 shifts exist in the current week | 19 Aug 2026 | The rate switches from declared typical hours to actual shifts once the week's first shift is logged, so the number visibly changes without the user changing anything. A silent recalculation on a financial figure reads as a bug or a lie. Pluralise "shift" at n=2 |
+| C8 | Headline verdict is hours against the ceiling the user set, in both branches. Over: "{n} hrs/week. That is {gap} hrs more than the {max} hr ceiling you set." Within: "{n} hrs/week. That leaves {gap} hrs of the {max} hr ceiling you set." Colour still tiers across three bands; the words do not | 19 Aug 2026 | The four previous strings all failed. "Cut outgoings, extend goal deadlines, or lift the ceiling" was a RULE 0 VIOLATION shipping in production, and "brutal" / "heavy but workable" / "sustainable" were judgements about a life the app knows nothing about. **Alternate considered and rejected:** three distinct factual strings per band, which read as the app grading the bands anyway. Naming the ceiling as one the user set is load-bearing, it keeps the number theirs |
 
 ## 5. Word swaps
 

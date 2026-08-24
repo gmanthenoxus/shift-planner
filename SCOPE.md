@@ -1,4 +1,4 @@
-# SCOPE CANDIDATE: Shift Planner v11 — the model rebuild
+# SCOPE: 
 
 Date: 2026-08-19
 

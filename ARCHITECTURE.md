@@ -1,401 +1,296 @@
-# ARCHITECTURE: Shift Planner
+# ARCHITECTURE: Shift Planner v11
 
-<!-- RETROACTIVE, ORIGINALLY. Shift Planner v8 already shipped and was live at
-     gmanthenoxus.github.io/shift-planner before this document existed. The base document was not
-     a forward design — it documented the real, existing shape of the app, extracted directly from
-     index.html, so the Build Org's governance could wrap around a working product.
+Architect pass, 2026-08-19, against `SCOPE.md` v11 (FROZEN 2026-08-19, 10 features) and
+`docs/design/DESIGN-TOKENS.md` (Guide, warm).
 
-     REVISED FOR v9 (2026-07-06). SCOPE.md v9 froze six fix-only features (tax corrections,
-     tax-basis change, Infinity/empty-state fix, goal auto-expiry, import hardening, a11y/touch
-     fixes) against TAX-ACCURACY-AUDIT.md and the human's own resolutions of the two forks v8's
-     scoping had left open (tax-rate basis, goal-expiry behavior). This revision updates the
-     sections those six features touch and resolves the two decisions-log entries v9 settles.
-     Everything else below is unchanged from the shipped v8 structure — v9 adds no pages, no
-     components, and no new files; it corrects behavior inside what already exists. Where a v9 call
-     isn't forced by SCOPE's wording, it's flagged below and in the Handover for the human to
-     confirm before the Builder proceeds, same discipline as the original document. -->
+<!-- Read-only to everyone except the architect at the next retro. Builder and Breaker consume it.
+     If either thinks it is wrong, they say so and STOP — they do not edit it.
+     Supersedes the v8/v9 version of this document, preserved in git history at 3b1a9bf. -->
 
-## 1. Design tokens (verbatim, extracted from index.html `:root`)
+---
 
-No separate design-token doc exists for this project (it predates the noxus-design-system
-skill). These are the actual custom properties in the shipped file, copied as-is. Unchanged by
-v9 — no visual redesign in scope.
+## 1. Design tokens — verbatim
+
+Copied in full from `docs/design/DESIGN-TOKENS.md` so the Builder never opens a second file.
+Every pair is contrast-verified at 4.5:1 or better in both modes. `--muted` was darkened from
+`#7D7367` to `#736A5E` because the original measured 4.09:1 against `--bg` and failed AA.
 
 ```css
-:root{
-  --bg:#0b0e13; --panel:#12161f; --panel2:#1a1f2b; --line:#272e3c;
-  --ink:#eaeff6; --sub:#8392a6; --accent:#5eead4; --accent2:#2dd4bf;
-  --warn:#fb7185; --amber:#fbbf24; --blue:#60a5fa; --violet:#a78bfa;
-  --r:14px;
-  /* category colours */
-  --c-bills:#60a5fa; --c-save:#5eead4; --c-repay:#fbbf24; --c-spend:#a78bfa; --c-tax:#fb7185;
+:root {
+  color-scheme: light;
+  --bg:#F4F0E9; --surface:#FFFDFA; --surface-2:#EDE7DD;
+  --text:#2A241F; --text-2:#5E5449; --muted:#736A5E;
+  --line:#E3DACE; --line-strong:#CFC3B2;
+  --accent:#A84E29; --accent-ink:#FFFDFA; --accent-soft:#F2E4DA;
+  --covered:#47663F; --covered-soft:#E4EADF;
+  --attention:#8A5B0E; --attention-soft:#F7EBD5;
+  --error:#93342A; --error-soft:#F7E3DF;
+  --r-card:16px; --r-control:14px; --r-pill:999px;
+  --s-1:4px; --s-2:8px; --s-3:12px; --s-4:16px;
+  --s-5:20px; --s-6:28px; --s-7:40px; --s-8:56px;
+  --pad-card:20px; --gap-card:12px; --gap-section:28px;
+  --dur:200ms; --ease:cubic-bezier(.2,.6,.3,1);
 }
+@media (prefers-color-scheme:dark){ :root:where(:not([data-theme="light"])){
+  color-scheme:dark;
+  --bg:#16120E; --surface:#211C17; --surface-2:#2C251E;
+  --text:#F4F0E9; --text-2:#C9BDAD; --muted:#9B8F80;
+  --line:#322A22; --line-strong:#443A2F;
+  --accent:#E2825A; --accent-ink:#16120E; --accent-soft:#33231A;
+  --covered:#9DBE93; --covered-soft:#222A1E;
+  --attention:#E0AC4E; --attention-soft:#302516;
+  --error:#E89184; --error-soft:#33201C;
+}}
+@media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 ```
 
-Type: `Inter, system-ui, -apple-system, sans-serif` for UI text; `ui-monospace, 'SF Mono', Menlo,
-monospace` (class `.mono`, `font-variant-numeric: tabular-nums`) for every numeric/data value
-(money, hours, rates). Border radius `14px` (`--r`, used on `.card`), `10px` on inputs/stats.
-Category-to-colour mapping: bills → blue, savings → teal (`--accent`), repayments → amber,
-spending → violet, tax/deductions → red (`--warn`). This reads closest to the noxus-design-system's
-"Engineer" archetype (function-first, data-dense, professional dark UI) — noted for reference only;
-not re-derived, not up for re-decision here.
+Type: system stack, weights 400/500 only. 44px headline · 20px section · 15px body · 13px label ·
+**12px hard floor.** Cards: `--surface` fill, `--r-card`, `--pad-card`, **no border in light mode**,
+`1px solid var(--line)` in dark. Icons: Lucide, 1.75px stroke, 20px inline, 44×44px tap target.
+Max content width 720px.
 
-**v9 addition to the token vocabulary (reused, not new):** the existing `--warn` (errors,
-over-ceiling states) and the existing `.pill` component pattern (small rounded label chips, already
-used for the Baseline/Goals headline pills) are the two visual primitives v9's new states borrow —
-the expired-goal indicator and the bad-import message both reuse these rather than introducing new
-colours or components. See Decisions log items 6 and 7.
+**Colour rule that binds the Builder:** covered = `--covered`, shortfall = `--attention`,
+not-reached = **no colour, `--muted` text only**, `--error` = app faults exclusively and never a
+user's financial position. See decision 14.
 
-## 2. Pages
+---
 
-One page. `index.html` is the entire app — a single scrolling document, no routing, no separate
-screens. v9 adds no sections and removes none; it's a fix-only version (confirmed by SCOPE's own
-NOT-doing list), so every row below is pre-existing structure. The right column now shows which
-v9 feature (if any) changes that section's behavior — a blank means v9 doesn't touch it.
+## 2. Storage: schema v6
 
-| Section (scroll order) | v9 feature(s) touched |
-|---|---|
-| Header + toolbar (export/import/reset) | 5 (import validation + inline error), 6 (export/import icon + aria-label) |
-| Country/currency picker | 1 (corrected per-country brackets), 2 (annualizing basis) |
-| Jobs panel | 2 (typical-hours basis), 6 (role field label, delete-icon a11y) |
-| Working ceiling panel | — (still the feasibility ceiling; explicitly *not* the tax-basis input as of v9 — see feature 2) |
-| Other income | — |
-| Monthly outgoings | 6 (delete-icon a11y) |
-| One-off goals | 4 (auto-expiry), 6 (delete-icon a11y) |
-| Take-home summary (gross/deductions/net per hour) | 1, 2, 3 (empty state when net/hr is 0) |
-| Headline / feasibility verdict | 3 (Infinity/NaN guard + empty state) |
-| Hour-breakdown donut ("where every hour goes") | 1, 2 (feeds off corrected `perHrComps`) |
-| Baseline panel | 3 (Infinity display guard) |
-| Goals panel | 4 (expired goals shown, not silently zeroed) |
-| Reality bar | 3 (Infinity/NaN guard) |
-| Shift log + pace panel | 5 (no-shifts message becomes a no-op, not `alert()`), 6 (icon buttons, touch targets, focus states) |
-| Week-history panel | — |
+### Key and read order
 
-## 3. Components
+New key `shiftPlanner.v6`. On load: read v6 → if absent read v5 and migrate → if absent, **empty
+state, no seed data** (SCOPE feature 2, D2).
 
-Real functional blocks as they exist in the code (function names in parens where the code names
-them). One line each: what it renders, what data it reads. Lines marked **[v9]** describe the
-post-fix behavior; everything else is unchanged from v8.
+**The v5 blob is not deleted after migration.** Why: it is the only rollback path if v6 has a bug
+that reaches a real user, and it costs a few KB. Delete it in v12 once v11 has survived contact.
 
-- **Header toolbar** — export/import/reset buttons; reads/writes the whole `S` object. **[v9]**
-  Export/Import buttons keep their visible text label but the arrow glyph becomes a real SVG icon
-  (see Decisions log item 9); both get an explicit `aria-label` regardless of the visible text
-  (SCOPE's literal criterion). A new inline message element sits under the toolbar, shown only when
-  an import is rejected (see import-hardening notes on the Header toolbar and Decisions log item
-  6).
-- **Country/currency picker** — `<select>` of 9 countries + "Flat % (custom)"; toggles the custom
-  rate input; reads/writes `S.settings.country`, `S.settings.customRate`. **[v9]** Feeds corrected
-  per-country brackets (feature 1) and the new typical-hours annualizing basis (feature 2); no
-  structural change to the component itself.
-- **Job list** (`renderJobs`) — one card per job: label, rate/hr, typical hrs/wk, pension %, delete;
-  reads/writes `S.jobs[]`. **[v9]** The "Role" (label) field gets a visible `<label class="label">`
-  matching its siblings (currently only a placeholder, no label — the a11y gap feature 6 calls
-  out). Delete button becomes a real SVG icon with `aria-label="Delete job"` (job-specific, not a
-  generic "Delete"), sized to at least 44×44px.
-- **Working ceiling panel** — max days/week, max hours/day inputs, computed ceiling display; reads
-  `S.settings.maxDays`, `S.settings.hoursPerDay`. Unchanged — still the feasibility ceiling used by
-  the reality bar/headline, unrelated to the tax-rate annualizing basis after feature 2 (see
-  Decisions log item 4).
-- **Other income input** — single currency field; reads/writes `S.settings.otherMo`. Unchanged.
-- **Monthly outgoings list** (`renderBills`) — one row per item (label, category select, amount,
-  delete), running total, per-category chip totals; reads/writes `S.bills[]`. **[v9]** Delete
-  button becomes a real SVG icon with `aria-label="Delete outgoing"`, sized to at least 44×44px.
-- **One-off goals list** (`renderGoals`) — one row per goal (label, amount, weeks, delete); reads/
-  writes `S.goals[]`. **[v9]** Goal objects gain an `addedAt` field (see section 4's state shape).
-  An expired goal (elapsed weeks since `addedAt` ≥ its `weeks`) renders with a muted/greyed row
-  style plus an "Expired" `.pill` (reusing the existing pill component, `--warn`-coloured) instead
-  of its normal appearance — it is not removed from the list, stays editable and deletable, exactly
-  per SCOPE's criterion. Delete button becomes a real SVG icon with `aria-label="Delete goal"`,
-  sized to at least 44×44px.
-- **Take-home summary** — blended gross/hr, per-hour deduction breakdown list, net take-home/hr;
-  reads the computed `model()` output. **[v9]** Reflects corrected brackets (feature 1) and the
-  typical-hours annualizing basis (feature 2); when net/hr is 0 (no job with both a rate and hours
-  entered), this panel and the headline/reality-bar area show the feature-3 empty state instead of
-  a broken number.
-- **Headline/feasibility panel** — hero number (total hrs/week + days/week), baseline-vs-goals
-  pills, colour-coded verdict text (sustainable/heavy/brutal/over-ceiling); reads `model()`. **[v9]**
-  No path in `model()`'s hour math may render the literal strings "Infinity" or "NaN" — every
-  divide-by-zero case (net = 0, maxWeekly = 0, hpd = 0) must resolve to the existing empty-state
-  message, not a raw computed value.
-- **Hour-breakdown donut** (`renderClock`) — inline SVG donut + legend; slices one hour of gross
-  pay into deduction components then spend categories by proportional monthly share; reads
-  `model().perHrComps` and `S.bills` category totals. Already guards `gross<=0` with an empty
-  state; unchanged structurally, benefits from corrected upstream numbers.
-- **Baseline panel** — net/gross/hours needed per month and per week; reads `model()`. **[v9]** Same
-  Infinity/NaN guard as the headline panel.
-- **Goals panel** (`goalRows`) — one row per goal with its extra hrs/week; reads
-  `model().goalCalc`. **[v9]** An expired goal's row shows the same "Expired" pill treatment as the
-  goals list and its hours contribution reads as `0` (or "—"), not a stale computed figure, since
-  expired goals no longer feed `goalHrsWkNow`.
-- **Reality bar** — stacked bar (baseline hours + goal hours vs ceiling) with headroom/over text;
-  reads `model()`. **[v9]** Same Infinity/NaN guard.
-- **Shift log** (`renderShifts`) — one card per logged shift (job select, start, end, break
-  minutes, computed hours + net pay, delete), "+ Shift" and "New week" buttons; reads/writes
-  `S.shifts[]`, reads `S.jobs` for rate lookup. **[v9]** Delete button becomes a real SVG icon with
-  `aria-label="Delete shift"`, sized to at least 44×44px. The "New week" button's `alert()` on zero
-  shifts is removed outright, not replaced with a new message — this component already renders "No
-  shifts logged this week." inline whenever `S.shifts` is empty, so the click becomes a no-op and
-  the pre-existing empty state is the message (see Decisions log item 6). Its own icon (↻) becomes
-  a real SVG with `aria-label="Bank this week and start a new one"`.
-- **Pace panel** — earned-this-week / needed-this-week / hours-worked stats, ahead/short verdict,
-  this-week's coverage waterfall bar + legend; computed live from `S.shifts` and `model()`. **[v9]**
-  Expired goals drop out of the coverage waterfall's items too (an expired goal isn't "running," so
-  it shouldn't still claim weekly coverage priority — see `weekCoverage()` note in section 4).
-- **Week-history panel** (`renderHistory`) — last 6 banked weeks, each with its own stored coverage
-  bar and legend; reads `S.history[]` (each entry carries a frozen `coverage` snapshot taken at
-  bank time, per the "history is read-only" NOT-doing item in SCOPE). Unchanged.
+### Shape
 
-## 4. File layout
-
-Literal, current, root of the `shift-planner` repo. Unchanged by v9 — no new files, no build step
-introduced:
-
-```
-Shift Planner/
-├── index.html               # entire app: HTML + <style> (all CSS) + <script> (all JS), one file
-├── README.md                # user-facing description, live-demo link, quick start
-├── SCOPE.md                 # frozen scope (v9)
-├── TAX-ACCURACY-AUDIT.md     # source of truth for feature 1's corrected per-country figures
-└── ARCHITECTURE.md           # this file
-```
-
-Stack: HTML/CSS/vanilla JS (no React, no framework — the approved stack's HTML/CSS/React option is
-available but this predates that default and the app has no state complexity that would benefit
-from it), localStorage-first persistence, GitHub Pages deployment (static file served directly
-from the repo root — no `.github/workflows` build step exists or is needed, since there is nothing
-to build). Why no build step: at ~500 lines total, a bundler or component framework would add
-tooling weight the project doesn't need; a static file GitHub Pages serves as-is is the boring,
-correct answer here. **This constraint is directly in tension with feature 6's icon-library
-requirement — see Decisions log item 9, an open question the human needs to confirm before the
-Builder starts on that feature.**
-
-**State model.** A single mutable object `S` holds all app state, re-rendered wholesale by
-`calc()` after every mutation, and persisted to `localStorage` under the key `"shiftPlanner.v5"` on
-every `calc()` call (not debounced, no explicit save button — matches SCOPE's "persists
-automatically"). **v9 does not bump this key** — see Decisions log item 10.
-
-`S` shape (seeded from `DEFAULT` on first load or corrupt storage). **v9 change: goals gain an
-`addedAt` field**, marked below:
 ```
 {
-  jobMode: "x",
-  jobs:     [{ id, label, wage, hours, pension }],
-  bills:    [{ id, label, amount, cat }],   // cat ∈ bills|save|repay|spend
-  goals:    [{ id, label, amount, weeks, addedAt }],   // [v9] addedAt: epoch ms, set at creation
-  shifts:   [{ id, jobId, start, end, brk }],
-  history:  [{ date, hours, net, coverage }], // coverage snapshot frozen at "New week" time
-  settings: { country, customRate, maxDays, hoursPerDay, otherMo }
+  schema: 6,
+  employers: [{ id, name, pension,                    // pension % is per employer, not per rate
+                rates: [{ id, name, value }],
+                typicalHours }],                      // fallback basis, see §3
+  outgoings: [{ id, label, amount, cat,
+                credit: bool,                         // SCOPE f4, D-v10-6
+                dated: null | {
+                  kind: "lump" | "rateChange",        // D11. Explicit, never inferred
+                  date: "YYYY-MM-DD",
+                  newAmount                           // rateChange only
+                } }],
+  goals:    [{ id, label, amount, weeks, addedAt }],   // unchanged from v5
+  shifts:   [{ id, date: "YYYY-MM-DD",                 // NEW — v5 shifts had no date at all
+                employerId, employerName,              // name snapshotted, D8 + default 4
+                rateId, rateName, rateValue,           // snapshotted at log time, D8
+                start, end, brk }],
+  history:  [{ id, weekStartISO,                       // NEW — v5 stored a locale display string
+                hours, net, coverage[] }],
+  settings: { country, customRate, maxDays, hoursPerDay, otherMo,
+              protectedBlocks: [] },                   // RESERVED, v12. See decision 12
+  meta:     { firstRunISO, appVersion, taxDataVersion }
 }
 ```
-`load()` wraps `localStorage.getItem` + `JSON.parse` in try/catch and falls back to a deep clone of
-`DEFAULT` on any read/parse failure — malformed storage degrades to seed data rather than crashing.
-**[v9]** After `load()` (and after a successful import), any goal missing `addedAt` is backfilled
-with the current time, treating pre-v9 data (or a v9 export from before this field existed) as
-"just added" rather than instantly expired — see Decisions log item 10.
 
-**Goal expiry computation [v9, feature 4].** No new library, just arithmetic against the new field:
-elapsed weeks since a goal was added = (current time − `addedAt`) ÷ (one week in milliseconds). A
-goal is expired once its elapsed weeks is greater than or equal to its stored `weeks` value.
-Expired goals: (a) contribute zero to `goalHrsWkNow` (the total extra hours goals add on top of
-baseline) rather than their normal `hrsWk` figure, and (b) are excluded from `weekCoverage()`'s
-waterfall items (an expired goal isn't "running," so it shouldn't still claim a weekly coverage
-slot in the pace panel or a banked week's history) — but the goal object itself stays in
-`S.goals[]` untouched until the user deletes it.
+### Migration v5 → v6, field by field
 
-**Tax-rate annualizing basis [v9, feature 2].** Two existing computations inside `model()` move
-from the working-ceiling basis to the typical-hours basis, and must move together to stay
-internally consistent:
-- The `annual` gross figure (currently `blended × maxWeekly × 52`, where `maxWeekly` is the working
-  ceiling `maxDays × hoursPerDay`) is recomputed as `blended × totH × 52`, where `totH` is the sum
-  of every job's entered "typical hrs/wk" — a value `model()` already computes earlier for the
-  blended-rate calculation, so no new input or field is needed.
-- The `annualHours` divisor (currently `maxWeekly × 52`, used to convert each country's computed
-  annual deduction back into a per-hour figure for the deduction-breakdown and hour-clock displays)
-  must move to the same basis (`totH × 52`). If only the first line moved, the resulting tax total
-  would be computed against typical-hours income but then divided back out over ceiling hours,
-  producing a self-contradictory per-hour breakdown — this is a two-line change, not a one-line
-  change, precisely because both figures have to share one basis.
-- `maxWeekly` keeps its separate, unrelated role everywhere else (working-ceiling display, the
-  reality bar's headroom/over-ceiling math, the headline's feasibility verdict) — those are
-  unaffected by this change and stay ceiling-based, since they're answering a different question
-  ("how many hours could this person work") than the tax basis is ("what income are they actually
-  being taxed on").
-- Net effect: net/hr for countries with progressive brackets changes whenever a person's summed
-  typical hours differ from their working ceiling — which is the common case, and is SCOPE's
-  explicit, confirmed intent (feature 2's criteria), not a side effect to guard against.
+| v5 | v6 | Rule |
+|---|---|---|
+| `jobs[]` | `employers[]` | Each job becomes an employer with exactly **one** rate, `name` = the old `label`, `value` = old `wage`. `pension` and `typicalHours` carry across from `hours`. |
+| `bills[]` | `outgoings[]` | 1:1. `credit:false`, `dated:null` added. |
+| `goals[]` | `goals[]` | Unchanged. Existing `addedAt` backfill logic is preserved. |
+| `shifts[]` | `shifts[]` | **The hard case.** v5 shifts carry only `{jobId,start,end,brk}` — no date, no rate snapshot. Migration sets `date` = the Monday of the current week, and snapshots `employerName`/`rateName`/`rateValue` from the job the `jobId` points at, at migration time. |
+| `history[]` | `history[]` | `date` was a locale display string (`"3 Aug"`) and is **not parseable**. Keep it as a display label; set `weekStartISO: null` for migrated rows and treat null as "legacy, do not date-sort". |
+| `settings` | `settings` | 1:1 plus `protectedBlocks: []`. |
 
-**Import validation [v9, feature 5].** "Expected shape" means a concrete, cheap top-level check
-before any assignment to `S`: the parsed result must be a non-null object, and `jobs`, `bills`,
-`goals`, `shifts`, `history` must each be present and be Arrays; `settings` must be present and be
-a plain object. (Per-item/per-field validation inside each array is not added — SCOPE's wording
-asks for shape rejection, not statutory-level validation, and every existing reader already coerces
-individual fields defensively, e.g. `+j.wage||0`; the actual crash risk was always the top-level
-shape, since `renderJobs`/`renderBills`/etc. call `.forEach` directly on these fields and would
-throw immediately if one were missing or the wrong type.) On any check failing: the import is
-rejected outright, `S` is left completely untouched (no partial merge), and an inline message
-communicates this — reusing the app's existing muted/centered small-text empty-state visual
-pattern (see Decisions log item 6 for exactly where that message lives).
+**Why the shift-date guess is acceptable:** v5 shifts are by definition the *current, unbanked*
+week — `newWeek` empties the array — so "this week's Monday" is correct for every shift that can
+exist in a v5 blob. Stated so the Breaker tests it rather than assuming it.
 
-## 5. Decisions log
+**Why history dates cannot be recovered:** `"3 Aug"` has no year and no locale guarantee. Parsing
+it would invent data. Legacy rows keep their label and opt out of date logic. This is a real,
+permanent scar from v5 and it is better than a silent wrong date in a financial record.
 
-Every call embedded in the shipped code (or newly made for v9) that wasn't forced by SCOPE.md or
-the approved stack. Items 1, 2, 3, 5, 8 are unchanged from v8. Items 4, 6, 7 were flagged open in
-the v8 version of this document and are now resolved by SCOPE v9 — entries rewritten below to
-record the resolution, not left as open flags. Items 9 and 10 are new for v9.
+### Defensive read
 
-1. **Single HTML file, no build step, no framework.** Why: ~500 lines total; a bundler/framework
-   adds ceremony disproportionate to the app's size and change frequency. Reasonable at this
-   scale; would need revisiting only if the app grows substantially. **v9 note:** this decision is
-   now in direct tension with feature 6's icon-library requirement — see item 9.
-2. **`localStorage` key `"shiftPlanner.v5"` is versioned independently of the product's feature
-   version (currently v9).** Why: the trailing number tracks *storage schema* compatibility, not
-   shipped features — bump it only when the stored shape changes in a way old data can't survive,
-   not on every release. Four feature versions (v6/7/8/9) have now shipped on top of the same
-   schema version (v5) without a key bump; v9's `addedAt` addition keeps that streak because it's
-   designed to be backfill-safe (see item 10) rather than requiring a hard migration.
-3. **Tax brackets/rates for all 9 countries are hardcoded as inline JS closures inside the
-   `COUNTRIES` object**, not in a separate data file. Why: no build step means no separate
-   data-import mechanism; keeping them inline preserves the single-file property. Tradeoff:
-   updating a bracket means editing code directly — a real, disclosed maintenance cost (the
-   footer already tells users these are "simplified effective-rate estimates"). **v9 note:** this
-   is exactly the pattern feature 1's corrections apply against (edit the inline figures to match
-   `TAX-ACCURACY-AUDIT.md`) and the pattern item 9 recommends reusing for icon markup.
-4. **RESOLVED in v9 (feature 2). Tax-rate annualizing basis changes from the working ceiling to
-   summed typical hours.** v8's version of this entry flagged the ceiling-based basis
-   (`maxDays × hoursPerDay × 52`) as an unconfirmed modeling choice needing human sign-off. SCOPE
-   v9 explicitly settles it: the basis is now each job's own entered "typical hrs/wk," summed
-   across jobs (`totH`) — not the working ceiling. See section 4's "Tax-rate annualizing basis"
-   note for exactly which two computations in `model()` move and why they must move together. This
-   is now a confirmed, deliberate change per SCOPE's own criteria wording ("expected and correct"),
-   not an open flag.
-5. **`DEFAULT` seed data is realistic personal-looking data** (two named jobs, real-shaped bills, a
-   "Visa extension" goal) rather than neutral placeholders. Why (inferred): makes a first-run
-   screen feel like a lived-in example rather than a blank form. Still flagged for confirmation —
-   SCOPE v9 doesn't address this (it's explicitly listed as a NOT-doing item, "a content decision...
-   needs your call independent of this fix-focused version"), so it carries forward unresolved,
-   on purpose, not by oversight.
-6. **RESOLVED in v9 (feature 4). Goals now auto-expire for real, closing the gap with the UI's
-   "only while it runs" hint text.** v8's version of this entry recorded a mismatch: `weeks` was
-   only used to divide a goal's amount into a flat per-week figure, with no expiry tracking, so a
-   goal contributed hours indefinitely — narrower than what the hint text promised. SCOPE v9
-   requires real expiry rather than a copy fix. Implementation approach: add `addedAt` to the goal
-   object (see section 4's state shape and expiry-computation notes) and compute elapsed weeks from
-   it; an expired goal stops contributing extra hours (both to `goalHrsWkNow` and to
-   `weekCoverage()`'s waterfall) but stays visible, shown with a muted row style plus an "Expired"
-   `.pill` (reusing the app's existing pill component and `--warn` colour token — no new visual
-   component invented) rather than vanishing, so the user knows it ran out and can delete or
-   re-add it, per SCOPE's explicit criterion. The hint copy itself ("only while it runs") no longer
-   needs changing — it's now accurate.
-7. **RESOLVED/expanded in v9 (feature 5). Import now validates top-level shape, not just JSON
-   parseability, and both blocking `alert()`s are gone.** v8's version of this entry recorded that
-   import only guarded against unparseable JSON, leaving a parseable-but-malformed file
-   (e.g. `{}`) free to load and break rendering — a known risk, not a scope gap, at the time.
-   SCOPE v9 requires the shape itself be checked. See section 4's "Import validation" note for the
-   concrete top-level key/type checks and the reject-and-leave-`S`-untouched behavior. The "bad
-   import" message and the "no shifts logged" message (previously both `alert()` calls) are handled
-   two different ways, deliberately not identically: the bad-import message is genuinely new
-   information at an unpredictable moment (file picked, then rejected), so it gets one small new
-   inline element near the import control, using the app's existing muted-small-text empty-state
-   visual language (not a new modal/toast pattern). The no-shifts-logged case already has a
-   permanently-visible inline message — `renderShifts()` shows "No shifts logged this week." inline
-   whenever `S.shifts` is empty — so its `alert()` is simply removed and the "New week" click
-   becomes a silent no-op; the pre-existing empty state already answers "why is there nothing to
-   bank," and adding a second, separate message next to it would duplicate what's already on
-   screen rather than fixing anything.
-8. **No calendar-based weekly rollover.** "This week" is whatever's in `S.shifts` until the user
-   clicks "New week" — there's no wall-clock check of which day a week starts or timezone
-   handling. Why: keeps the model simple and user-driven rather than making assumptions about week
-   boundaries for a self-reported log. Unaffected by v9 — goal expiry (item 6) uses real elapsed
-   time against `addedAt`, which is a different clock than the shift-log's user-driven "week."
-9. **NEW, v9 (feature 6). OPEN — flagged for human confirmation before the Builder starts this
-   feature.** How to bring "one real icon library" into a single-file, zero-dependency,
-   no-build-step app. The approved stack already sanctions using one proper icon library (Lucide or
-   Phosphor); what it doesn't settle is the delivery mechanism, and every standard mechanism costs
-   something this project has explicitly avoided: an `npm install` + bundler pipeline directly
-   contradicts item 1 (no build step); a CDN `<script src>` tag would be the app's first-ever
-   external network dependency (it currently makes zero network calls and works fully offline,
-   true since v6). **Recommended approach:** inline the small, fixed set of icons v9 actually
-   needs (delete/trash, export/download, import/upload, new-week/refresh — four icons, all four
-   already named in SCOPE's own criteria) as literal SVG `<path>` markup, copied directly from
-   Lucide's real, MIT-licensed source icons, into the existing render functions' template strings —
-   the same "inline, no separate data file" convention the app already uses for the `COUNTRIES` tax
-   data (item 3), applied to icon markup instead of tax brackets. This satisfies "one library" (every
-   path traces to a single named, real icon set, not an ad hoc mix) while adding zero dependencies,
-   zero network calls, and zero build tooling. This is a genuine structural call, not one SCOPE's
-   wording forces a single answer to — confirm with the human before any icon markup is written.
-10. **NEW, v9 (feature 4/state model). Goals missing `addedAt` are backfilled with "now," not
-    treated as expired, and this does not bump the storage key.** Why: per item 2's own
-    convention, the key bumps only when old data "can't survive" the new shape. A goal saved before
-    v9 (or exported from a pre-v9 session and imported later) has no `addedAt`, but stamping it with
-    the current time on load makes it behave exactly like a freshly-added goal rather than
-    appearing expired the instant the user opens v9 — deliberately generous to existing users, and
-    consistent with the "shape stayed forward-compatible across v6-v8" precedent item 2 already
-    documents.
+`validShape()` extends to v6: `schema` is a number, the five arrays are arrays, `settings` and
+`meta` are objects. A blob with `schema > 6` is **not** migrated and **not** discarded — the app
+refuses to load it, keeps it untouched, and shows the import-error pattern. Silently downgrading a
+future blob would destroy data the user cannot get back.
+
+---
+
+## 3. Computation
+
+### Blended rate
+
+`Σ(shift.rateValue × shiftHours) / Σ(shiftHours)` over **shifts in the current week**, per SCOPE
+feature 3 ("weighted average of shifts actually worked").
+
+**With zero shifts logged there is nothing to average.** Fallback: `Σ(rate.value × typicalHours)`
+weighted per employer, i.e. the v5 behaviour. **See Open 1 — this fallback and its window are the
+one place SCOPE is ambiguous and I have not resolved it.**
+
+### Tax basis
+
+Unchanged from v9: annualise on **declared typical hours**, not the ceiling and not actual logged
+hours. Why it must not follow the blended rate onto actual shifts: a light week would drop the
+annualised figure into a lower bracket and *raise* the net hourly rate, so working less would make
+each hour look worth more. That is backwards and would be invisible.
+
+### Extra hours (feature 5, D9)
+
+```
+committed   = Σ shiftHours(s) for s in shifts where s.date is in the current week
+                                (including dates later in the week)
+baseline    = (Σ outgoing.effectiveAmount − otherMo) / net / WPM
+datedWeekly = Σ lump.amount / max(1, whole weeks from today to lump.date)
+goalWeekly  = existing goal logic, unchanged
+extra       = max(0, baseline + datedWeekly + goalWeekly − committed)
+```
+
+`effectiveAmount` for an outgoing: `dated?.kind === "rateChange" && today >= dated.date`
+→ `dated.newAmount`, else `amount`. A `rateChange` **never** contributes to `datedWeekly` — it is
+part of the baseline before and after, at different amounts.
+
+**Guards.** `net <= 0` → empty state, no figure. Ceiling of 0 → empty state. `whole weeks
+remaining` floors at 1, never 0, so no division by zero. A `lump` with a past date contributes 0.
+No path may render `Infinity` or `NaN` (feature 5 criterion, and the v9 bug this replaces).
+
+### Coverage (feature 7)
+
+Waterfall in **the user's stored order**, never re-sorted. A `lump` is measured against its
+per-week contribution, not its total. Banking snapshots `coverage[]` into the history row so a
+later edit cannot rewrite a banked week.
+
+---
+
+## 4. Service worker — the highest-risk decision
+
+Three files: `index.html`, `sw.js`, `manifest.webmanifest`.
+
+**Strategy: network-first for the document, cache-first for static assets, user-confirmed update.**
+
+- Cache name `shift-planner-<APP_VERSION>`, where `APP_VERSION` is a literal string at the top of `sw.js`. Bumping it is the release action.
+- `install`: precache `index.html`, `manifest.webmanifest`, icons. **No `skipWaiting()` here** — swapping assets under a page mid-session can leave a half-old, half-new app holding financial input.
+- `activate`: delete every cache whose name is not the current one, then `clients.claim()`.
+- `fetch`, navigation requests: **network first, 3s timeout, fall back to cache.** An online user always gets the current document. An offline user gets the last good one.
+- `fetch`, other requests: cache-first.
+- Update handshake: page registers the SW → `updatefound` → new worker reaches `installed` while `navigator.serviceWorker.controller` exists → app shows an inline, dismissible "New version ready. Reload" affordance (not a modal, not automatic) → on tap, `postMessage({type:"SKIP_WAITING"})` → SW calls `skipWaiting()` → `controllerchange` fires → `location.reload()`.
+
+**Why network-first for the document rather than the usual cache-first:** cache-first is faster and is the standard PWA advice, and it is wrong here. This app's payload is tax arithmetic. A user pinned to a superseded bracket table gets confidently wrong numbers with no symptom. Trading ~200ms of load for "an online user is never stale" is the right trade for this product and would be the wrong trade for most.
+
+**Belt and braces:** the footer renders `appVersion` and `taxDataVersion` from `meta`, always visible. If someone reports a wrong figure, the first question is answerable without guessing. `taxDataVersion` is bumped **only** when a bracket or rate changes, independently of `appVersion`, so a tax correction is legible as one.
+
+---
+
+## 5. Pages and components
+
+One page, single scrolling document, plus a first-run flow that occupies the whole viewport.
+
+| # | Screen / section | SCOPE feature |
+|---|---|---|
+| 0 | Cold open — empty, one sentence, "Set up" and "I have a backup file" | 2 |
+| 1 | Onboarding, 5 steps: country → employers → outgoings → ceiling → goals | 2 |
+| 2 | Headline: extra hours + breakdown | 5 |
+| 3 | Employers panel with rate cards | 3 |
+| 4 | Outgoings panel with type, dated kind, date | 4 |
+| 5 | Goals panel | — (carried) |
+| 6 | Working ceiling | — (carried) |
+| 7 | Take-home summary + hour-breakdown donut | — (carried) |
+| 8 | Shift log with rate picker and duplicate | 6 |
+| 9 | Bank the week + coverage + history | 7 |
+| 10 | Footer: version stamp, tax disclaimer, not-debt-advice statement | 9 |
+
+Components, one line each:
+
+- `OnboardingStep` — renders one question, a progress meter, Continue. Needs: step index, current draft state. Commits to storage on Continue.
+- `EmptyState` — muted sentence + one action. Needs: message, action label. **One component, used everywhere.** Guide's minimal deliverable and the fix for the v8 silent-blank-grid gap.
+- `EmployerCard` — name, pension, rate list. Needs: employer.
+- `RateRow` — name, value, delete. Needs: rate.
+- `OutgoingRow` — label, amount, category, credit toggle, dated control. Needs: outgoing.
+- `DatedControl` — kind selector, date, and `newAmount` when kind is `rateChange`. Needs: outgoing.dated.
+- `HeadlineFigure` — the number, unit, meter, breakdown rows. Needs: model output.
+- `ShiftRow` — date, employer, rate picker, start, end, break, computed pay, duplicate, delete. Needs: shift, employers.
+- `CoverageList` — obligation rows in stored order with state. Needs: coverage[].
+- `UpdateBanner` — inline "New version ready. Reload". Needs: waiting-worker flag.
+- `VersionStamp` — appVersion, taxDataVersion, build date.
+
+---
+
+## 6. File layout
+
+```
+/
+  index.html                  app, single file, unchanged stack
+  sw.js                       NEW — service worker
+  manifest.webmanifest        NEW — PWA manifest
+  icons/                      NEW
+    icon-192.png  icon-512.png  icon-maskable-512.png  apple-touch-icon.png
+  CLAUDE.md  README.md  SCOPE.md  ARCHITECTURE.md  PARKING.md  HANDOVER.md
+  .gitignore
+  docs/                       see docs/FILING.md
+```
+
+**The single-file rule is now three files, deliberately.** A service worker cannot be inlined —
+it must be served from its own URL at the scope it controls. The manifest likewise. This is the
+minimum possible departure and it does not introduce a build step. `index.html` stays one file.
+
+GitHub Pages, branch-deploy from `main:/`, unchanged. Pages serves `sw.js` from the root, so
+service-worker scope covers the whole app without a `Service-Worker-Allowed` header, which Pages
+cannot set.
+
+---
+
+## 7. Build order
+
+Strict, because each step reads the one before:
+
+1. Schema v6 + migration, alone, with console assertions. **No UI.**
+2. Empty state + onboarding (feature 2) — builds `EmptyState`, the Guide component proof.
+3. Employers + rate cards (3).
+4. Outgoings + dated (4).
+5. Extra-hours headline (5).
+6. Shift logging (6).
+7. Bank + coverage (7).
+8. PWA (8) — needs a stable `index.html` to precache.
+9. Compliance subset (9), copy pass (10).
+
+Steps 3 and 4 may swap. Nothing else may. 8 cannot move earlier.
+
+---
+
+## 8. Decisions log
+
+Carried from v8/v9 and still true: single HTML file no build step (1) · storage key versioned
+independently of feature version (2) · tax tables inline in `COUNTRIES` (3) · tax basis is declared
+typical hours, confirmed in v9 (4) · goals expire via `addedAt` (6) · import validates shape (7).
+
+Resolved and closed by v11: **(5) seed data** — killed by D2, replaced with empty state. Open since
+6 July, now closed.
+
+New for v11:
+
+11. **Three files, not one.** A service worker cannot be inlined. Minimum departure from the single-file rule; no build step added.
+12. **`settings.protectedBlocks: []` is reserved now though the feature is v12.** Why: adding it in v12 would need a v7 schema bump and a second migration for every user. An empty array costs nothing and buys a free upgrade path.
+13. **Rate, rate name and employer name are snapshotted onto every shift** (D8, default 4). Why: history becomes immutable and independent of the rate card, so editing or deleting a rate can never rewrite what someone was paid. Costs a little duplication; removes an entire class of bug.
+14. **The no-ranking constraint, with its reason.** The app never reorders, ranks, recommends or evaluates the merits of paying one obligation over another. Ordering is always the user's. **Why: advising a borrower on the liquidation of a debt due under a credit agreement is a regulated activity under article 39E of the Regulated Activities Order.** Per FCA PERG 17: "liquidation" includes paying a debt off in full and on time; it covers future obligations, not just overdue ones; where a mixed list contains any credit-agreement debt, advice on the whole list is caught; and "any element of evaluation, value judgment or persuasion is likely to mean that advice is being given." Shift Planner is not FCA authorised. This binds sorting, defaults, copy **and colour**. Legal reading is sourced to PERG at 65% confidence and is not solicitor-reviewed (`docs/governance/REQUIREMENTS.md` §3.6). **A future session that finds this constraint inconvenient must escalate to the human, not soften it.**
+15. **Colour may not editorialise where copy may not.** "Not reached" gets no colour; `--error` is reserved for app faults. Why: a red row says *failure* about a person's life louder than any sentence, and decision 14 binds meaning, not just words.
+16. **Network-first for the document.** Against standard PWA advice. Why: the payload is tax arithmetic and staleness is silent. See §4.
+17. **The v5 blob survives migration.** Why: only rollback path if v6 reaches a user with a bug. Delete in v12.
+18. **Legacy history rows keep an unparseable date label and opt out of date logic.** Why: `"3 Aug"` has no year. Parsing invents data; a wrong date in a financial record is worse than a missing one.
 
 ---
 
 ## Handover
 
-**Done:** Revised `ARCHITECTURE.md` at `/Users/noxus/Builds/Shift Planner/ARCHITECTURE.md` for
-SCOPE v9 (frozen 2026-07-06), against `TAX-ACCURACY-AUDIT.md` and the current `index.html`. Kept
-the design-tokens, file-tree, and most component descriptions from the v8 version (still accurate,
-v9 adds no pages/files). Edited: the Pages table (now shows which v9 feature touches each existing
-section, since v9 is fixes-only and adds nothing new); the Components list (v9-tagged behavior
-changes on ~9 of 15 components); the state-shape block (added `goals[].addedAt`); a new
-"Tax-rate annualizing basis" note documenting precisely which two `model()` computations
-(`annual` and `annualHours`) move from the ceiling (`maxWeekly`) to summed typical hours (`totH`)
-and why both must move together; a new "Goal expiry computation" note (elapsed-weeks formula
-against `addedAt`, what "expired" excludes it from); a new "Import validation" note (concrete
-top-level key/type checks, reject-and-leave-untouched behavior); and the Decisions log — items 4,
-6, and 7 rewritten from open flags to resolved entries citing the specific SCOPE v9 feature that
-resolved them, plus two new items (9: the icon-library delivery mechanism, left genuinely open; 10:
-the `addedAt` backfill convention, resolved and documented).
+**Done:** Architect pass for v11 against frozen `SCOPE.md` and `DESIGN-TOKENS.md`. Produced: tokens verbatim; full v6 schema with a field-by-field v5 migration table; the blended-rate, tax-basis, extra-hours and coverage computations with their guards; the service-worker update strategy in implementable detail; screens mapped to SCOPE features; eleven named components; literal file layout; a strict build order; and eight new decisions-log entries including the no-ranking constraint recorded with its art. 39E / PERG 17 reason, which was a frozen criterion.
 
-**Assumed:** (1) `addedAt` should be an epoch-millisecond timestamp (`Date.now()`-style), not an
-ISO date string — functionally equivalent for the elapsed-weeks arithmetic, epoch ms is simpler to
-diff; flagging in case the human prefers a human-readable stored value for easier manual
-inspection/debugging of exported JSON. (2) Delete buttons should use a trash/delete icon rather than
-a bare "X" — more semantically correct for "permanently remove this item" than a close/dismiss
-icon, but the app's current visual language uses a plain "✕" glyph everywhere, so this is a small
-upgrade beyond the literal ask, not a forced reading of SCOPE. (3) Expired goals get a `.pill`-style
-"Expired" badge specifically (reusing the existing pill component) rather than some other visual
-treatment — chosen because it's the closest existing pattern to "small state label," not because
-SCOPE specifies pill-shaped UI. (4) Bad-import rejection discards the entire import and leaves `S`
-untouched (no partial/best-effort merge of the valid-looking parts) — the more conservative, more
-predictable reading of "rejected... not a silent load that can break rendering." (5) The
-"no-shifts-logged" fix is a no-op click plus reliance on the pre-existing empty state, not a new
-message element — read as the more literal application of "reuse the existing empty-state pattern"
-instruction, but flagging since a stricter reading of SCOPE's "both display inline" wording could
-be read as wanting an equally new, equally explicit message in both cases. (6) Top-level import
-validation checks only the five array fields and `settings`'s presence/type, not `jobMode` (present
-in `DEFAULT` but never read or written anywhere else in the code — appears to be vestigial) — not
-validating a dead field seemed correct rather than a gap.
+**Assumed:** (1) Blended rate averages over **the current week's** shifts. SCOPE says "shifts actually worked" without naming a window — see Open 1; I have written the architecture around current-week but have NOT resolved it. (2) Migrated v5 shifts get this week's Monday as their date, safe because v5 shifts are by definition the unbanked current week. (3) `typicalHours` stays on the employer rather than moving to the rate, because SCOPE only says pension stays per employer. If someone works mostly one rate, a per-rate typical would model them better. (4) The update affordance is inline and dismissible rather than modal — my call, not SCOPE's. (5) One `EmptyState` component serves every empty case.
 
-**Risky:** (1) The tax-basis change (feature 2) is documented as a two-line `model()` edit
-(`annual` and `annualHours` moving together) based on tracing the current code; if the Builder
-finds a third place that silently assumes the ceiling-basis annual figure, that needs to surface
-back here, not get silently patched around. (2) Feature 1's corrected figures are extensive (all
-9 countries, several structural bracket-loop fixes per `TAX-ACCURACY-AUDIT.md`) — this document
-doesn't re-derive or re-verify those figures, it points at the audit as the source of truth; a
-transcription error going from audit to code is a real risk the Breaker should specifically check
-line-by-line against the audit, not just spot-check. (3) Goal-expiry migration: an old export
-missing `addedAt`, imported into a v9 session, gets backfilled to "now" — meaning a genuinely old,
-long-running goal that should already be expired will incorrectly get a fresh clock. This is a
-one-time, edge-case cost of choosing the generous backfill in item 10 over a stricter "assume
-already expired" default; worth the human's awareness even though it's not being flagged as an
-open question (the generous default seems clearly better for anyone with in-progress goals). (4)
-The icon-inlining approach in item 9, if approved, adds a small ongoing maintenance surface (hand-
-copied SVG path data with no package-manager-driven update path) — acceptable at 4 icons, would
-need re-thinking if the icon count grows materially in a future version.
+**Risky:** (1) **The blended-rate window is a genuine SCOPE ambiguity and the whole downstream figure depends on it.** A one-shift week makes the blended rate that one shift's rate, which then feeds the net hourly rate and the headline. That may be correct or may be violently unstable; I could not tell from SCOPE and did not pick. (2) The zero-shifts fallback means a new user's blended rate comes from declared hours and their week-two rate comes from actual shifts — **the number moves for a reason the user never did anything to cause.** No copy currently explains that. (3) Network-first costs ~200ms per load on a slow connection, on a tool whose stated use case is a five-minute glance mid-shift. I judged staleness worse than latency; that is a judgement. (4) The service-worker update handshake is standard but has never been tested on iOS Safari in this project, where PWA behaviour diverges most. (5) `taxDataVersion` is only useful if someone remembers to bump it, and nothing enforces that.
 
-**Open:** (1) ~~Icon-library delivery mechanism~~ — **CONFIRMED by human 2026-07-06: inline
-Lucide-sourced SVG paths**, no dependency, no build step, per Decisions log item 9's recommendation.
-(2) ~~`addedAt` stored format~~ — **CONFIRMED: epoch milliseconds.** (3) ~~"Expired" pill /
-trash-icon-for-delete choices~~ — **accepted as reasonable defaults, no objection raised.** (4)
-~~Reject-entire-import vs. partial merge~~ — **CONFIRMED: reject entirely, leave existing data
-untouched**, per Decisions log item 7's conservative reading. (5) `DEFAULT` seed data (item 5) and
-the noxus-design-system archetype label remain open from the v8 version of this document, unrelated
-to v9 — carried forward, not re-raised as new, no action needed before the Builder starts.
+**Open:** (1) **Blended-rate window and zero-shift fallback.** Needs the human. Options: current week only (drafted); trailing 4 weeks including banked; all history; or declared typical hours always, with actual shifts used only for the pace panel. The last is the most stable and the least faithful to feature 3's wording. (2) Should the moving blended rate be explained to the user, and if so that is a `shift-planner-copywriter` job? (3) Icon assets do not exist and are not a Builder deliverable — someone must produce four PNGs. (4) Does `taxDataVersion` bumping need a checklist entry somewhere the next tax correction will actually see it? (5) Should the Breaker add a colour-vision-deficiency check and a "hairline is never the only signal" check — carried from the token pass, still unanswered.
 
-**Touched:** `/Users/noxus/Builds/Shift Planner/ARCHITECTURE.md` (revised in place). No other files
-modified — `SCOPE.md`, `TAX-ACCURACY-AUDIT.md`, and `index.html` were read-only inputs.
+**Touched:** `ARCHITECTURE.md` (rewritten for v11; v8/v9 version preserved in git at 3b1a9bf). Read-only inputs: `SCOPE.md`, `docs/design/DESIGN-TOKENS.md`, `docs/design/COPY-DECK.md`, `index.html`. No code written. No dependencies added.

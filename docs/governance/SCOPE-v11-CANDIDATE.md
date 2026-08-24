@@ -1,6 +1,6 @@
 # SCOPE CANDIDATE: Shift Planner v11 — the model rebuild
 
-Date: 2026-08-19 · Status: **COMPLETE AND UNFROZEN.**
+Date: 2026-08-19 · Status: **COMPLETE. ALL DECISIONS ANSWERED. AWAITING FREEZE ONLY.**
 
 <!-- To freeze: read it, cut what you don't want, answer the six defaults in §7, copy the whole
      thing into SCOPE.md, append a freeze line, append v10 AND v11 lines to SCOPE-HISTORY.md
@@ -41,6 +41,7 @@ questions in `PROJECT.md` stay open until v12.
 | D8 | Rate deletion solved by snapshotting rate name and value onto each shift at log time | 19 Aug |
 | D9 | "Hours already committed" = shifts logged for the current week, including future-dated ones | 19 Aug |
 | D10 | Visual style: Guide, warm accent. Tokens in `DESIGN-TOKENS.md` | 19 Aug |
+| D11 | Dated obligations split into two kinds: **dated lump sum** amortises across weeks remaining, **dated rate change** switches on the date. No horizon cutoff | 19 Aug |
 
 ## The permanent constraint
 
@@ -97,9 +98,14 @@ Ordered so anything changing the shape of stored data precedes anything reading 
 ### 4. Outgoings: type, hard date, optional rate
 
 - An outgoing can be typed as a **credit commitment** (credit card, loan, BNPL, car finance, overdraft, catalogue). Optional; no behaviour change when unset. Carried intact from frozen v10 feature 6.
-- An outgoing can carry an optional **hard date**, so "0% until 18 Feb 2027" is representable.
-- An outgoing can carry an optional **rate**, so a promo cliff is distinguishable from a flat cost.
-- A dated outgoing does not become a goal. The two stay distinct in the model and in the UI.
+- An outgoing can carry an optional **hard date**, and where it does, it is one of exactly two kinds (D11). The kind is an explicit field, never inferred.
+  - **Dated lump sum** — a one-off amount with a deadline, e.g. "₦3,000,000 due 18 Feb 2027". It **amortises across the whole number of weeks remaining until its date**, from the moment it is entered. £3,000 due in 20 weeks contributes £150/wk in week one, and the per-week figure is recomputed as the date approaches. It never appears as a cliff.
+  - **Dated rate change** — an existing recurring cost whose amount changes on a date, e.g. "0% until 18 Feb 2027". It **does not amortise**. The outgoing carries its current amount until the date, then switches to the new amount. Charging for it early would bill the user for money not yet owed.
+- Both kinds show their date, and a lump sum shows its current per-week contribution, so the user can see why the weekly figure moved.
+- A dated lump sum whose date has passed stops contributing and is visually marked, reusing the expired-goal treatment rather than inventing a second one.
+- A dated lump sum with a date in the past at entry time is rejected inline, not silently accepted.
+- **There is no horizon cutoff.** A dated obligation contributes from the moment it exists, however far away its date is. The horizon was cut deliberately: it recreated the cliff this feature exists to remove.
+- A dated outgoing does not become a goal. A goal is a target the user chose with a duration they chose; a dated lump sum is an obligation with an external deadline. They stay distinct in the model and in the UI even though both amortise.
 - Nothing about credit typing changes ordering, ranking or presentation priority. The permanent constraint applies at full force.
 - The not-debt-advice statement (feature 9) ships in the same version as this feature, not after it.
 
@@ -108,7 +114,8 @@ Ordered so anything changing the shape of stored data precedes anything reading 
 - The figure is **hours needed to meet the target minus hours already committed this week**, not total hours needed.
 - **"Committed" means shifts logged for the current week, including shifts dated later in that week** (D9). A shift agreed for Friday and logged on Tuesday counts on Tuesday.
 - A future-dated shift contributes to committed hours but not to earnings actually banked. The two must not be conflated anywhere.
-- The breakdown is visible: baseline to cover life, dated obligations falling in range, against the ceiling.
+- The breakdown is visible: baseline to cover life, the combined per-week contribution of dated lump sums (D11), and the ceiling.
+- A dated rate change contributes nothing extra before its date. On and after the date, its new amount is simply part of the baseline. It never appears as a separate line.
 - When extra hours exceed the remaining ceiling, the app states that as a fact and says nothing about what to do.
 - No combination of inputs renders `Infinity`, `NaN`, or a fabricated figure. Including: no employer, no rate, no outgoings, zero ceiling, all shifts deleted mid-week.
 - The formula is written as a comment and confirmed by the human before implementation.
@@ -125,7 +132,7 @@ Ordered so anything changing the shape of stored data precedes anything reading 
 ### 7. Bank the week and coverage
 
 - Coverage states which obligations the earnings reached, **in the user's own order**, as computed fact.
-- Dated obligations falling due inside the horizon appear in coverage; ones that do not, do not.
+- A dated lump sum appears in coverage as its per-week contribution for that week, not its full amount. Reaching £150 of a £3,000 obligation is covered for that week; it is not "£2,850 short".
 - Banking a week freezes its coverage. A later edit to an obligation does not rewrite history.
 - No string on this screen suggests, ranks, or evaluates. This is where a helpful suggestion is most tempting and most expensive.
 - Colour follows `DESIGN-TOKENS.md`: covered is sage, a shortfall is ochre, not-reached carries no colour at all, and rust red never appears for a financial position.
@@ -181,17 +188,24 @@ Ordered so anything changing the shape of stored data precedes anything reading 
 
 ---
 
-## Six defaults needing a yes or no at freeze
+## Defaults — answered 2026-08-19
 
-Standing order 2 forbids the Builder inventing these. Each is written as a proposed default so
-freezing is a decision, not a drafting session. Change any of them freely.
+All six resolved. Recorded here because the reasoning matters more than the answers.
 
-1. **Minimum to leave onboarding:** one employer with at least one rate. Outgoings and goals may both be empty. *Rationale: the app can compute a net hourly rate with one employer and nothing else, so anything more is a barrier at the front door v11 exists to fix.*
-2. **Goals in onboarding:** skippable, with an obvious route to add later.
-3. **Empty outgoings list after onboarding:** allowed. The headline shows the empty state from feature 5 rather than a zero.
-4. **Deleting an employer that has logged shifts:** the shifts remain and keep their snapshotted rate and pay, and the employer name is snapshotted onto them too. *Rationale: consistent with D8. History is immutable.*
-5. **Typeface:** system font stack, no webfont. *Rationale: a webfont is a network request, and the core loop must work offline. If a webfont is wanted it must be self-hosted and precached by the service worker, which is an architect decision, not a Builder one.*
-6. **Dated-obligation horizon:** an obligation appears in the weekly figure when its hard date falls within the next 4 weeks. *Rationale: a number, not a guess, and the breaker needs one to test against.*
+1. **Minimum to leave onboarding:** one employer with at least one rate. Outgoings and goals may both be empty. ✅ *The app can compute a net hourly rate from one employer alone, so anything more is a barrier at the front door v11 exists to fix.*
+2. **Goals in onboarding:** skippable, with an obvious route to add later. ✅
+3. **Empty outgoings list after onboarding:** allowed. The headline shows feature 5's empty state, not a zero. ✅
+4. **Deleting an employer with logged shifts:** shifts remain and keep their snapshotted rate, pay and employer name. ✅ *Consistent with D8. History is immutable.*
+5. **Typeface:** system font stack, no webfont. ✅ *A webfont is a network request and the core loop must work offline. A self-hosted precached webfont remains an architect decision if ever wanted.*
+6. **Dated-obligation horizon: WITHDRAWN, replaced by D11.** ❌ *The original default proposed a 4-week cutoff. It was wrong twice over: a cutoff recreates the exact cliff the feature exists to remove, and it conflated two different things. See feature 4 for the resolved model.*
+
+**Why 6 was withdrawn, kept because it is the most instructive item in this document:** the question
+was drafted by the Builder as "how many weeks", with a number picked so the breaker had something
+to test. Accepting it would have shipped a headline that stays silent about a large obligation
+until it is four weeks away, then demands impossible hours. The spec's own gap table already said
+the app "cannot distinguish a cliff from a steady cost" — the proposed default reintroduced that
+defect while appearing to fix it. **A default with a rationale attached is not the same as a
+default that is right.**
 
 ## Freeze
 

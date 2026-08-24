@@ -125,12 +125,24 @@ future blob would destroy data the user cannot get back.
 
 ### Blended rate
 
-`Σ(shift.rateValue × shiftHours) / Σ(shiftHours)` over **shifts in the current week**, per SCOPE
-feature 3 ("weighted average of shifts actually worked").
+**RESOLVED 2026-08-19 by the human: the window is the current week.** SCOPE feature 3's "shifts
+actually worked" named no window; this closes it.
 
-**With zero shifts logged there is nothing to average.** Fallback: `Σ(rate.value × typicalHours)`
-weighted per employer, i.e. the v5 behaviour. **See Open 1 — this fallback and its window are the
-one place SCOPE is ambiguous and I have not resolved it.**
+`Σ(shift.rateValue × shiftHours) / Σ(shiftHours)` over **shifts dated in the current week**,
+including shifts dated later in that week (consistent with D9's definition of committed).
+
+**With zero shifts in the week there is nothing to average.** Fallback: `Σ(rate.value ×
+typicalHours)` weighted per employer, i.e. the v5 behaviour. This applies on first run, and again
+at the start of every week before the first shift is logged.
+
+**The consequence the Builder must handle, not hide:** the blended rate is declared-hours-based at
+the start of a week and shift-based once a shift exists, so **the net hourly rate changes when the
+first shift of the week is logged, without the user changing any rate.** With one shift logged, the
+blended rate *is* that shift's rate. This is faithful to feature 3 and it is surprising. It gets a
+plain explanatory line, not a hidden recalculation, and the line is
+`shift-planner-copywriter`'s to write. Placement: adjacent to the take-home summary's net/hr
+figure, shown only when the current week has between one and two shifts logged, since that is when
+the swing is largest and least explicable.
 
 ### Tax basis
 
@@ -283,6 +295,27 @@ New for v11:
 
 ---
 
+## 9. Checks the Breaker must add for v11
+
+Beyond `breaker-protocol`'s standard menu. Listed here because they come from architectural calls
+made in this document, and would otherwise be nobody's job.
+
+1. **Colour-vision deficiency.** Simulate protanopia, deuteranopia and tritanopia across the
+   coverage list and the headline verdict. Sage and ochre separate by luminance for a typical
+   viewer; that is an assumption, not a measurement.
+2. **Hairline is never the only signal.** `--line` and `--line-strong` measure under 3:1 and are
+   documented as decorative. Verify no boundary or state is conveyed by a rule alone.
+3. **Colour is never the only signal.** Every state using a semantic colour must also carry a text
+   label. Decision 15 states it; nothing enforces it.
+4. **Service-worker update, on iOS Safari specifically.** Load, deploy a change, reload. iOS is
+   where PWA behaviour diverges most and where much of this audience is.
+5. **The rate swing.** Log the first shift of a week and confirm the net/hr change is accompanied
+   by the C7 string, not silent.
+6. **Schema refusal.** A blob with `schema: 7` must be refused, left untouched, and reported. It
+   must not be migrated and must not be discarded.
+
+---
+
 ## Handover
 
 **Done:** Architect pass for v11 against frozen `SCOPE.md` and `DESIGN-TOKENS.md`. Produced: tokens verbatim; full v6 schema with a field-by-field v5 migration table; the blended-rate, tax-basis, extra-hours and coverage computations with their guards; the service-worker update strategy in implementable detail; screens mapped to SCOPE features; eleven named components; literal file layout; a strict build order; and eight new decisions-log entries including the no-ranking constraint recorded with its art. 39E / PERG 17 reason, which was a frozen criterion.
@@ -291,6 +324,8 @@ New for v11:
 
 **Risky:** (1) **The blended-rate window is a genuine SCOPE ambiguity and the whole downstream figure depends on it.** A one-shift week makes the blended rate that one shift's rate, which then feeds the net hourly rate and the headline. That may be correct or may be violently unstable; I could not tell from SCOPE and did not pick. (2) The zero-shifts fallback means a new user's blended rate comes from declared hours and their week-two rate comes from actual shifts — **the number moves for a reason the user never did anything to cause.** No copy currently explains that. (3) Network-first costs ~200ms per load on a slow connection, on a tool whose stated use case is a five-minute glance mid-shift. I judged staleness worse than latency; that is a judgement. (4) The service-worker update handshake is standard but has never been tested on iOS Safari in this project, where PWA behaviour diverges most. (5) `taxDataVersion` is only useful if someone remembers to bump it, and nothing enforces that.
 
-**Open:** (1) **Blended-rate window and zero-shift fallback.** Needs the human. Options: current week only (drafted); trailing 4 weeks including banked; all history; or declared typical hours always, with actual shifts used only for the pace panel. The last is the most stable and the least faithful to feature 3's wording. (2) Should the moving blended rate be explained to the user, and if so that is a `shift-planner-copywriter` job? (3) Icon assets do not exist and are not a Builder deliverable — someone must produce four PNGs. (4) Does `taxDataVersion` bumping need a checklist entry somewhere the next tax correction will actually see it? (5) Should the Breaker add a colour-vision-deficiency check and a "hairline is never the only signal" check — carried from the token pass, still unanswered.
+**Open:** **None blocking.** All five opens from the first draft of this pass were closed on 2026-08-19: (1) blended-rate window resolved to **the current week** by the human, with the declared-typical-hours fallback and the rate-swing consequence now written into §3; (2) the rate swing **is** explained, string C7 in `COPY-DECK.md`, written by `shift-planner-copywriter`; (3) icon assets produced and committed to `icons/`; (4) `taxDataVersion` bumping is now a line item in `docs/process/RELEASE-CHECKLIST.md`; (5) the colour-vision and hairline checks are specified in §9 above, along with four others.
+
+Remaining and **not** blocking the build: the legal reading behind decision 14 sits at 65% confidence and is not solicitor-reviewed. It constrains what gets built rather than gating it.
 
 **Touched:** `ARCHITECTURE.md` (rewritten for v11; v8/v9 version preserved in git at 3b1a9bf). Read-only inputs: `SCOPE.md`, `docs/design/DESIGN-TOKENS.md`, `docs/design/COPY-DECK.md`, `index.html`. No code written. No dependencies added.

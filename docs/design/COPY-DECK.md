@@ -97,6 +97,7 @@ correct, not by being likeable.
 | C4 | The three-tier verdict must stop using "brutal" | 19 Aug 2026 | It is a judgement about the user's life, made by a tool that knows their bills and nothing else. Replace with facts about the ceiling. **Live rewrite target, not yet applied** |
 | C5 | "Credit commitment", never "debt" | 19 Aug 2026 | Neutral, and matches the v11 data model |
 | C6 | "Not reached", never "missed" or "failed" | 19 Aug 2026 | Both alternatives assign fault to the user |
+| C7 | Moving blended rate is explained, not hidden. String: **"Based on {n} shift logged this week. It moves as more are logged."** Shown beside net/hr only when 1-2 shifts exist in the current week | 19 Aug 2026 | The rate switches from declared typical hours to actual shifts once the week's first shift is logged, so the number visibly changes without the user changing anything. A silent recalculation on a financial figure reads as a bug or a lie. Pluralise "shift" at n=2 |
 
 ## 5. Word swaps
 

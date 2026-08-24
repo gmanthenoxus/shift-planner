@@ -47,11 +47,13 @@ docs/
     SCOPE-v11-CANDIDATE.md        draft awaiting the human's freeze
   process/
     PROMPTS.md                    the v11 run-book, prompt by prompt
+    RELEASE-CHECKLIST.md          run before every deploy
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Still referenced by index.html
   design/
     COPY-DECK.md                  voice, register, resolved copy decisions
+    DESIGN-TOKENS.md              Guide (warm), contrast-verified
     TECH-PACK.md                  v9 layout and states
     SPEC-v11-TARGET.html          v11 design target, screen by screen
   archive/

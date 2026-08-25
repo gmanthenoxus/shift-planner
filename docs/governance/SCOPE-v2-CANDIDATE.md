@@ -1,6 +1,6 @@
 # SCOPE CANDIDATE: Shift Planner 2.0 — answer first
 
-Date: 2026-08-19 · Status: **CANDIDATE. AWAITING YOUR APPROVAL AND FREEZE.**
+Date: 2026-08-19 · Status: **CANDIDATE. ALL DECISIONS ANSWERED. AWAITING FREEZE ONLY.**
 
 <!-- v11 and everything before it is archived at docs/archive/v11/, with a README recording why.
      To freeze: read this, cut what you don't want, answer §6, copy into SCOPE.md, add a freeze
@@ -46,8 +46,9 @@ That is the whole idea, and every decision below follows from it.
 ### 1. Two-question start
 
 - Cold open shows one line and one button. No numbers, no seed data, no feature list.
-- **Question 1: what you earn an hour.** Question 2: what your month costs, as a single number.
-- Country is asked only if it cannot be inferred, and it is asked **first** when it is asked, because it sets currency and tax. Where inference is possible it is offered as "United Kingdom, change this" rather than a question.
+- **Question 1: what you earn an hour.** **Question 2: what your month costs, as one number** (D5). Splitting it into items is a refinement, not a prerequisite.
+- **Country is inferred, never asked** (D4). Read `Intl.DateTimeFormat().resolvedOptions().timeZone` first, since a timezone maps to a country more reliably than a language tag; fall back to `navigator.language`; fall back to United Kingdom. The result is shown as a changeable line, not a question: "United Kingdom, change this".
+- Inference can be wrong, so the line is visible on the first screen where money appears, not hidden in Settings. A wrong country means a wrong tax model and therefore a wrong number, which is the one error this app cannot afford to make quietly.
 - Answering both lands directly on the number. No confirmation step, no summary screen.
 - Each answer commits to storage as it is given, so closing the tab mid-flow resumes.
 - An "I have a backup file" route on the cold open goes straight to import.
@@ -106,10 +107,19 @@ That is the whole idea, and every decision below follows from it.
 Four screens, named after what you'd actually ask:
 
 **Now** (the number, log a shift) · **Earn** (jobs, rates, hours, your limit, what an hour pays) ·
-**Owe** (monthly items, goals, where the hours go) · **Weeks** (history).
+**Outgoings** (monthly items, goals, where the hours go) · **Weeks** (history).
 
-"Earn" and "Owe" mirror the two opening questions on purpose. Settings sits behind a header
-control, as before.
+"Earn" and "Outgoings" mirror the two opening questions on purpose (D2). **"Owe" was rejected**: the
+screen also holds savings and spending, and a savings pot is not something you owe. "Bills" is too
+narrow for the same reason, and "Expenses" reads like something you claim back from an employer.
+"Outgoings" is the everyday UK word, already used in the app, and it carries no implication of debt,
+which matters for a product that must never look like it advises on debt. Cost: nine characters
+against four, in a four-column tab bar. Acceptable at 11px, and the Builder must verify it does not
+wrap on a 320px viewport.
+
+**A workplace is a "job", everywhere, with no exceptions** (D3). A job holds one or more rates. The
+words "employer" and "workplace" do not appear in any visitor-facing string. v11 shipped a card
+headed "Your jobs" containing a field labelled "Employer" and a button reading "+ Job".
 
 ---
 
@@ -123,12 +133,18 @@ control, as before.
 
 ---
 
-## §6 — Decisions I need from you before freeze
+## Decisions — answered 2026-08-19
 
-1. **Screen names: Now / Earn / Owe / Weeks.** Plainer than Work/Money and they mirror the two questions. "Owe" may read as debt-specific when it also covers savings and spending, so it is the weakest of the four.
-2. **One word for a workplace: "job" or "employer"?** A job has rates. Recommend **job**, as the plainer word, used everywhere with no exceptions.
-3. **Country: infer or ask?** Recommend inferring from the browser and showing "United Kingdom, change this", because it removes a question from a flow whose whole point is brevity. Inference can be wrong.
-4. **Does question 2 accept one number, or ask for a short list?** Recommend one number, split later as a refinement. A list is more accurate and slower, and slow is what went wrong.
+| # | Decision | Why |
+|---|---|---|
+| D2 | Screens are **Now / Earn / Outgoings / Weeks** | "Owe" rejected: the screen holds savings and spending too. See Navigation |
+| D3 | A workplace is a **job**, everywhere | One word for one thing. v11 used three for this |
+| D4 | Country is **inferred from the browser**, shown as a changeable line | Removes a question from a flow whose whole point is brevity |
+| D5 | Question 2 takes **one number** | Splitting into items is a refinement. Slow is what went wrong |
+
+**Still standing, unanswered:** whether to overrule the port-not-rewrite deviation. The instruction
+was to reset all code; the tax tables and the v6 schema/migration are currently scoped as ported.
+Silence leaves them ported.
 
 ## Freeze
 

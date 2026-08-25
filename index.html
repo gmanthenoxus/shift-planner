@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,6 +9,12 @@
   header h1{font-size:26px;line-height:1.15;margin:2px 0 8px}
   .lede{max-width:52ch;margin:0 0 4px}
   @media(min-width:760px){header h1{font-size:30px}}
+  #headline{text-align:center;padding:30px 20px}
+  #headline .label{font-size:13px;color:var(--sub)}
+  #headline .hero-num{font-size:52px;font-weight:500;letter-spacing:-.03em;line-height:1.05;
+    color:var(--ink);margin:8px 0 0}
+  #headline #hl-break{max-width:340px;margin-left:auto;margin-right:auto;text-align:left}
+  @media(max-width:420px){#headline{padding:24px 16px}#headline .hero-num{font-size:44px}}
   .empty{color:var(--sub);font-size:13px;text-align:center;padding:10px 4px;line-height:1.5}
   :root{
     color-scheme:light;
@@ -34,8 +40,7 @@
        Every slice also carries a text label, which stays the real guarantee. */
     --c-bills:#5C2410; --c-save:#3A5A31; --c-repay:#8A5B0E; --c-spend:#8E6A60; --c-tax:#4A443C;
   }
-  @media (prefers-color-scheme:dark){
-    :root{
+  @media (prefers-color-scheme:dark){ :root[data-theme="auto"]{
       color-scheme:dark;
       --bg:#16120E; --panel:#211C17; --panel2:#2C251E; --line:#322A22; --line-strong:#443A2F;
       --ink:#F4F0E9; --sub:#9B8F80;
@@ -44,11 +49,20 @@
       --error:#E89184; --error-soft:#33201C;
       --amber:#E0AC4E; --covered:#9DBE93; --covered-soft:#222A1E;
       --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
-    }
+  } }
+  :root[data-theme="dark"]{
+      color-scheme:dark;
+      --bg:#16120E; --panel:#211C17; --panel2:#2C251E; --line:#322A22; --line-strong:#443A2F;
+      --ink:#F4F0E9; --sub:#9B8F80;
+      --accent:#E2825A; --accent2:#C96A44; --accent-ink:#16120E; --accent-soft:#33231A;
+      --warn:#E0AC4E; --warn-soft:#302516;
+      --error:#E89184; --error-soft:#33201C;
+      --amber:#E0AC4E; --covered:#9DBE93; --covered-soft:#222A1E;
+      --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
   }
   /* Cards carry no border in light mode; Guide separates with space. In dark, fill alone stops
      separating surfaces, so a hairline comes back (DESIGN-TOKENS "Space"). */
-  @media (prefers-color-scheme:dark){ .card,.panel{border:1px solid var(--line)} }
+  
 
   /* ── four-screen shell (TECH-PACK.md v11 §1) ───────────────────────────── */
   .tabpanel[hidden]{display:none}
@@ -73,12 +87,14 @@
   body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,sans-serif;line-height:1.4}
   .mono{font-family:ui-monospace,'SF Mono',Menlo,monospace;font-variant-numeric:tabular-nums}
   .wrap{max-width:980px;margin:0 auto;padding:24px 16px 64px}
-  .eyebrow{font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:8px}
+  .eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:500;margin-bottom:6px}
   h1{font-size:clamp(24px,6vw,32px);margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.1}
   .lede{color:var(--sub);margin-top:10px;font-size:15px;max-width:620px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px}
+  .card{background:var(--panel);border:0;border-radius:16px;padding:20px}
+  :root[data-theme="dark"] .card,
+  :root[data-theme="auto"] .card{border:1px solid var(--line)}
   .stack{display:grid;gap:14px}
-  .label{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--sub);font-weight:700;display:block}
+  .label{font-size:13px;letter-spacing:0;text-transform:none;color:var(--sub);font-weight:400;display:block}
   label.label{margin-bottom:7px}
   input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none;-webkit-appearance:none}
   select{font-family:inherit;cursor:pointer}
@@ -136,24 +152,9 @@
     <div id="hl-break" style="margin-top:14px;display:grid;gap:8px"></div>
     <div id="hl-burn" style="margin-top:14px"></div>
   </div>
-<div class="card">
-      <span class="label" style="margin-bottom:12px">Baseline: covering monthly life</span>
-      <div class="stack" style="gap:10px">
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Shift hours / month</span><span class="mono" id="bl-hrsMo"></span></div>
-        <div class="row-between" style="border-top:1px solid var(--line);padding-top:10px"><span style="font-weight:700">Baseline hours / week</span><span class="mono" id="bl-hrsWk" style="color:var(--accent);font-weight:800"></span></div>
-      </div>
-      <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
-    </div>
-<div class="card">
-      <span class="label" style="margin-bottom:12px">Goals: extra hours while they run</span>
-      <div id="goalRows" class="stack" style="gap:6px"></div>
-    </div>
-<div class="card" style="margin-bottom:14px">
-    <span class="label" style="margin-bottom:12px">Reality check against your ceiling</span>
-    <div id="reality"></div>
-  </div>
+
+
+
 <div class="card">
     <div class="row-between" style="margin-bottom:6px">
       <span class="label">This week's shifts</span>
@@ -169,6 +170,10 @@
   </div>
 </section>
 <section class="tabpanel" id="tab-work" role="tabpanel" aria-labelledby="tabbtn-work" hidden>
+<div class="card" style="margin-bottom:14px">
+    <span class="label" style="margin-bottom:12px">Reality check against your ceiling</span>
+    <div id="reality"></div>
+  </div>
 <div class="card">
         <div class="row-between" style="margin-bottom:12px"><span class="label">Your jobs</span><button class="btn" id="addJob">+ Job</button></div>
         <div id="jobs" class="stack" style="gap:12px"></div>
@@ -191,6 +196,20 @@
       </div>
 </section>
 <section class="tabpanel" id="tab-money" role="tabpanel" aria-labelledby="tabbtn-money" hidden>
+<div class="card">
+      <span class="label" style="margin-bottom:12px">Goals: extra hours while they run</span>
+      <div id="goalRows" class="stack" style="gap:6px"></div>
+    </div>
+<div class="card">
+      <span class="label" style="margin-bottom:12px">Baseline: covering monthly life</span>
+      <div class="stack" style="gap:10px">
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Shift hours / month</span><span class="mono" id="bl-hrsMo"></span></div>
+        <div class="row-between" style="border-top:1px solid var(--line);padding-top:10px"><span style="font-weight:700">Baseline hours / week</span><span class="mono" id="bl-hrsWk" style="color:var(--accent);font-weight:800"></span></div>
+      </div>
+      <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
+    </div>
 <div class="card">
         <div class="row-between" style="margin-bottom:4px"><span class="label">Monthly outgoings</span><button class="btn" id="addBill">+ Item</button></div>
         <div class="hint" style="margin-top:0;margin-bottom:12px">Bills, savings, repayments, spending. Tag each so you can see where the money, and the hours, go.</div>
@@ -224,6 +243,15 @@
 <div class="card"><div class="label">Banked weeks</div><div id="history"></div></div>
 </section>
 <section class="tabpanel" id="tab-settings" role="tabpanel" aria-labelledby="tabbtn-settings" hidden>
+<div class="card" style="margin-bottom:14px">
+  <span class="label" style="margin-bottom:10px">Appearance</span>
+  <div class="toolbar" role="radiogroup" aria-label="Appearance">
+    <button class="btn btn-sm themebtn" data-theme-set="light" aria-pressed="true">Light</button>
+    <button class="btn btn-sm themebtn" data-theme-set="dark" aria-pressed="false">Dark</button>
+    <button class="btn btn-sm themebtn" data-theme-set="auto" aria-pressed="false">Match device</button>
+  </div>
+</div>
+
 <div class="card" style="margin-bottom:14px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
     <div style="flex:1;min-width:200px">
       <label class="label" style="margin-bottom:7px">Where are you based? <span style="color:var(--accent);font-weight:700">Start here, it sets your currency and tax model.</span></label>
@@ -781,6 +809,20 @@ $("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;showImportMs
   S=parsed;save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();
   };r.readAsText(f);};
 $("resetBtn").onclick=()=>{if(confirm("Clear everything and start fresh? This can't be undone.")){S=EMPTY_V6();save();location.reload();}};
+
+
+// ── appearance ──────────────────────────────────────────────────────────────
+// Light is the design. Dark exists, but it is CHOSEN, not inherited: an earlier build honoured
+// prefers-color-scheme silently, so anyone with a dark OS never saw the palette that was designed,
+// approved and contrast-checked. A theme the user did not pick is a theme they cannot report.
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  document.querySelectorAll(".themebtn").forEach(b=>
+    b.setAttribute("aria-pressed",b.dataset.themeSet===t?"true":"false"));
+}
+applyTheme(S.settings.theme||"light");
+document.querySelectorAll(".themebtn").forEach(b=>b.addEventListener("click",()=>{
+  S.settings.theme=b.dataset.themeSet;save();applyTheme(S.settings.theme);}));
 
 // ── four-screen shell (TECH-PACK.md v11 §1) ─────────────────────────────────
 // Scroll position is remembered per tab: returning to Now after checking Money should not dump you

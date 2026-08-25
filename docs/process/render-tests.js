@@ -1,4 +1,4 @@
-// TEMPORARY. jsdom render tests for the v6 switchover + the four-screen shell.
+// TEMPORARY. jsdom render tests: v6 switchover, four-screen shell, appearance.
 // Run: node docs/process/render-tests.js   Requires: npm i jsdom. Delete after the v11 Breaker pass.
 const fs=require("fs"),{JSDOM}=require("jsdom");
 const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
@@ -79,3 +79,22 @@ console.log("\nE. Numbers actually render (the gap that let a blank headline shi
 }
 console.log("\n"+pass+" passed, "+fail+" failed");
 if(fail)process.exitCode=1;
+
+console.log("\nF. Appearance");
+{ const {d,errs}=boot({});
+  ok("no uncaught errors",errs.length===0,errs.join("; "));
+  ok("light is the default, not the OS preference",d.documentElement.getAttribute("data-theme")==="light",
+     d.documentElement.getAttribute("data-theme"));
+  ok("three appearance choices",d.querySelectorAll(".themebtn").length===3);
+  ok("light is pressed",d.querySelector('[data-theme-set="light"]').getAttribute("aria-pressed")==="true");
+  d.querySelector('[data-theme-set="dark"]').click();
+  ok("choosing dark applies it",d.documentElement.getAttribute("data-theme")==="dark");
+  ok("aria-pressed follows",d.querySelector('[data-theme-set="dark"]').getAttribute("aria-pressed")==="true"
+     && d.querySelector('[data-theme-set="light"]').getAttribute("aria-pressed")==="false");
+}
+{ const {d}=boot({"shiftPlanner.v6":JSON.stringify({schema:6,employers:[],outgoings:[],goals:[],shifts:[],history:[],
+    settings:{country:"UK",customRate:20,maxDays:6,hoursPerDay:10,otherMo:0,protectedBlocks:[],theme:"dark"},meta:{}})});
+  ok("a saved choice survives reload",d.documentElement.getAttribute("data-theme")==="dark",
+     d.documentElement.getAttribute("data-theme"));
+}
+console.log("\n"+pass+" passed, "+fail+" failed");

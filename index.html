@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Shift Planner: How many hours does your life cost?</title>
 <style>
+  header{margin-bottom:20px}
+  header h1{font-size:26px;line-height:1.15;margin:2px 0 8px}
+  .lede{max-width:52ch;margin:0 0 4px}
+  @media(min-width:760px){header h1{font-size:30px}}
   .empty{color:var(--sub);font-size:13px;text-align:center;padding:10px 4px;line-height:1.5}
   :root{
     color-scheme:light;
@@ -48,13 +52,13 @@
 
   /* ── four-screen shell (TECH-PACK.md v11 §1) ───────────────────────────── */
   .tabpanel[hidden]{display:none}
-  .tabpanel{max-width:720px;margin:0 auto;padding:0 16px}
+  .tabpanel{margin:0}
   .tabpanel:focus{outline:none}
   @media(min-width:480px){.tabpanel{padding:0 24px}}
   /* `hidden` is enough: it removes the element from the accessibility tree, so a screen reader
      never walks an inactive screen. The Tech Pack asked for DOM detachment on the grounds that it
      would; that reasoning is wrong and detaching would cost complexity for no benefit. Flagged. */
-  .tabbar{position:sticky;bottom:0;max-width:720px;margin-left:auto;margin-right:auto;display:flex;gap:2px;background:var(--panel);
+  .tabbar{position:sticky;bottom:0;z-index:5;box-shadow:0 -8px 16px -12px rgba(0,0,0,.4);display:flex;gap:2px;background:var(--panel);
     border-radius:var(--r);padding:6px 4px;margin:18px 0 0;
     padding-bottom:calc(6px + env(safe-area-inset-bottom))}
   .tabbtn{flex:1;min-height:44px;background:none;border:0;border-radius:10px;cursor:pointer;
@@ -108,14 +112,14 @@
 </head>
 <body>
 <div class="wrap">
-  <header style="margin-bottom:18px">
+  <header>
     <div class="row-between" style="align-items:flex-start">
       <div>
         <div class="eyebrow">Shift Planner</div>
         <h1>How many hours does your life cost?</h1>
       </div>
     </div>
-    <p class="lede">Enter what you earn per hour and what your month actually costs. See how many shifts that takes, and exactly where every hour goes. Log each week to track what you really earned, in priority order. Built for anyone juggling more than one job and shifts that change every week.</p>
+    <p class="lede">Enter what you earn an hour and what your month costs. It works out the hours.</p>
     <div class="toolbar" style="margin-top:14px">
       <button class="settingsbtn" id="settingsBtn" aria-label="Settings and data">Settings</button>
       <button class="btn btn-sm" id="exportBtn" aria-label="Export data"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
@@ -125,52 +129,6 @@
     </div>
     <div id="importMsg" style="display:none;margin-top:8px;font-size:12px;color:var(--error)"></div>
   </header>
-
-  <!-- COUNTRY PICKER: first thing, sets currency for everything below -->
-  
-
-  <div class="cols" style="margin-bottom:14px">
-    <!-- LEFT: earning -->
-    <div class="stack">
-      
-
-      
-
-      
-    </div>
-
-    <!-- RIGHT: spending -->
-    <div class="stack">
-      
-
-      
-
-      
-    </div>
-  </div>
-
-  <!-- HEADLINE -->
-  
-
-  <!-- HOUR BREAKDOWN — the signature -->
-  
-
-  <!-- baseline + goals -->
-  <div class="cols" style="margin-bottom:14px">
-    
-    
-  </div>
-
-  <!-- reality bar -->
-  
-
-  <!-- shift log -->
-  
-
-  <p style="font-size:11px;color:var(--sub);margin-top:20px;text-align:center;line-height:1.6">
-    These are simplified effective-rate estimates, not real tax law: no allowances, credits, student loans, or overtime rules factored in. It plans average hours, not bill due dates. Treat it as planning guidance, not a payslip. Nothing leaves your browser, ever.
-  </p>
-</div>
 <section class="tabpanel" id="tab-now" role="tabpanel" aria-labelledby="tabbtn-now">
 <div class="card" id="headline" style="margin-bottom:14px">
     <span class="label" id="hl-label">This week, to stay on top of everything, work</span>
@@ -278,6 +236,10 @@
   </div>
 </section>
 <nav class="tabbar" role="tablist" aria-label="Sections"><button class="tabbtn is-on" id="tabbtn-now" role="tab" aria-selected="true" aria-controls="tab-now" data-tab="now">Now</button><button class="tabbtn" id="tabbtn-work" role="tab" aria-selected="false" aria-controls="tab-work" data-tab="work">Work</button><button class="tabbtn" id="tabbtn-money" role="tab" aria-selected="false" aria-controls="tab-money" data-tab="money">Money</button><button class="tabbtn" id="tabbtn-weeks" role="tab" aria-selected="false" aria-controls="tab-weeks" data-tab="weeks">Weeks</button></nav>
+<p style="font-size:11px;color:var(--sub);margin-top:20px;text-align:center;line-height:1.6">
+    These are simplified effective-rate estimates, not real tax law: no allowances, credits, student loans, or overtime rules factored in. It plans average hours, not bill due dates. Treat it as planning guidance, not a payslip. Nothing leaves your browser, ever.
+  </p>
+</div>
 <script>
 // ── tax models: return {tax components...} so we can break them down ──
 // Figures verified against official sources as of 2026-07-06 -- see TAX-ACCURACY-AUDIT.md for

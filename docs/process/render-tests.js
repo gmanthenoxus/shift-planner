@@ -1,9 +1,6 @@
-// TEMPORARY. jsdom render tests for the v6 switchover. Run: node docs/process/render-tests.js
-// Requires: npm i jsdom. Delete once the Breaker has passed v11.
-const fs=require("fs");
-let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){
-  console.error("jsdom not installed. Run:  npm i jsdom   (dev-only, not an app dependency)");
-  process.exit(2);}
+// TEMPORARY. jsdom render tests for the v6 switchover + the four-screen shell.
+// Run: node docs/process/render-tests.js   Requires: npm i jsdom. Delete after the v11 Breaker pass.
+const fs=require("fs"),{JSDOM}=require("jsdom");
 const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
 let pass=0,fail=0;
 const vis=d=>{const c=d.body.cloneNode(true);c.querySelectorAll("script,style").forEach(n=>n.remove());return c.textContent;};
@@ -63,6 +60,22 @@ console.log("\nD. Adding an employer from empty");
   ok("empty state replaced by a card",!/Add an employer/.test(d.getElementById("jobs").textContent));
   ok("card has one rate row",d.getElementById("jobs").querySelectorAll("[data-k='value']").length===1);
   ok("delete buttons carry aria-labels",[...d.getElementById("jobs").querySelectorAll("button.x")].every(b=>b.getAttribute("aria-label")));
+}
+
+console.log("\nE. Numbers actually render (the gap that let a blank headline ship)");
+{ const {d,errs}=boot({"shiftPlanner.v5":JSON.stringify(V5)});
+  ok("no uncaught errors",errs.length===0,errs.join("; "));
+  const num=id=>{const e=d.getElementById(id);return e&&/[0-9]/.test(e.textContent);};
+  ok("headline shows a figure, not blank",num("hl-total"),JSON.stringify(d.getElementById("hl-total").textContent));
+  ok("baseline net has a value",num("bl-net"));
+  ok("baseline gross has a value",num("bl-gross"));
+  ok("baseline hours/month has a value",num("bl-hrsMo"));
+  ok("baseline hours/week has a value",num("bl-hrsWk"));
+  ok("net per hour has a value",num("netHr"));
+  ok("gross per hour has a value",num("grossHr"));
+  const empties=["hl-total","bl-net","bl-gross","bl-hrsMo","bl-hrsWk","netHr","grossHr"]
+    .filter(id=>{const e=d.getElementById(id);return !e||e.textContent.trim()==="";});
+  ok("no populated field is left blank",empties.length===0,empties.join(","));
 }
 console.log("\n"+pass+" passed, "+fail+" failed");
 if(fail)process.exitCode=1;

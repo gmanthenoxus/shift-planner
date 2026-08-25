@@ -1,6 +1,9 @@
 // TEMPORARY. jsdom tests for the four-screen shell + card density. Run: node docs/process/tab-tests.js
 // Requires: npm i jsdom. Delete once the Breaker has passed v11.
-const fs=require("fs"),{JSDOM}=require("jsdom");
+const fs=require("fs");
+let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){
+  console.error("jsdom not installed. Run:  npm i jsdom   (dev-only, not an app dependency)");
+  process.exit(2);}
 const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
 let pass=0,fail=0;
 const ok=(n,c,x)=>{c?(pass++,console.log("  PASS  "+n)):(fail++,console.log("  FAIL  "+n+(x?"  -> "+x:"")));};

@@ -197,7 +197,7 @@ default that is right.**
 
 ## Freeze
 
-FROZEN: 2026-08-19
+FROZEN: 
 
 ## Changelog
 

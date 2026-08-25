@@ -17,6 +17,9 @@ If you are adding a file and it is not read at the start of every session, it do
 | `CLAUDE.md` | Standing orders. The constitution | Human |
 | `SCOPE.md` | The frozen scope for the current version | Human. Builder is read-only |
 | `ARCHITECTURE.md` | Structure and decisions log | Architect. Builder is read-only |
+
+**Both absent as of 2026-08-19.** v11 was archived for a 2.0 restart; `SCOPE.md`, `ARCHITECTURE.md`
+and `index.html` return when 2.0's scope is frozen. See `docs/archive/v11/README.md`.
 | `PARKING.md` | Parked ideas | Scope-clerk. Builder is read-only |
 | `HANDOVER.md` | Append-only session log. The org's only memory | Every session appends |
 | `README.md` | What this is, for a stranger | Human |
@@ -44,21 +47,19 @@ docs/
     PROJECT.md                    problem, audience, strategy, money. Version-independent
     REQUIREMENTS.md               full-app requirements + the legal trigger map
     SCOPE-HISTORY.md              append-only, one line per frozen version
+    SCOPE-v2-CANDIDATE.md         2.0 draft, awaiting freeze
   process/
-    PROMPTS.md                    the v11 run-book, prompt by prompt
     RELEASE-CHECKLIST.md          run before every deploy
-    migration-assertions.js       TEMPORARY, delete after the v11 Breaker pass
-    render-tests.js               TEMPORARY, jsdom. Needs `npm i jsdom`
-    dst-and-colour-checks.js      TEMPORARY, DST + colour-vision
-    tab-tests.js                  TEMPORARY, jsdom. Four-screen shell
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Still referenced by index.html
   design/
     COPY-DECK.md                  voice, register, resolved copy decisions
     DESIGN-TOKENS.md              Guide (warm), contrast-verified
-    TECH-PACK.md                  v11 layout, states, four-screen structure
   archive/
+    v11/                          THE WHOLE OF v11. README.md records why it closed
+      README.md  index.html  SCOPE.md  ARCHITECTURE.md  TECH-PACK.md  PROMPTS.md
+      migration-assertions.js  render-tests.js  tab-tests.js  dst-and-colour-checks.js
     v9/
       QA-REPORT.md                v9 breaker report. Superseded when v11's is written
       TECH-PACK.md                v9 layout, single-scroll. Superseded by the v11 rebuild

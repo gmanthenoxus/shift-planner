@@ -38,8 +38,11 @@ active in `--accent` at weight 500, inactive in `--muted` at 400. **Labels, not 
 four abstract icons would need learning, and this is used tired. Each tab target is at least
 44×44px. Bar sits above the safe-area inset, never overlapping content.
 
-**Only one tab's content is in the DOM at a time.** Not `display:none` on all four — a screen
-reader should not encounter three hidden screens. See States, below, for the switch behaviour.
+**Only the active tab is exposed, via the `hidden` attribute.** An earlier version of this line
+called for DOM detachment on the grounds that a screen reader would otherwise walk three hidden
+screens. **That reasoning was wrong:** `hidden` removes an element from the accessibility tree, so
+inactive panels are never encountered. Detaching would add complexity for no benefit. Corrected
+2026-08-19 after the Builder flagged it rather than silently working around it.
 
 ---
 

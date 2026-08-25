@@ -38,7 +38,8 @@ token change means editing both, in the same commit.
   --pad-card:20px; --gap-card:12px; --gap-section:28px;
   --dur:200ms; --ease:cubic-bezier(.2,.6,.3,1);
 }
-@media (prefers-color-scheme:dark){ :root:where(:not([data-theme="light"])){
+:root[data-theme="dark"]{ /* same values */ }
+@media (prefers-color-scheme:dark){ :root[data-theme="auto"]{
   color-scheme:dark;
   --bg:#16120E; --surface:#211C17; --surface-2:#2C251E;
   --text:#F4F0E9; --text-2:#C9BDAD; --muted:#9B8F80;
@@ -56,6 +57,10 @@ Type: system stack, weights 400/500 only. 44px headline · 20px section · 15px 
 **12px hard floor.** Cards: `--surface` fill, `--r-card`, `--pad-card`, **no border in light mode**,
 `1px solid var(--line)` in dark. Icons: Lucide, 1.75px stroke, 20px inline, 44×44px tap target.
 Max content width 720px.
+
+**Theme: light by default and explicit** (`<html data-theme="light">`). Dark is opt-in via Settings;
+the OS preference applies only under `data-theme="auto"`. Corrected 2026-08-19 after a silent
+`prefers-color-scheme` override meant the approved light palette was never seen.
 
 **Colour rule that binds the Builder:** covered = `--covered`, shortfall = `--attention`,
 not-reached = **no colour, `--muted` text only**, `--error` = app faults exclusively and never a

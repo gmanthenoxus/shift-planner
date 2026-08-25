@@ -1,4 +1,4 @@
-// TEMPORARY. jsdom tests for the four-screen shell. Run: node docs/process/tab-tests.js
+// TEMPORARY. jsdom tests for the four-screen shell + card density. Run: node docs/process/tab-tests.js
 // Requires: npm i jsdom. Delete once the Breaker has passed v11.
 const fs=require("fs"),{JSDOM}=require("jsdom");
 const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
@@ -63,3 +63,18 @@ d.querySelector('[data-tab="now"]').click();
 ok("headline + shifts on Now",!!d.getElementById("tab-now").querySelector("#headline")&&!!d.getElementById("tab-now").querySelector("#shifts"));
 console.log("\n"+pass+" passed, "+fail+" failed");
 if(fail)process.exitCode=1;
+
+console.log("\nDensity (TECH-PACK §2: never more than three cards per screen)");
+{ const counts={};
+  ["now","work","money","weeks","settings"].forEach(t=>{
+    counts[t]=d.getElementById("tab-"+t).querySelectorAll(":scope > .card").length;});
+  Object.entries(counts).forEach(([t,n])=>ok(t+" has "+n+" cards (max 3)",n<=3));
+  ok("Now carries the headline, this-week and shifts",
+     !!d.getElementById("headline")&&!!d.getElementById("thisweek")&&!!d.getElementById("shifts"));
+  // this fixture has one migrated shift, so the card must be SHOWING and populated
+  ok("this-week card shows when a shift exists",!d.getElementById("thisweek").hidden);
+  ok("this-week counts the shift",d.getElementById("tw-count").textContent==="1",d.getElementById("tw-count").textContent);
+  ok("this-week shows earnings, not a dash",/[0-9]/.test(d.getElementById("tw-net").textContent),d.getElementById("tw-net").textContent);
+  ok("a full-width log button exists on Now",!!d.getElementById("addShiftTop"));
+}
+console.log("\n"+pass+" passed, "+fail+" failed");

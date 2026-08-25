@@ -9,6 +9,29 @@
   header h1{font-size:26px;line-height:1.15;margin:2px 0 8px}
   .lede{max-width:52ch;margin:0 0 4px}
   @media(min-width:760px){header h1{font-size:30px}}
+
+  input:focus,select:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+  input::placeholder{color:var(--sub)}
+  :root[data-theme="dark"] input,:root[data-theme="dark"] select,
+  :root[data-theme="auto"] input,:root[data-theme="auto"] select{border-color:var(--line)}
+  .pre{position:absolute;left:14px;top:14px;color:var(--sub);font-size:15px;pointer-events:none}
+  .post{position:absolute;right:14px;top:14px;color:var(--sub);font-size:15px;pointer-events:none}
+  .pl{padding-left:30px} .pr{padding-right:32px}
+  /* rows read as label-left / value-right, the shape the mockup used everywhere */
+  .card .row-between{padding:9px 0;font-size:15px}
+  .card .row-between > span:first-child{color:var(--sub)}
+  .kv{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;font-size:15px}
+  .kv > span:first-child{color:var(--text-2,var(--sub))}
+  .kv b{font-weight:500;color:var(--ink)}
+  .btn{border-radius:12px;padding:11px 14px;font-size:14px;min-height:44px}
+  .btn-sm{padding:9px 12px;font-size:13px;min-height:44px}
+  .btn-block{display:block;width:100%;text-align:center;background:var(--accent);
+    border-color:var(--accent);color:var(--accent-ink);font-weight:500}
+  .x{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;
+    background:none;border:0;color:var(--sub);border-radius:12px;cursor:pointer}
+  .x:hover{background:var(--panel2);color:var(--error)}
+  .stack{display:grid;gap:16px}
+  .card + .card{margin-top:12px}
   #headline{text-align:center;padding:30px 20px}
   #headline .label{font-size:13px;color:var(--sub)}
   #headline .hero-num{font-size:52px;font-weight:500;letter-spacing:-.03em;line-height:1.05;
@@ -96,7 +119,7 @@
   .stack{display:grid;gap:14px}
   .label{font-size:13px;letter-spacing:0;text-transform:none;color:var(--sub);font-weight:400;display:block}
   label.label{margin-bottom:7px}
-  input,select{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--ink);padding:12px;font-size:16px;font-family:ui-monospace,Menlo,monospace;outline:none;-webkit-appearance:none}
+  input,select{width:100%;background:var(--panel2);border:1px solid transparent;border-radius:12px;color:var(--ink);padding:13px 14px;font:inherit;font-size:15px;-webkit-appearance:none;appearance:none}
   select{font-family:inherit;cursor:pointer}
   input:focus,select:focus{border-color:var(--accent2)}
   .btn{background:transparent;border:1px solid var(--line);color:var(--sub);border-radius:10px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:700;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
@@ -152,6 +175,13 @@
     <div id="hl-break" style="margin-top:14px;display:grid;gap:8px"></div>
     <div id="hl-burn" style="margin-top:14px"></div>
   </div>
+<div class="card" id="thisweek" hidden>
+  <span class="label" style="margin-bottom:8px">This week so far</span>
+  <div class="kv"><span>Shifts logged</span><b id="tw-count">0</b></div>
+  <div class="kv"><span>Earned</span><b id="tw-net" class="mono">—</b></div>
+</div>
+<button class="btn btn-block" id="addShiftTop" style="margin-top:12px">Log a shift</button>
+
 
 
 
@@ -170,10 +200,7 @@
   </div>
 </section>
 <section class="tabpanel" id="tab-work" role="tabpanel" aria-labelledby="tabbtn-work" hidden>
-<div class="card" style="margin-bottom:14px">
-    <span class="label" style="margin-bottom:12px">Reality check against your ceiling</span>
-    <div id="reality"></div>
-  </div>
+
 <div class="card">
         <div class="row-between" style="margin-bottom:12px"><span class="label">Your jobs</span><button class="btn" id="addJob">+ Job</button></div>
         <div id="jobs" class="stack" style="gap:12px"></div>
@@ -186,7 +213,12 @@
           <div><label class="label">Max hours/day</label><input type="number" id="hoursPerDay" min="1" max="16" value="10" inputmode="numeric"></div>
         </div>
         <div class="hint">Ceiling: <span id="ceiling" style="color:var(--ink);font-weight:700"></span></div>
-      </div>
+      
+<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+    <span class="label" style="margin-bottom:12px">Reality check against your ceiling</span>
+    <div id="reality"></div>
+  </div>
+</div>
 <div class="card">
         <span class="label" style="margin-bottom:12px">Your real take-home</span>
 
@@ -196,20 +228,8 @@
       </div>
 </section>
 <section class="tabpanel" id="tab-money" role="tabpanel" aria-labelledby="tabbtn-money" hidden>
-<div class="card">
-      <span class="label" style="margin-bottom:12px">Goals: extra hours while they run</span>
-      <div id="goalRows" class="stack" style="gap:6px"></div>
-    </div>
-<div class="card">
-      <span class="label" style="margin-bottom:12px">Baseline: covering monthly life</span>
-      <div class="stack" style="gap:10px">
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
-        <div class="row-between"><span style="color:var(--sub);font-size:13px">Shift hours / month</span><span class="mono" id="bl-hrsMo"></span></div>
-        <div class="row-between" style="border-top:1px solid var(--line);padding-top:10px"><span style="font-weight:700">Baseline hours / week</span><span class="mono" id="bl-hrsWk" style="color:var(--accent);font-weight:800"></span></div>
-      </div>
-      <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
-    </div>
+
+
 <div class="card">
         <div class="row-between" style="margin-bottom:4px"><span class="label">Monthly outgoings</span><button class="btn" id="addBill">+ Item</button></div>
         <div class="hint" style="margin-top:0;margin-bottom:12px">Bills, savings, repayments, spending. Tag each so you can see where the money, and the hours, go.</div>
@@ -219,17 +239,19 @@
           <span class="mono" style="font-weight:800" id="totalMonthly"></span>
         </div>
         <div id="catTotals" style="margin-top:10px;display:flex;gap:6px;flex-wrap:wrap"></div>
+      
+<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+        <span class="label" style="margin-bottom:12px">Other income</span>
+        <div><label class="label">Other net income / month</label><div class="inwrap"><span class="pre" id="s2"></span><input type="number" class="pl" id="otherMo" value="0" inputmode="decimal"></div></div>
+        <div class="hint">Salary, benefits, anything not from these shifts. Reduces the hours your shifts must cover.</div>
       </div>
+</div>
 <div class="card">
         <div class="row-between" style="margin-bottom:4px"><span class="label">One-off goals</span><button class="btn" id="addGoal">+ Goal</button></div>
         <div class="hint" style="margin-top:0;margin-bottom:12px">A lump sum by a deadline. Adds extra hours on top, only while it runs.</div>
         <div id="goals" class="stack" style="gap:12px"></div>
       </div>
-<div class="card">
-        <span class="label" style="margin-bottom:12px">Other income</span>
-        <div><label class="label">Other net income / month</label><div class="inwrap"><span class="pre" id="s2"></span><input type="number" class="pl" id="otherMo" value="0" inputmode="decimal"></div></div>
-        <div class="hint">Salary, benefits, anything not from these shifts. Reduces the hours your shifts must cover.</div>
-      </div>
+
 <div class="card" style="margin-bottom:14px">
     <span class="label" style="margin-bottom:4px">Where every hour goes</span>
     <div class="hint" style="margin-top:0;margin-bottom:16px">One hour of work, sliced by what it pays for. This is your money turned back into time.</div>
@@ -237,7 +259,23 @@
       <svg id="clock" width="180" height="180" viewBox="0 0 180 180" style="flex-shrink:0"></svg>
       <div id="clockLegend" class="stack" style="gap:8px;flex:1;min-width:200px"></div>
     </div>
-  </div>
+  
+<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+      <span class="label" style="margin-bottom:12px">Baseline: covering monthly life</span>
+      <div class="stack" style="gap:10px">
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Net needed / month</span><span class="mono" id="bl-net"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Gross to earn / month</span><span class="mono" id="bl-gross"></span></div>
+        <div class="row-between"><span style="color:var(--sub);font-size:13px">Shift hours / month</span><span class="mono" id="bl-hrsMo"></span></div>
+        <div class="row-between" style="border-top:1px solid var(--line);padding-top:10px"><span style="font-weight:700">Baseline hours / week</span><span class="mono" id="bl-hrsWk" style="color:var(--accent);font-weight:800"></span></div>
+      </div>
+      <div class="hint">A month = 4.345 weeks. This is the floor you work before any goals.</div>
+    </div>
+
+<div style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+      <span class="label" style="margin-bottom:12px">Goals: extra hours while they run</span>
+      <div id="goalRows" class="stack" style="gap:6px"></div>
+    </div>
+</div>
 </section>
 <section class="tabpanel" id="tab-weeks" role="tabpanel" aria-labelledby="tabbtn-weeks" hidden>
 <div class="card"><div class="label">Banked weeks</div><div id="history"></div></div>
@@ -771,7 +809,7 @@ $("addGoal").onclick=()=>{S.goals.push({id:uid(),label:"New goal",amount:500,wee
 $("addShift").onclick=()=>{const e0=S.employers[0],r0=e0&&e0.rates?e0.rates[0]:null;
   S.shifts.push({id:uid(),date:mondayISO(new Date()),employerId:e0?e0.id:null,employerName:e0?e0.name:"",
     rateId:r0?r0.id:null,rateName:r0?r0.name:"",rateValue:r0?+r0.value||0:0,start:"18:00",end:"02:00",brk:0});
-  renderShifts();calc();};
+  renderShifts();calc();renderThisWeek();};
 // No alert() when there are no shifts to bank -- renderShifts() already shows "No shifts logged
 // this week." inline whenever S.shifts is empty, so the click is just a silent no-op; a second,
 // separate message would duplicate what's already on screen (SCOPE v9 feature 5).
@@ -782,10 +820,10 @@ $("newWeek").onclick=()=>{const ws=currentWeekShifts();if(!ws.length)return;cons
   S.history.push({id:uid(),weekStartISO:mondayISO(new Date()),
     dateLabel:new Date().toLocaleDateString(undefined,{month:"short",day:"numeric"}),
     hours:hrs,net,coverage:weekCoverage(net)});
-  S.shifts=S.shifts.filter(x=>!ws.includes(x));renderShifts();calc();};
+  S.shifts=S.shifts.filter(x=>!ws.includes(x));renderShifts();calc();renderThisWeek();};
 ["maxDays","hoursPerDay","customRate","otherMo"].forEach(id=>$(id).addEventListener("input",calc));
 $("country").addEventListener("input",()=>{sym=COUNTRIES[csel.value]?.symbol||"¤";sym=COUNTRIES[csel.value]?.symbol||"¤";
-renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();});
+renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();renderThisWeek();});
 
 // export / import / reset
 $("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="shift-planner-data.json";a.click();};
@@ -806,7 +844,7 @@ function showImportMsg(text){const el=$("importMsg");el.textContent=text;el.styl
 $("importFile").onchange=e=>{const f=e.target.files[0];if(!f)return;showImportMsg("");const r=new FileReader();r.onload=()=>{
   let parsed;try{parsed=JSON.parse(r.result);}catch(err){showImportMsg("Couldn't read that file: it isn't valid JSON.");return;}
   if(!validShapeV6(parsed)){showImportMsg("That file doesn't look like a Shift Planner export. Nothing was changed.");return;}
-  S=parsed;save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();
+  S=parsed;save();csel.value=S.settings.country;$("customRate").value=S.settings.customRate;$("maxDays").value=S.settings.maxDays;$("hoursPerDay").value=S.settings.hoursPerDay;$("otherMo").value=S.settings.otherMo;renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();renderThisWeek();
   };r.readAsText(f);};
 $("resetBtn").onclick=()=>{if(confirm("Clear everything and start fresh? This can't be undone.")){S=EMPTY_V6();save();location.reload();}};
 
@@ -823,6 +861,19 @@ function applyTheme(t){
 applyTheme(S.settings.theme||"light");
 document.querySelectorAll(".themebtn").forEach(b=>b.addEventListener("click",()=>{
   S.settings.theme=b.dataset.themeSet;save();applyTheme(S.settings.theme);}));
+
+
+// The "this week so far" card is hidden until there is something to say. An empty card that reads
+// "0 shifts, £0" is noise on the one screen that exists to carry a single number.
+function renderThisWeek(){
+  const ws=currentWeekShifts(),el=$("thisweek");
+  if(!ws.length){el.hidden=true;return;}
+  const m=model();let net=0;ws.forEach(x=>{net+=shiftHours(x)*shiftRate(x)*(1-m.effRate);});
+  $("tw-count").textContent=ws.length;
+  $("tw-net").textContent=fmt2(net);
+  el.hidden=false;
+}
+$("addShiftTop").addEventListener("click",()=>$("addShift").click());
 
 // ── four-screen shell (TECH-PACK.md v11 §1) ─────────────────────────────────
 // Scroll position is remembered per tab: returning to Now after checking Money should not dump you
@@ -864,7 +915,7 @@ $("settingsBtn").addEventListener("click",()=>{
 // A blob from a newer build was refused, not downgraded. Say so plainly rather than presenting an
 // empty app as if the user had no data (ARCHITECTURE.md §2, "Defensive read").
 if(SCHEMA_TOO_NEW)showImportMsg("Your saved data was created by a newer version of this app. Nothing was changed or deleted.");
-renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();
+renderEmployers();renderOutgoings();renderGoals();renderShifts();calc();renderThisWeek();
 </script>
 </body>
 </html>

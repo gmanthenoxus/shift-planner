@@ -111,8 +111,15 @@ Every pair below is measured, not estimated. See "Verified contrast".
   --ease: cubic-bezier(.2,.6,.3,1);
 }
 
+/* Light is the DEFAULT and it is explicit: `<html data-theme="light">`. Dark is chosen, never
+   inherited. An earlier build let prefers-color-scheme win silently, so anyone on a dark-mode OS
+   never saw the palette that was designed, approved and contrast-checked, and the mockups shown
+   for sign-off did not match what shipped. The OS preference now applies only under
+   data-theme="auto", which the user selects in Settings. Corrected 2026-08-19. */
+:root[data-theme="dark"] { /* ...same values as below... */ }
+
 @media (prefers-color-scheme: dark) {
-  :root:where(:not([data-theme="light"])) {
+  :root[data-theme="auto"] {
     color-scheme: dark;
     --bg:          #16120E;
     --surface:     #211C17;

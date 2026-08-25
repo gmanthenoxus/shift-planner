@@ -17,9 +17,6 @@ If you are adding a file and it is not read at the start of every session, it do
 | `CLAUDE.md` | Standing orders. The constitution | Human |
 | `SCOPE.md` | The frozen scope for the current version | Human. Builder is read-only |
 | `ARCHITECTURE.md` | Structure and decisions log | Architect. Builder is read-only |
-
-**Both absent as of 2026-08-19.** v11 was archived for a 2.0 restart; `SCOPE.md`, `ARCHITECTURE.md`
-and `index.html` return when 2.0's scope is frozen. See `docs/archive/v11/README.md`.
 | `PARKING.md` | Parked ideas | Scope-clerk. Builder is read-only |
 | `HANDOVER.md` | Append-only session log. The org's only memory | Every session appends |
 | `README.md` | What this is, for a stranger | Human |
@@ -47,7 +44,6 @@ docs/
     PROJECT.md                    problem, audience, strategy, money. Version-independent
     REQUIREMENTS.md               full-app requirements + the legal trigger map
     SCOPE-HISTORY.md              append-only, one line per frozen version
-    SCOPE-v2-CANDIDATE.md         2.0 draft, awaiting freeze
   process/
     RELEASE-CHECKLIST.md          run before every deploy
   research/
@@ -67,6 +63,7 @@ docs/
       LANDSCAPE.md                Jul 2026 scan, extended and replaced by COMPETITION-UK.md
       SCOPE-v10-CANDIDATE.md      frozen into SCOPE.md v10 on 18 Aug. Draft is dead
       SCOPE-v11-CANDIDATE.md      frozen into SCOPE.md v11 on 19 Aug. Draft is dead
+      SCOPE-v2-CANDIDATE.md       frozen into SCOPE.md 2.0 on 19 Aug. Draft is dead
       SPEC-v11-TARGET.html        Engineer-token design target. Superseded by Guide + the rebuild
 ```
 
@@ -79,6 +76,11 @@ version-closed artefacts, `archive/superseded/` for anything replaced by a newer
 **Cross-references are bare filenames**, not paths — `PROJECT.md` §0, not `docs/governance/PROJECT.md`
 §0. Filenames are unique across the repo, so a bare name resolves unambiguously and survives a
 reorganisation. Do not introduce path-based references.
+
+**No em-dashes in any document here.** Two frozen `SCOPE.md` files arrived truncated at the em-dash
+character, losing the rest of the line each time. Use a comma, colon or full stop. This is a
+mechanical constraint of the toolchain, not a style preference, and it matches what `COPY-DECK.md`
+already requires of product copy.
 
 **One home per fact.** If two documents state the same rule, one of them goes stale the first time
 either changes. When you find a duplicate, pick the authoritative home, delete the copy, and leave

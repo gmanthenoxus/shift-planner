@@ -50,6 +50,7 @@ docs/
     migration-assertions.js       TEMPORARY, delete after the v11 Breaker pass
     render-tests.js               TEMPORARY, jsdom. Needs `npm i jsdom`
     dst-and-colour-checks.js      TEMPORARY, DST + colour-vision
+    tab-tests.js                  TEMPORARY, jsdom. Four-screen shell
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Still referenced by index.html

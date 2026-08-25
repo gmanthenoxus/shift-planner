@@ -52,41 +52,48 @@ colour at all, `--error` = app faults only and never a user's financial position
 
 ---
 
-## 2. Storage: schema v6, ported
+## 2. Storage: a new schema, no inheritance
 
-**Ported from `docs/archive/v11/index.html`, not rewritten.** SCOPE feature 8. It is tested (26
-assertions) and it protects data already on the user's device. Everything else in the app is new.
+**Nothing is migrated. Nothing is read from any previous version.** SCOPE feature 8, D6.
 
-Key `shiftPlanner.v6`. Read order: v6, else migrate v5, else empty. The v5 blob survives migration
-as the rollback path. A blob declaring a higher schema is refused and left untouched, never
-downgraded.
+Key `shiftPlanner.2`. Deliberately not `.v7`: this is a new lineage, not the next step in an old
+one, and a name that implies continuity would invite someone to write a migration later.
 
 ```
-{ schema:6,
+{ v:1,
   jobs:      [{ id, name, pension, typicalHours, rates:[{id,name,value}] }],
-  outgoings: [{ id, label, amount, cat, credit:bool, dated:null }],
+  outgoings: [{ id, label, amount, cat }],
   goals:     [{ id, label, amount, weeks, addedAt }],
   shifts:    [{ id, date:"YYYY-MM-DD", jobId, jobName, rateId, rateName, rateValue,
                 start, end, brk }],
-  history:   [{ id, weekStartISO, dateLabel, hours, net, coverage[] }],
-  settings:  { country, customRate, maxDays, hoursPerDay, otherMo, theme, protectedBlocks:[] },
-  meta:      { firstRunISO, appVersion, taxDataVersion, onboarded:bool } }
+  weeks:     [{ id, weekStart:"YYYY-MM-DD", hours, net, coverage:[] }],
+  settings:  { country, customRate, maxDays, hoursPerDay, otherIncome, theme },
+  meta:      { firstRun, onboarded, appVersion, taxDataVersion } }
 ```
 
-**Two changes from the ported v6.** `employers` is renamed `jobs` and `employerId`/`employerName`
-become `jobId`/`jobName`, because SCOPE D3 makes "job" the only word and a data model that says
-"employer" leaks into strings eventually. `meta.onboarded` is new: the two-question flow needs to
-know whether it has run, and inferring it from "are there any jobs" breaks for a user who deletes
-their only job. Both are renames or additions inside the same schema number, so **no migration step
-is added and the v5 path is unchanged**.
+**Read:** key present and `v === 1` and shape valid, load it. `v > 1`, refuse, leave untouched,
+say so. Anything else, blank. **`shiftPlanner.v5` and `shiftPlanner.v6` are never read, never
+written and never deleted:** data already on a device stays exactly where it is, and the archived
+v11 build still exports it.
 
-**The two-question start writes a normal record, not a special one.** Question 1 creates a job named
-"Job" with one rate named "Standard". Question 2 creates one outgoing labelled "Everything" in the
-`bills` category. Refinements then edit ordinary records. Nothing in the model knows onboarding
-happened. This is what makes "refinements are offered, not required" cheap: there is no simple mode
-to graduate out of.
+**What was dropped from v6 and why, so nobody re-adds it by reflex:**
 
----
+| Dropped | Why |
+|---|---|
+| `employers` naming | SCOPE D3: a job is a job. The clash with the human's own on-disk blob is what forced this decision |
+| `history` naming | The tab is called Weeks. Two names for one thing is how drift starts |
+| `otherMo` | Cryptic. Now `otherIncome` |
+| `weekStartISO` + `dateLabel` pair | Existed only because v5 stored an unparseable locale string. No legacy, no pair |
+| `credit` flag on outgoings | Was v11's credit-commitment typing. The no-ranking rule holds without it, because the app never ranks anything at all. See decision 8 |
+| `protectedBlocks: []` | Reserved for a feature v11 deferred. A schema willing to change does not hoard |
+| `dated` on outgoings | Dated obligations are out of 2.0 scope |
+
+**The two-question start writes ordinary records.** Question 1 creates a job named "Job" with one
+rate named "Standard". Question 2 creates one outgoing labelled "Everything". Refinements then edit
+ordinary records. Nothing in the model knows onboarding happened, which is exactly what makes
+"refinements are offered, not required" cheap: there is no simple mode to graduate out of.
+`meta.onboarded` records only whether the flow has run, because inferring that from "are there any
+jobs" breaks for someone who deletes their only job.
 
 ## 3. Computation
 
@@ -100,7 +107,7 @@ so a user who corrects it does not get overruled on their next visit.
 ### The number (SCOPE f2)
 ```
 netPerHour = blendedRate * (1 - effectiveRate)     // effectiveRate = tax + pension
-monthlyNeed = sum(outgoings.amount) - settings.otherMo
+monthlyNeed = sum(outgoings.amount) - settings.otherIncome
 hoursPerWeek = monthlyNeed / netPerHour / 4.345
 ```
 `blendedRate` = weighted average of the current week's logged shifts if any exist, else weighted
@@ -118,7 +125,7 @@ inputs present is a real zero and says so differently. No path renders `Infinity
 
 ### Coverage (SCOPE f5)
 Waterfall over `outgoings` **in stored order, never re-sorted**. Banking snapshots the result into
-the history row so later edits cannot rewrite a banked week.
+the `weeks` row so later edits cannot rewrite a banked week.
 
 ---
 
@@ -178,7 +185,7 @@ framework, GitHub Pages from `main:/`, all unchanged from the approved stack.
 Each step reads the one before. **Steps 1 to 3 are the whole product for a first-time user and
 should go in front of the human before step 4 starts.**
 
-1. Storage v6 ported, plus country inference. No UI.
+1. Storage: the new schema, its defensive read, and country inference. No migration, no UI.
 2. Cold open and the two questions (f1).
 3. The number and its empty states (f2).
 4. Refinements (f3).
@@ -193,7 +200,7 @@ should go in front of the human before step 4 starts.**
 ## 7. Decisions log
 
 1. **One file again.** No PWA in 2.0, so no service worker, so no reason for three.
-2. **`employers` renamed `jobs` in the data model.** SCOPE D3 makes "job" the only word; a model that says "employer" leaks into strings eventually. Same schema number, no migration step.
+2. **A new key, `shiftPlanner.2`, and a new schema at `v:1`.** Not `.v7`. This is a new lineage, and a name implying continuity would invite a migration nobody wants. The human chose a clean break after the architect pass found their own on-disk v6 blob would have been misread.
 3. **`meta.onboarded` added.** Inferring "has this user been onboarded" from "are there any jobs" breaks the moment someone deletes their only job.
 4. **Onboarding writes ordinary records.** A job called "Job" with a rate called "Standard", and one outgoing called "Everything". No simple mode, therefore no graduation, therefore refinements are cheap.
 5. **Blended rate with several rates and no shifts is the mean of the rates**, not the first. v11 took the first and silently dropped the rest; it was visibly wrong on the human's own Work screen and had been flagged as an open assumption in three handovers before it shipped.
@@ -209,10 +216,10 @@ should go in front of the human before step 4 starts.**
 
 **Done:** Architect pass for 2.0 against the frozen scope and the token doc. Covers tokens verbatim, the ported v6 schema with its two renames, country inference, the number and its guards, seven screens mapped to features, thirteen named components, the literal file layout, a nine-step build order, and ten decisions including the art. 39E / PERG 17 constraint recorded with its reason.
 
-**Assumed:** (1) That renaming `employers` to `jobs` inside schema v6 needs no migration step, because a fresh 2.0 build reads its own writes and the v5 path is untouched. **A v6 blob written by v11 would carry `employers` and would not be read correctly.** That blob only exists if the human ran v11 against their real data, which they did. See Risky 1. (2) That the two-question flow writing ordinary records is right rather than a distinct "simple" state. (3) That the mean of a job's rates is the right no-shift fallback; it is defensible and it is a choice, not a derivation. (4) That country is inferred once. (5) That `Outgoings` fits a four-column bar at 320px, unverified.
+**Assumed:** (1) RESOLVED 2026-08-19: the human chose a completely new schema with blank data rather than an alias or a migration, which removes this problem entirely. The cost they accepted is that their existing data is no longer read by the app. It is not destroyed, and `docs/archive/v11/index.html` still exports it. (2) That the two-question flow writing ordinary records is right rather than a distinct "simple" state. (3) That the mean of a job's rates is the right no-shift fallback; it is defensible and it is a choice, not a derivation. (4) That country is inferred once. (5) That `Outgoings` fits a four-column bar at 320px, unverified.
 
-**Risky:** (1) **THE HUMAN HAS A v6 BLOB WRITTEN BY v11, CONTAINING `employers`, NOT `jobs`.** They used the app today. Under this architecture 2.0 will read that blob, find no `jobs` array, and treat them as a new user while their v5 blob also still exists. That is a data-loss-shaped bug on the only real user, and it is the first thing step 1 must handle: either accept `employers` as an alias on read, or bump to schema 7 with a real migration. **I have not resolved it because it changes the schema decision and the human should choose.** (2) The whole product now rests on a two-question flow that will give the human personally a wrong number, since they work multiple rates at different pay. They are the only real user. (3) Eight features is fewer than v11's ten and still not small; steps 1 to 3 being reviewable independently is the mitigation. (4) The legal reading is unchanged at 65% and still unreviewed. (5) Nothing here has been seen rendered; that has caught real faults twice.
+**Risky:** (1) RESOLVED by the clean break, but the consequence stands: **the human starts 2.0 with an empty app.** Every job, rate, outgoing and banked week they entered is invisible to the new build. Nothing is destroyed and the archived build exports it, but the first run of 2.0 for the only real user is a blank slate, which also means the two-question flow gets tested honestly. (2) The whole product now rests on a two-question flow that will give the human personally a wrong number, since they work multiple rates at different pay. They are the only real user. (3) Eight features is fewer than v11's ten and still not small; steps 1 to 3 being reviewable independently is the mitigation. (4) The legal reading is unchanged at 65% and still unreviewed. (5) Nothing here has been seen rendered; that has caught real faults twice.
 
-**Open:** (1) **Resolve Risky 1 before any code.** Alias `employers` on read, or schema 7 with a migration. (2) Confirm the mean-of-rates fallback. (3) `Outgoings` at 320px. (4) `PROJECT.md` was not archived and still reads true; confirm. (5) The port-not-rewrite deviation from the human's "reset all code" instruction stands unanswered.
+**Open:** (1) Resolved: clean break, new key `shiftPlanner.2`, no migration. (2) Confirm the mean-of-rates fallback. (3) `Outgoings` at 320px. (4) `PROJECT.md` was not archived and still reads true; confirm. (5) The port-not-rewrite deviation from the human's "reset all code" instruction stands unanswered.
 
 **Touched:** `ARCHITECTURE.md` (new, 2.0). Read-only inputs: `SCOPE.md`, `docs/design/DESIGN-TOKENS.md`, `docs/design/COPY-DECK.md`, `docs/archive/v11/`. No code written.

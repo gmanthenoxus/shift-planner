@@ -2,16 +2,15 @@
 
 Run before every deploy. Short on purpose: a checklist nobody finishes is a checklist nobody reads.
 
-<!-- Created 2026-08-19. Exists because ARCHITECTURE.md §4 introduced two version stamps that are
-     only useful if someone bumps them, and nothing enforced that. A convention with no home is a
-     convention that lapses. -->
+<!-- Created 2026-08-19, revised the same day for 2.0. Exists because the version stamps are only
+     useful if someone bumps them, and nothing else enforces that. A convention with no home lapses.
+     The service-worker items were removed when 2.0 dropped the PWA. -->
 
 ## Every release
 
-- [ ] `APP_VERSION` at the top of `sw.js` is bumped. **This is the release action** — the cache name derives from it, so forgetting it means returning users keep the old app.
-- [ ] `meta.appVersion` matches `APP_VERSION`.
+- [ ] `meta.appVersion` bumped in `index.html`. **This is the release action.**
 - [ ] The footer version stamp renders and reads correctly on a real phone.
-- [ ] Deploy, then hard-check the update path: load the old version, deploy, reload, confirm the "New version ready" affordance appears and the reload lands you on the new one **without clearing site data**.
+- [ ] Deploy, then hard-reload and confirm the version stamp in the footer shows the new number.
 - [ ] `HANDOVER.md` entry written and committed.
 - [ ] `QA-REPORT.md` exists for this version and the Breaker's verdict is SHIP-READY.
 - [ ] The human pressed ship. Never assumed, never inferred. Standing order: no deploy without it.
@@ -23,9 +22,8 @@ Run before every deploy. Short on purpose: a checklist nobody finishes is a chec
 - [ ] The footer's "simplified effective-rate estimates" disclaimer still describes what is actually simplified. If the model got more precise, the disclaimer got less accurate.
 
 **Why this one has its own section:** a stale app is an inconvenience; stale tax maths is a
-confidently wrong number with no symptom. It is the failure mode `ARCHITECTURE.md` §4's whole
-service-worker strategy exists to prevent, and the strategy does not help if the version stamp
-lies.
+confidently wrong number with no symptom. The version stamp is the only way a support conversation
+can tell which figures someone is looking at, and it only works if it is honest.
 
 ## Only when a design token changes
 

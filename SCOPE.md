@@ -93,11 +93,18 @@ That is the whole idea, and every decision below follows from it.
 - Nothing appears twice on one screen. v11 showed the same week's figures in two cards.
 - Every string written by `shift-planner-copywriter`, checked against Rule 0.
 
-### 8. Storage
+### 8. Storage, a clean break
 
-- Carried from v11: schema v6, and the v5 migration, both already tested. **This is the one part of the code that is ported rather than rewritten**, because it protects data that already exists on your device.
-- Export and import round-trip.
-- A blob from a newer version is refused and left untouched, never downgraded.
+- **A new key and a new schema. Nothing is migrated from any previous version** (D6). The two-question
+  flow and the refinements define the shape; the shape is not inherited from a model built for a
+  different product.
+- Old keys `shiftPlanner.v5` and `shiftPlanner.v6` are **never read, never written, never deleted.**
+  Data already on a device is left exactly where it is, and the archived v11 app at
+  `docs/archive/v11/index.html` still opens and still exports it.
+- No reserved fields for deferred features. v11 carried an empty `protectedBlocks` to dodge a future
+  migration; a schema that is happy to change does not need to hoard.
+- Export and import round-trip at the new schema.
+- A blob declaring a higher schema version is refused and left untouched, never downgraded.
 
 ---
 
@@ -147,8 +154,16 @@ Silence leaves them ported.
 
 ## Freeze
 
-FROZEN: 2026-08-19
+FROZEN: 2026-08-25
 
 ## Changelog
 
 <!-- None. -->
+
+**[2026-08-19] Feature 8 replaced: clean-break storage.** Frozen scope originally carried v6 and its
+v5 migration forward as the one ported piece of code. The human then chose a completely new schema
+with blank data, and explicitly asked that nothing conflicting be carried over. This removes the
+`employers` versus `jobs` clash the architect pass found in their own on-disk blob, removes two
+legacy fields that existed only for deferred features, and removes the migration entirely. Cost,
+stated plainly: their existing data is no longer read by the app. It is not destroyed, and the
+archived v11 build still exports it.

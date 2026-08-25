@@ -48,7 +48,7 @@ docs/
     RELEASE-CHECKLIST.md          run before every deploy
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
-    TAX-ACCURACY-AUDIT.md         per-country tax model audit. Still referenced by index.html
+    TAX-ACCURACY-AUDIT.md         per-country tax model audit. Source for 2.0's ported tax tables
   design/
     COPY-DECK.md                  voice, register, resolved copy decisions
     DESIGN-TOKENS.md              Guide (warm), contrast-verified
@@ -77,10 +77,12 @@ version-closed artefacts, `archive/superseded/` for anything replaced by a newer
 §0. Filenames are unique across the repo, so a bare name resolves unambiguously and survives a
 reorganisation. Do not introduce path-based references.
 
-**No em-dashes in any document here.** Two frozen `SCOPE.md` files arrived truncated at the em-dash
-character, losing the rest of the line each time. Use a comma, colon or full stop. This is a
-mechanical constraint of the toolchain, not a style preference, and it matches what `COPY-DECK.md`
-already requires of product copy.
+**No em-dashes in files that get copied between tools.** `SCOPE.md` has now arrived truncated at an
+em-dash twice, losing the rest of the line each time, and `sed` did the same thing once. The rule
+binds `SCOPE.md`, `ARCHITECTURE.md`, `CLAUDE.md` and `index.html`: the files that get pasted, piped
+or hand-edited. Older research and design documents still contain them and are NOT being retro-fixed,
+because they are read in place and never round-trip through another tool. Use a comma, colon or full
+stop. Mechanical, not stylistic, and it matches what `COPY-DECK.md` already asks of product copy.
 
 **One home per fact.** If two documents state the same rule, one of them goes stale the first time
 either changes. When you find a duplicate, pick the authoritative home, delete the copy, and leave

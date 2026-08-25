@@ -1,4 +1,4 @@
-// TEMPORARY. jsdom tests for 2.0 build steps 1 to 3. Run: node docs/process/v2-tests.js
+// TEMPORARY. jsdom tests for 2.0 build steps 1 to 5. Run: node docs/process/v2-tests.js
 // Requires: npm i jsdom. Delete once the Breaker has passed 2.0.
 const fs=require("fs");
 let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){console.error("npm i jsdom");process.exit(2);}
@@ -96,3 +96,78 @@ console.log("\nG. Malformed storage fails safe");
  }}
 console.log("\n"+pass+" passed, "+fail+" failed");
 if(fail)process.exitCode=1;
+
+function onboard(tz){
+  const b=boot({},tz);
+  b.d.getElementById("start").click();
+  type(b.d,"14.25"); b.d.getElementById("next").click();
+  type(b.d,"1240");  b.d.getElementById("next").click();
+  return b;
+}
+const nav=(d,t)=>d.querySelector('.nav button[data-tab="'+t+'"]').click();
+
+console.log("\nH. Nav appears only once there is an answer");
+{const {d}=boot({});
+ ok("no nav on cold open",d.getElementById("nav").hidden);
+ d.getElementById("start").click();
+ ok("no nav during the questions",d.getElementById("nav").hidden);
+ const b=onboard();
+ ok("nav appears after the answer",!b.d.getElementById("nav").hidden);
+ ok("four tabs",b.d.querySelectorAll(".nav button").length===4);
+ ok("Outgoings is a tab label",[...b.d.querySelectorAll(".nav button")].some(x=>x.textContent==="Outgoings"));}
+
+console.log("\nI. Refinements");
+{const {d}=onboard();
+ ok("refinement list is offered",!d.getElementById("refineBox").hidden);
+ const items=[...d.querySelectorAll(".refine b")].map(x=>x.textContent);
+ ok("at most four at a time",items.length<=4,items.length);
+ ok("each states what it buys",[...d.querySelectorAll(".refine span")].every(x=>x.textContent.trim().length>10));
+ ok("offers a second rate",items.some(t=>/another rate/i.test(t)),items);
+ d.querySelectorAll(".refine")[0].click();
+ ok("tapping one navigates and acts",!d.getElementById("earn").hidden);
+ ok("a second rate now exists",JSON.parse(boot?"{}":"{}")||d.querySelectorAll('#jobList [data-k="value"]').length===2,
+    d.querySelectorAll('#jobList [data-k="value"]').length);
+ nav(d,"answer");
+ const after=[...d.querySelectorAll(".refine b")].map(x=>x.textContent);
+ ok("the taken refinement drops off the list",!after.some(t=>/another rate/i.test(t)),after);}
+
+console.log("\nJ. Earn edits change the number");
+{const {d,st}=onboard();
+ const before=parseFloat(d.getElementById("hours").textContent);
+ nav(d,"earn");
+ const rate=d.querySelectorAll('#jobList [data-k="value"]')[0];
+ rate.value="20"; rate.dispatchEvent(new (d.defaultView.Event)("input",{bubbles:true}));
+ nav(d,"answer");
+ const after=parseFloat(d.getElementById("hours").textContent);
+ ok("a higher rate means fewer hours",after<before,{before,after});
+ ok("persisted",JSON.parse(st["shiftPlanner.2"]).jobs[0].rates[0].value===20);}
+
+console.log("\nK. Outgoings edits change the number");
+{const {d,st}=onboard();
+ const before=parseFloat(d.getElementById("hours").textContent);
+ nav(d,"out");
+ ok("the onboarding item is there, labelled plainly",
+    d.querySelector('#outList [data-k="label"]').value==="Everything");
+ d.getElementById("addOut").click();
+ const rows=d.querySelectorAll('#outList [data-k="amount"]');
+ rows[rows.length-1].value="200";
+ rows[rows.length-1].dispatchEvent(new (d.defaultView.Event)("input",{bubbles:true}));
+ nav(d,"answer");
+ ok("more outgoings means more hours",parseFloat(d.getElementById("hours").textContent)>before);
+ nav(d,"out");
+ const oi=d.getElementById("otherIncome");
+ oi.value="1440"; oi.dispatchEvent(new (d.defaultView.Event)("input",{bubbles:true}));
+ nav(d,"answer");
+ ok("other income covering everything gives zero hours, not a crash",
+    d.getElementById("hours").textContent==="0.0",d.getElementById("hours").textContent);
+ ok("no Infinity or NaN on screen",!/Infinity|NaN/.test(d.getElementById("answer").textContent));}
+
+console.log("\nL. Deleting everything degrades to a named empty state");
+{const {d}=onboard();
+ nav(d,"earn");
+ d.querySelector("[data-delj]").click();
+ nav(d,"answer");
+ ok("no figure",d.getElementById("ansGood").hidden);
+ ok("names what is missing",/what you earn an hour/i.test(d.getElementById("missText").textContent),
+    d.getElementById("missText").textContent);}
+console.log("\n"+pass+" passed, "+fail+" failed");

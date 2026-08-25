@@ -73,6 +73,37 @@
   .err{background:var(--error-soft);color:var(--error);border-radius:var(--r-control);
     padding:12px 14px;font-size:14px;margin:0 0 16px}
   [hidden]{display:none!important}
+
+  /* the app proper. The onboarding wrap centres vertically; once you are in, it does not. */
+  body.app .wrap{justify-content:flex-start;max-width:640px;padding-bottom:96px}
+  .panel{display:grid;gap:12px}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 14px}
+  .head h2{font-size:20px;font-weight:500;margin:0}
+  .sec{font-size:15px;color:var(--sub);margin:0 0 12px}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:10px 0;font-size:15px}
+  .row span{color:var(--sub)} .row b{font-weight:500;color:var(--ink)}
+  .row+.row{border-top:1px solid var(--line)}
+  .sub{color:var(--sub);font-size:13px}
+  .refine{display:block;width:100%;text-align:left;background:none;border:0;border-radius:var(--r-control);
+    padding:13px 12px;cursor:pointer;font:inherit;color:var(--ink)}
+  .refine:hover{background:var(--panel2)}
+  .refine b{display:block;font-weight:500;font-size:15px;color:var(--accent)}
+  .refine span{display:block;font-size:13px;color:var(--sub);margin-top:2px}
+  .item{background:var(--panel2);border-radius:var(--r-control);padding:14px;display:grid;gap:10px}
+  .item input{font-size:16px;padding:11px 12px}
+  .item input.money{padding-left:30px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .x{min-width:44px;min-height:44px;border:0;background:none;color:var(--sub);border-radius:var(--r-control);
+    cursor:pointer;font-size:20px;line-height:1}
+  .x:hover{background:var(--panel);color:var(--error)}
+  .add{background:none;border:1px solid var(--line-strong);color:var(--accent);border-radius:var(--r-control);
+    min-height:44px;padding:10px 14px;font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+  .nav{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);
+    display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom))}
+  .nav button{flex:1;min-height:44px;border:0;background:none;font:inherit;font-size:11px;
+    color:var(--sub);border-radius:10px;cursor:pointer;padding:6px 2px;white-space:nowrap}
+  .nav button.on{color:var(--accent);font-weight:500;background:var(--accent-soft)}
+  .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 </style>
 </head>
 <body>
@@ -105,6 +136,10 @@
       <div class="unit">hours a week</div>
       <div class="restate" id="restate"></div>
     </div>
+    <div id="refineBox" style="margin-top:22px;text-align:left" hidden>
+      <p class="sub" style="margin:0 0 6px">Make it more accurate</p>
+      <div id="refineList"></div>
+    </div>
     <div id="ansMissing" hidden>
       <div class="step">Not enough to work it out yet</div>
       <div class="miss" id="missText"></div>
@@ -112,6 +147,57 @@
     <div class="foot" id="countryLine"></div>
     <button class="btn ghost" id="redo" style="margin-top:14px">Start again</button>
   </section>
+
+  <section id="earn" class="panel" hidden>
+    <div class="card">
+      <div class="head"><h2>Your jobs</h2><button class="add" id="addJob">Add job</button></div>
+      <div id="jobList"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Your limit</h2></div>
+      <p class="sec">The most you are willing to work. It does not change the number, it tells you when the number is more than you want.</p>
+      <div class="two">
+        <div><label for="maxDays">Most days a week</label><input id="maxDays" class="plain" type="text" inputmode="numeric"></div>
+        <div><label for="hoursPerDay">Most hours a day</label><input id="hoursPerDay" class="plain" type="text" inputmode="numeric"></div>
+      </div>
+      <div class="row" style="margin-top:6px"><span>That is</span><b id="ceiling"></b></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>What an hour pays</h2></div>
+      <div id="takehome"></div>
+    </div>
+  </section>
+
+  <section id="out" class="panel" hidden>
+    <div class="card">
+      <div class="head"><h2>Every month</h2><button class="add" id="addOut">Add item</button></div>
+      <div id="outList"></div>
+      <div class="row"><span>Total</span><b id="outTotal"></b></div>
+      <div style="margin-top:14px">
+        <label for="otherIncome">Money in from anywhere else, each month</label>
+        <div class="inwrap"><span class="pre" id="sym2">&#163;</span>
+        <input id="otherIncome" type="text" inputmode="decimal"></div>
+        <p class="sub" style="margin-top:8px">Salary, benefits, anything not from these shifts. It lowers the hours your shifts have to cover.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>One off goals</h2><button class="add" id="addGoal">Add goal</button></div>
+      <p class="sec">A lump sum by a deadline. Adds hours on top, only while it runs.</p>
+      <div id="goalList"></div>
+    </div>
+  </section>
+
+  <section id="weeks" class="panel" hidden>
+    <div class="card"><div class="head"><h2>Weeks</h2></div>
+      <p class="sec" id="weeksEmpty">Nothing banked yet. Log a shift first.</p></div>
+  </section>
+
+  <nav class="nav" id="nav" hidden role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="answer" class="on" aria-selected="true">Now</button>
+    <button role="tab" data-tab="earn" aria-selected="false">Earn</button>
+    <button role="tab" data-tab="out" aria-selected="false">Outgoings</button>
+    <button role="tab" data-tab="weeks" aria-selected="false">Weeks</button>
+  </nav>
 
   <div class="foot">
     These are simplified effective-rate estimates, not real tax law. Planning guidance, not a
@@ -304,9 +390,212 @@ function missing(){
 
 // ---- screens
 var el=function(id){return document.getElementById(id);};
+var SCREENS=["cold","ask","answer","earn","out","weeks"];
+var TABS=["answer","earn","out","weeks"];
 function show(name){
-  ["cold","ask","answer"].forEach(function(n){el(n).hidden=(n!==name);});
+  SCREENS.forEach(function(n){el(n).hidden=(n!==name);});
+  // The nav only exists once you have an answer. Before that it would offer four doors into
+  // screens that cannot say anything yet.
+  var inApp=S.meta.onboarded&&TABS.indexOf(name)>-1;
+  el("nav").hidden=!inApp;
+  document.body.classList.toggle("app",inApp);
+  Array.prototype.forEach.call(el("nav").children,function(b){
+    var on=b.dataset.tab===name;
+    b.classList.toggle("on",on); b.setAttribute("aria-selected",on?"true":"false");
+  });
+  if(name==="earn")renderEarn();
+  if(name==="out")renderOut();
+  if(name==="answer")renderAnswer();
+  window.scrollTo(0,0);
 }
+el("nav").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-tab]"); if(b)show(b.dataset.tab);
+});
+
+// ---- refinements. Each one states what it BUYS, and each disappears once taken, so the list
+// shrinks as the picture gets more accurate instead of nagging forever. SCOPE f3.
+function refinements(){
+  var r=[], j=S.jobs[0];
+  if(j&&(j.rates||[]).length<2)
+    r.push({t:"Add another rate",w:"If you are paid differently for different work.",go:"earn",act:"rate"});
+  if(S.outgoings.length<2)
+    r.push({t:"Split what your month costs",w:"See which parts of it cost you the most hours.",go:"out",act:"out"});
+  if(!clamp(j&&j.typicalHours,0,168))
+    r.push({t:"Say how many hours you usually work",w:"Makes the tax on your rate more accurate.",go:"earn",act:"hours"});
+  if(!clamp(S.settings.maxDays,0,7)||!clamp(S.settings.hoursPerDay,0,24))
+    r.push({t:"Set a limit on your hours",w:"So the app can tell you when the number is more than you want.",go:"earn",act:"limit"});
+  if(!S.goals.length)
+    r.push({t:"Add a one off goal",w:"A lump sum by a deadline, on top of your month.",go:"out",act:"goal"});
+  if(S.jobs.length<2)
+    r.push({t:"Add a second job",w:"If more than one place pays you.",go:"earn",act:"job"});
+  return r;
+}
+function renderRefine(){
+  var list=refinements(), box=el("refineBox"), c=el("refineList");
+  c.innerHTML="";
+  if(!list.length||!S.meta.onboarded){box.hidden=true;return;}
+  box.hidden=false;
+  list.slice(0,4).forEach(function(x){
+    var b=document.createElement("button");
+    b.className="refine"; b.type="button";
+    b.innerHTML="<b>"+esc(x.t)+"</b><span>"+esc(x.w)+"</span>";
+    b.addEventListener("click",function(){ pending=x.act; show(x.go); });
+    c.appendChild(b);
+  });
+}
+var pending=null;
+function esc(t){return String(t==null?"":t).replace(/[&<>"\']/g,function(c){
+  return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c];});}
+
+// ---- Earn
+function renderEarn(){
+  var act=pending; pending=null;
+  el("sym2").textContent=sym();
+  var c=el("jobList"); c.innerHTML="";
+  if(!S.jobs.length){
+    c.innerHTML='<p class="sec">Add a job and what it pays an hour.</p>';
+  }
+  S.jobs.forEach(function(j){
+    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
+    var rates=(j.rates||[]).map(function(r){
+      return '<div style="display:flex;gap:8px;align-items:center">'+
+        '<input value="'+esc(r.name)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="name" aria-label="Rate name">'+
+        '<div class="inwrap" style="width:130px"><span class="pre">'+sym()+'</span>'+
+        '<input class="money" value="'+esc(r.value)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="value" inputmode="decimal" aria-label="Rate an hour"></div>'+
+        '<button class="x" data-delr="'+r.id+'" data-j="'+j.id+'" aria-label="Remove rate">&times;</button></div>';
+    }).join("");
+    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
+      '<input value="'+esc(j.name)+'" data-j="'+j.id+'" data-k="jobname" aria-label="Job name">'+
+      '<button class="x" data-delj="'+j.id+'" aria-label="Remove job">&times;</button></div>'+
+      '<label style="margin:2px 0 0">What it pays an hour</label>'+rates+
+      '<button class="add" data-addr="'+j.id+'" style="justify-self:start">Add rate</button>'+
+      '<div class="two"><div><label>Hours you usually work a week</label>'+
+      '<input class="plain" value="'+esc(j.typicalHours)+'" data-j="'+j.id+'" data-k="hrs" inputmode="numeric"></div>'+
+      '<div><label>Pension you pay in, %</label>'+
+      '<input class="plain" value="'+esc(j.pension)+'" data-j="'+j.id+'" data-k="pension" inputmode="decimal"></div></div>';
+    c.appendChild(d);
+  });
+  el("maxDays").value=S.settings.maxDays||"";
+  el("hoursPerDay").value=S.settings.hoursPerDay||"";
+  var ceil=clamp(S.settings.maxDays,0,7)*clamp(S.settings.hoursPerDay,0,24);
+  el("ceiling").textContent=ceil>0?ceil.toFixed(0)+" hours a week":"not set";
+  var m=model(), t=el("takehome");
+  if(!(m.gross>0)){t.innerHTML='<p class="sec">Add what a job pays an hour to see this.</p>';}
+  else{
+    t.innerHTML='<div class="row"><span>Before tax</span><b>'+money2(m.gross)+'</b></div>'+
+      m.comps.map(function(x){return '<div class="row"><span>'+esc(x[0])+'</span><b>-'+money2(x[1]/(clamp(S.jobs.reduce(function(a,j){return a+clamp(j.typicalHours,0,168);},0),1,1e9)*52))+'</b></div>';}).join("")+
+      '<div class="row"><span>You keep</span><b style="color:var(--accent)">'+money2(m.net)+'</b></div>';
+  }
+  if(act==="rate"&&S.jobs[0]){addRate(S.jobs[0].id);}
+  else if(act==="job"){el("addJob").click();}
+  else if(act==="hours"){var i=c.querySelector('[data-k="hrs"]'); if(i)i.focus();}
+  else if(act==="limit"){el("maxDays").focus();}
+}
+function addRate(jid){
+  var j=S.jobs.filter(function(x){return x.id===jid;})[0]; if(!j)return;
+  j.rates=j.rates||[]; j.rates.push({id:uid(),name:"Another rate",value:0});
+  save(); renderEarn();
+  var last=el("jobList").querySelectorAll('[data-k="value"]');
+  if(last.length)last[last.length-1].focus();
+}
+el("addJob").addEventListener("click",function(){
+  S.jobs.push({id:uid(),name:"Second job",pension:0,typicalHours:0,
+    rates:[{id:uid(),name:"Standard",value:0}]});
+  save(); renderEarn();
+});
+el("jobList").addEventListener("input",function(e){
+  var t=e.target, jid=t.dataset.j; if(!jid)return;
+  var j=S.jobs.filter(function(x){return x.id===jid;})[0]; if(!j)return;
+  if(t.dataset.r){
+    var r=(j.rates||[]).filter(function(x){return x.id===t.dataset.r;})[0]; if(!r)return;
+    if(t.dataset.k==="value")r.value=clamp(t.value,0,10000); else r.name=t.value;
+  } else if(t.dataset.k==="jobname"){ j.name=t.value; }
+  else if(t.dataset.k==="hrs"){ j.typicalHours=clamp(t.value,0,168); }
+  else if(t.dataset.k==="pension"){ j.pension=clamp(t.value,0,100); }
+  save();
+});
+el("jobList").addEventListener("click",function(e){
+  var a=e.target.closest("[data-addr]"); if(a){addRate(a.dataset.addr);return;}
+  var dr=e.target.closest("[data-delr]");
+  if(dr){var j=S.jobs.filter(function(x){return x.id===dr.dataset.j;})[0];
+    if(j)j.rates=(j.rates||[]).filter(function(x){return x.id!==dr.dataset.delr;});
+    save(); renderEarn(); return;}
+  var dj=e.target.closest("[data-delj]");
+  if(dj){S.jobs=S.jobs.filter(function(x){return x.id!==dj.dataset.delj;});save();renderEarn();}
+});
+["maxDays","hoursPerDay"].forEach(function(id){
+  el(id).addEventListener("input",function(){
+    S.settings[id]=clamp(el(id).value,0,id==="maxDays"?7:24); save();
+    var ceil=clamp(S.settings.maxDays,0,7)*clamp(S.settings.hoursPerDay,0,24);
+    el("ceiling").textContent=ceil>0?ceil.toFixed(0)+" hours a week":"not set";
+  });
+});
+
+// ---- Outgoings
+function renderOut(){
+  var act=pending; pending=null;
+  el("sym2").textContent=sym();
+  var c=el("outList"); c.innerHTML="";
+  if(!S.outgoings.length) c.innerHTML='<p class="sec">Add what you pay each month.</p>';
+  S.outgoings.forEach(function(b){
+    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
+    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
+      '<input value="'+esc(b.label)+'" data-b="'+b.id+'" data-k="label" aria-label="What it is">'+
+      '<div class="inwrap" style="width:130px"><span class="pre">'+sym()+'</span>'+
+      '<input class="money" value="'+esc(b.amount)+'" data-b="'+b.id+'" data-k="amount" inputmode="decimal" aria-label="How much a month"></div>'+
+      '<button class="x" data-delb="'+b.id+'" aria-label="Remove item">&times;</button></div>';
+    c.appendChild(d);
+  });
+  el("outTotal").textContent=money(S.outgoings.reduce(function(s2,b){return s2+clamp(b.amount,0,1e7);},0));
+  el("otherIncome").value=S.settings.otherIncome||"";
+  var g=el("goalList"); g.innerHTML="";
+  if(!S.goals.length) g.innerHTML='<p class="sec">No goals.</p>';
+  S.goals.forEach(function(x){
+    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
+    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
+      '<input value="'+esc(x.label)+'" data-g="'+x.id+'" data-k="label" aria-label="What it is for">'+
+      '<button class="x" data-delg="'+x.id+'" aria-label="Remove goal">&times;</button></div>'+
+      '<div class="two"><div><label>How much</label><div class="inwrap"><span class="pre">'+sym()+'</span>'+
+      '<input class="money" value="'+esc(x.amount)+'" data-g="'+x.id+'" data-k="amount" inputmode="decimal"></div></div>'+
+      '<div><label>Over how many weeks</label><input class="plain" value="'+esc(x.weeks)+'" data-g="'+x.id+'" data-k="weeks" inputmode="numeric"></div></div>';
+    g.appendChild(d);
+  });
+  if(act==="out"){el("addOut").click();}
+  else if(act==="goal"){el("addGoal").click();}
+}
+el("addOut").addEventListener("click",function(){
+  S.outgoings.push({id:uid(),label:"New item",amount:0,cat:"bills"}); save(); renderOut();
+  var i=el("outList").querySelectorAll('[data-k="label"]'); if(i.length)i[i.length-1].select();
+});
+el("addGoal").addEventListener("click",function(){
+  S.goals.push({id:uid(),label:"New goal",amount:0,weeks:8,addedAt:Date.now()}); save(); renderOut();
+});
+el("outList").addEventListener("input",function(e){
+  var t=e.target, id=t.dataset.b; if(!id)return;
+  var b=S.outgoings.filter(function(x){return x.id===id;})[0]; if(!b)return;
+  if(t.dataset.k==="amount")b.amount=clamp(t.value,0,1e7); else b.label=t.value;
+  el("outTotal").textContent=money(S.outgoings.reduce(function(s2,x){return s2+clamp(x.amount,0,1e7);},0));
+  save();
+});
+el("outList").addEventListener("click",function(e){
+  var d=e.target.closest("[data-delb]");
+  if(d){S.outgoings=S.outgoings.filter(function(x){return x.id!==d.dataset.delb;});save();renderOut();}
+});
+el("goalList").addEventListener("input",function(e){
+  var t=e.target, id=t.dataset.g; if(!id)return;
+  var g=S.goals.filter(function(x){return x.id===id;})[0]; if(!g)return;
+  if(t.dataset.k==="amount")g.amount=clamp(t.value,0,1e7);
+  else if(t.dataset.k==="weeks")g.weeks=clamp(t.value,1,520);
+  else g.label=t.value;
+  save();
+});
+el("goalList").addEventListener("click",function(e){
+  var d=e.target.closest("[data-delg]");
+  if(d){S.goals=S.goals.filter(function(x){return x.id!==d.dataset.delg;});save();renderOut();}
+});
+el("otherIncome").addEventListener("input",function(){
+  S.settings.otherIncome=clamp(el("otherIncome").value,0,1e7); save();
+});
 
 var step=1, draft={rate:null,cost:null};
 function renderAsk(){
@@ -362,6 +651,7 @@ el("next").addEventListener("click",function(){
 el("qInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();el("next").click();}});
 
 function renderAnswer(){
+  renderRefine();
   var miss=missing();
   el("countryLine").textContent=(COUNTRIES[S.settings.country]||COUNTRIES.UK).name+", change this in settings.";
   if(miss){

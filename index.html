@@ -89,9 +89,27 @@
   .refine:hover{background:var(--panel2)}
   .refine b{display:block;font-weight:500;font-size:15px;color:var(--accent)}
   .refine span{display:block;font-size:13px;color:var(--sub);margin-top:2px}
-  .item{background:var(--panel2);border-radius:var(--r-control);padding:14px;display:grid;gap:10px}
-  .item input{font-size:16px;padding:11px 12px}
-  .item input.money{padding-left:30px}
+  .blk{padding:14px 0}
+  .blk+.blk{border-top:1px solid var(--line)}
+  .line{display:flex;align-items:center;gap:8px}
+  .line+.line{margin-top:6px}
+  .grow{flex:1;min-width:0}
+  /* flush inputs: no fill, no border, until you touch them. Removes most of the visual weight. */
+  .f{background:none;border:1px solid transparent;border-radius:10px;padding:9px 10px;
+    font-size:16px;color:var(--ink);width:100%}
+  .f:hover{background:var(--panel2)}
+  .f:focus{background:var(--panel2);border-color:var(--accent);outline:none}
+  .f.name{font-weight:500}
+  .f.money{text-align:right;width:104px;flex:none;font-variant-numeric:tabular-nums}
+  .f.narrow{width:76px;flex:none;text-align:right;font-variant-numeric:tabular-nums}
+  .cur{color:var(--sub);font-size:15px}
+  select.f{appearance:none;-webkit-appearance:none;width:auto;flex:none;padding-right:22px;
+    color:var(--sub);font-size:14px;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%);
+    background-position:calc(100% - 12px) 52%,calc(100% - 7px) 52%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  .jobname{font-size:17px}
+  .mini{font-size:12px;color:var(--sub);white-space:nowrap}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .x{min-width:44px;min-height:44px;border:0;background:none;color:var(--sub);border-radius:var(--r-control);
     cursor:pointer;font-size:20px;line-height:1}
@@ -152,15 +170,6 @@
     <div class="card">
       <div class="head"><h2>Your jobs</h2><button class="add" id="addJob">Add job</button></div>
       <div id="jobList"></div>
-    </div>
-    <div class="card">
-      <div class="head"><h2>Your limit</h2></div>
-      <p class="sec">The most you are willing to work. It does not change the number, it tells you when the number is more than you want.</p>
-      <div class="two">
-        <div><label for="maxDays">Most days a week</label><input id="maxDays" class="plain" type="text" inputmode="numeric"></div>
-        <div><label for="hoursPerDay">Most hours a day</label><input id="hoursPerDay" class="plain" type="text" inputmode="numeric"></div>
-      </div>
-      <div class="row" style="margin-top:6px"><span>That is</span><b id="ceiling"></b></div>
     </div>
     <div class="card">
       <div class="head"><h2>What an hour pays</h2></div>
@@ -354,6 +363,11 @@ function pensionRate(){
   return ps.length?ps.reduce(function(a,b){return a+b;},0)/ps.length:0;
 }
 
+var WEEKS_PER_MONTH=4.345;
+function monthly(b){
+  var a=clamp(b.amount,0,1e7);
+  return b.every==="week" ? a*WEEKS_PER_MONTH : a;
+}
 function model(){
   var c=S.settings.country, gross=blendedRate(), pr=pensionRate();
   var totH=S.jobs.reduce(function(s,j){return s+clamp(j.typicalHours,0,168);},0);
@@ -370,10 +384,13 @@ function model(){
   var taxRate=annual>0?taxTotal/annual:0;
   var eff=Math.min(.98,taxRate+pr);
   var net=gross*(1-eff);
-  var monthlyOut=S.outgoings.reduce(function(s,b){return s+clamp(b.amount,0,1e7);},0);
+  var annualHours=basisH*52;
+  var perHour=comps.map(function(x){return [x[0], annualHours>0?x[1]/annualHours:0];});
+  if(pr>0)perHour.push(["Pension",gross*pr]);
+  var monthlyOut=S.outgoings.reduce(function(s,b){return s+monthly(b);},0);
   var need=Math.max(0,monthlyOut-clamp(S.settings.otherIncome,0,1e7));
   var hours = net>0 ? need/net/WPM : null;
-  return {gross:gross,net:net,eff:eff,comps:comps,monthlyOut:monthlyOut,need:need,hours:hours};
+  return {gross:gross,net:net,eff:eff,comps:comps,perHour:perHour,basisH:basisH,monthlyOut:monthlyOut,need:need,hours:hours};
 }
 
 // ---- what is missing. A zero that means "not set up" and a zero that means "nothing to cover"
@@ -422,8 +439,6 @@ function refinements(){
     r.push({t:"Split what your month costs",w:"See which parts of it cost you the most hours.",go:"out",act:"out"});
   if(!clamp(j&&j.typicalHours,0,168))
     r.push({t:"Say how many hours you usually work",w:"Makes the tax on your rate more accurate.",go:"earn",act:"hours"});
-  if(!clamp(S.settings.maxDays,0,7)||!clamp(S.settings.hoursPerDay,0,24))
-    r.push({t:"Set a limit on your hours",w:"So the app can tell you when the number is more than you want.",go:"earn",act:"limit"});
   if(!S.goals.length)
     r.push({t:"Add a one off goal",w:"A lump sum by a deadline, on top of your month.",go:"out",act:"goal"});
   if(S.jobs.length<2)
@@ -450,46 +465,52 @@ function esc(t){return String(t==null?"":t).replace(/[&<>"\']/g,function(c){
 // ---- Earn
 function renderEarn(){
   var act=pending; pending=null;
-  el("sym2").textContent=sym();
   var c=el("jobList"); c.innerHTML="";
-  if(!S.jobs.length){
-    c.innerHTML='<p class="sec">Add a job and what it pays an hour.</p>';
-  }
+  if(!S.jobs.length) c.innerHTML='<p class="sec">Add a job and what it pays an hour.</p>';
   S.jobs.forEach(function(j){
-    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
+    var d=document.createElement("div"); d.className="blk";
     var rates=(j.rates||[]).map(function(r){
-      return '<div style="display:flex;gap:8px;align-items:center">'+
-        '<input value="'+esc(r.name)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="name" aria-label="Rate name">'+
-        '<div class="inwrap" style="width:130px"><span class="pre">'+sym()+'</span>'+
-        '<input class="money" value="'+esc(r.value)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="value" inputmode="decimal" aria-label="Rate an hour"></div>'+
+      return '<div class="line">'+
+        '<input class="f grow" value="'+esc(r.name)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="name" aria-label="Rate name">'+
+        '<span class="cur">'+sym()+'</span>'+
+        '<input class="f money" value="'+esc(r.value)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="value" inputmode="decimal" aria-label="Pay an hour">'+
         '<button class="x" data-delr="'+r.id+'" data-j="'+j.id+'" aria-label="Remove rate">&times;</button></div>';
     }).join("");
-    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
-      '<input value="'+esc(j.name)+'" data-j="'+j.id+'" data-k="jobname" aria-label="Job name">'+
-      '<button class="x" data-delj="'+j.id+'" aria-label="Remove job">&times;</button></div>'+
-      '<label style="margin:2px 0 0">What it pays an hour</label>'+rates+
-      '<button class="add" data-addr="'+j.id+'" style="justify-self:start">Add rate</button>'+
-      '<div class="two"><div><label>Hours you usually work a week</label>'+
-      '<input class="plain" value="'+esc(j.typicalHours)+'" data-j="'+j.id+'" data-k="hrs" inputmode="numeric"></div>'+
-      '<div><label>Pension you pay in, %</label>'+
-      '<input class="plain" value="'+esc(j.pension)+'" data-j="'+j.id+'" data-k="pension" inputmode="decimal"></div></div>';
+    d.innerHTML='<div class="line">'+
+        '<input class="f name jobname grow" value="'+esc(j.name)+'" data-j="'+j.id+'" data-k="jobname" aria-label="Job name">'+
+        '<button class="x" data-delj="'+j.id+'" aria-label="Remove job">&times;</button></div>'+
+      rates+
+      '<div class="line" style="margin-top:8px">'+
+        '<button class="add" data-addr="'+j.id+'">Add rate</button>'+
+        '<span class="grow"></span>'+
+        '<span class="mini">Usual hours</span>'+
+        '<input class="f narrow" value="'+esc(j.typicalHours||"")+'" data-j="'+j.id+'" data-k="hrs" inputmode="numeric" aria-label="Hours you usually work a week">'+
+        '<span class="mini">Pension</span>'+
+        '<input class="f narrow" value="'+esc(j.pension||"")+'" data-j="'+j.id+'" data-k="pension" inputmode="decimal" aria-label="Pension percent">'+
+        '<span class="mini">%</span></div>';
     c.appendChild(d);
   });
-  el("maxDays").value=S.settings.maxDays||"";
-  el("hoursPerDay").value=S.settings.hoursPerDay||"";
-  var ceil=clamp(S.settings.maxDays,0,7)*clamp(S.settings.hoursPerDay,0,24);
-  el("ceiling").textContent=ceil>0?ceil.toFixed(0)+" hours a week":"not set";
-  var m=model(), t=el("takehome");
-  if(!(m.gross>0)){t.innerHTML='<p class="sec">Add what a job pays an hour to see this.</p>';}
-  else{
-    t.innerHTML='<div class="row"><span>Before tax</span><b>'+money2(m.gross)+'</b></div>'+
-      m.comps.map(function(x){return '<div class="row"><span>'+esc(x[0])+'</span><b>-'+money2(x[1]/(clamp(S.jobs.reduce(function(a,j){return a+clamp(j.typicalHours,0,168);},0),1,1e9)*52))+'</b></div>';}).join("")+
-      '<div class="row"><span>You keep</span><b style="color:var(--accent)">'+money2(m.net)+'</b></div>';
-  }
+  renderTakehome();
   if(act==="rate"&&S.jobs[0]){addRate(S.jobs[0].id);}
   else if(act==="job"){el("addJob").click();}
   else if(act==="hours"){var i=c.querySelector('[data-k="hrs"]'); if(i)i.focus();}
-  else if(act==="limit"){el("maxDays").focus();}
+}
+
+// Split out so an edit can refresh it without re-rendering the whole screen and stealing focus
+// from the field being typed in. The old version only recomputed on a full render, so it looked
+// frozen while you typed.
+function renderTakehome(){
+  var m=model(), t=el("takehome");
+  if(!(m.gross>0)){ t.innerHTML='<p class="sec">Add what a job pays an hour to see this.</p>'; return; }
+  var hrs=S.jobs.reduce(function(a,j){return a+clamp(j.typicalHours,0,168);},0);
+  var basis = hrs>0
+    ? '<p class="sub" style="margin:10px 0 0">Worked out on '+hrs+' hours a week.</p>'
+    : '<p class="sub" style="margin:10px 0 0">No usual hours entered, so this assumes 37.5 a week. Add your hours to make it exact.</p>';
+  t.innerHTML='<div class="row"><span>Before tax</span><b>'+money2(m.gross)+'</b></div>'+
+    m.perHour.map(function(x){
+      return '<div class="row"><span>'+esc(x[0])+'</span><b>-'+money2(x[1])+'</b></div>';
+    }).join("")+
+    '<div class="row"><span>You keep</span><b style="color:var(--accent)">'+money2(m.net)+'</b></div>'+basis;
 }
 function addRate(jid){
   var j=S.jobs.filter(function(x){return x.id===jid;})[0]; if(!j)return;
@@ -512,7 +533,7 @@ el("jobList").addEventListener("input",function(e){
   } else if(t.dataset.k==="jobname"){ j.name=t.value; }
   else if(t.dataset.k==="hrs"){ j.typicalHours=clamp(t.value,0,168); }
   else if(t.dataset.k==="pension"){ j.pension=clamp(t.value,0,100); }
-  save();
+  save(); renderTakehome();
 });
 el("jobList").addEventListener("click",function(e){
   var a=e.target.closest("[data-addr]"); if(a){addRate(a.dataset.addr);return;}
@@ -523,13 +544,6 @@ el("jobList").addEventListener("click",function(e){
   var dj=e.target.closest("[data-delj]");
   if(dj){S.jobs=S.jobs.filter(function(x){return x.id!==dj.dataset.delj;});save();renderEarn();}
 });
-["maxDays","hoursPerDay"].forEach(function(id){
-  el(id).addEventListener("input",function(){
-    S.settings[id]=clamp(el(id).value,0,id==="maxDays"?7:24); save();
-    var ceil=clamp(S.settings.maxDays,0,7)*clamp(S.settings.hoursPerDay,0,24);
-    el("ceiling").textContent=ceil>0?ceil.toFixed(0)+" hours a week":"not set";
-  });
-});
 
 // ---- Outgoings
 function renderOut(){
@@ -538,30 +552,42 @@ function renderOut(){
   var c=el("outList"); c.innerHTML="";
   if(!S.outgoings.length) c.innerHTML='<p class="sec">Add what you pay each month.</p>';
   S.outgoings.forEach(function(b){
-    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
-    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
-      '<input value="'+esc(b.label)+'" data-b="'+b.id+'" data-k="label" aria-label="What it is">'+
-      '<div class="inwrap" style="width:130px"><span class="pre">'+sym()+'</span>'+
-      '<input class="money" value="'+esc(b.amount)+'" data-b="'+b.id+'" data-k="amount" inputmode="decimal" aria-label="How much a month"></div>'+
-      '<button class="x" data-delb="'+b.id+'" aria-label="Remove item">&times;</button></div>';
+    var d=document.createElement("div"); d.className="blk";
+    var wk=b.every==="week";
+    d.innerHTML='<div class="line">'+
+      '<input class="f grow" value="'+esc(b.label)+'" data-b="'+b.id+'" data-k="label" aria-label="What it is">'+
+      '<span class="cur">'+sym()+'</span>'+
+      '<input class="f money" value="'+esc(b.amount)+'" data-b="'+b.id+'" data-k="amount" inputmode="decimal" aria-label="How much">'+
+      '<select class="f" data-b="'+b.id+'" data-k="every" aria-label="How often">'+
+        '<option value="month"'+(wk?"":" selected")+'>a month</option>'+
+        '<option value="week"'+(wk?" selected":"")+'>a week</option></select>'+
+      '<button class="x" data-delb="'+b.id+'" aria-label="Remove item">&times;</button></div>'+
+      (wk?'<div class="mini" style="text-align:right;margin-top:2px">'+money(monthly(b))+' a month</div>':"");
     c.appendChild(d);
   });
-  el("outTotal").textContent=money(S.outgoings.reduce(function(s2,b){return s2+clamp(b.amount,0,1e7);},0));
+  renderOutTotal();
   el("otherIncome").value=S.settings.otherIncome||"";
   var g=el("goalList"); g.innerHTML="";
   if(!S.goals.length) g.innerHTML='<p class="sec">No goals.</p>';
   S.goals.forEach(function(x){
-    var d=document.createElement("div"); d.className="item"; d.style.marginBottom="10px";
-    d.innerHTML='<div style="display:flex;gap:8px;align-items:center">'+
-      '<input value="'+esc(x.label)+'" data-g="'+x.id+'" data-k="label" aria-label="What it is for">'+
+    var d=document.createElement("div"); d.className="blk";
+    d.innerHTML='<div class="line">'+
+      '<input class="f name grow" value="'+esc(x.label)+'" data-g="'+x.id+'" data-k="label" aria-label="What it is for">'+
+      '<span class="cur">'+sym()+'</span>'+
+      '<input class="f money" value="'+esc(x.amount)+'" data-g="'+x.id+'" data-k="amount" inputmode="decimal" aria-label="How much">'+
       '<button class="x" data-delg="'+x.id+'" aria-label="Remove goal">&times;</button></div>'+
-      '<div class="two"><div><label>How much</label><div class="inwrap"><span class="pre">'+sym()+'</span>'+
-      '<input class="money" value="'+esc(x.amount)+'" data-g="'+x.id+'" data-k="amount" inputmode="decimal"></div></div>'+
-      '<div><label>Over how many weeks</label><input class="plain" value="'+esc(x.weeks)+'" data-g="'+x.id+'" data-k="weeks" inputmode="numeric"></div></div>';
+      '<div class="line"><span class="grow"></span><span class="mini">Over</span>'+
+      '<input class="f narrow" value="'+esc(x.weeks)+'" data-g="'+x.id+'" data-k="weeks" inputmode="numeric" aria-label="Over how many weeks">'+
+      '<span class="mini">weeks</span></div>';
     g.appendChild(d);
   });
   if(act==="out"){el("addOut").click();}
   else if(act==="goal"){el("addGoal").click();}
+}
+function renderOutTotal(){
+  var t=S.outgoings.reduce(function(s2,b){return s2+monthly(b);},0);
+  var anyWeek=S.outgoings.some(function(b){return b.every==="week";});
+  el("outTotal").textContent=money(t)+(anyWeek?" a month":"");
 }
 el("addOut").addEventListener("click",function(){
   S.outgoings.push({id:uid(),label:"New item",amount:0,cat:"bills"}); save(); renderOut();
@@ -574,8 +600,14 @@ el("outList").addEventListener("input",function(e){
   var t=e.target, id=t.dataset.b; if(!id)return;
   var b=S.outgoings.filter(function(x){return x.id===id;})[0]; if(!b)return;
   if(t.dataset.k==="amount")b.amount=clamp(t.value,0,1e7); else b.label=t.value;
-  el("outTotal").textContent=money(S.outgoings.reduce(function(s2,x){return s2+clamp(x.amount,0,1e7);},0));
-  save();
+  renderOutTotal(); save();
+});
+// A frequency change alters what the row means, so it re-renders: the "x a month" hint under a
+// weekly row appears and disappears with it.
+el("outList").addEventListener("change",function(e){
+  var t=e.target; if(t.dataset.k!=="every")return;
+  var b=S.outgoings.filter(function(x){return x.id===t.dataset.b;})[0];
+  if(b){b.every=t.value==="week"?"week":"month";save();renderOut();}
 });
 el("outList").addEventListener("click",function(e){
   var d=e.target.closest("[data-delb]");

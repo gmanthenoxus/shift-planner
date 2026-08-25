@@ -1,4 +1,4 @@
-// TEMPORARY. jsdom tests for 2.0 build steps 1 to 5. Run: node docs/process/v2-tests.js
+// TEMPORARY. jsdom tests for 2.0. Run: node docs/process/v2-tests.js
 // Requires: npm i jsdom. Delete once the Breaker has passed 2.0.
 const fs=require("fs");
 let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){console.error("npm i jsdom");process.exit(2);}
@@ -170,4 +170,56 @@ console.log("\nL. Deleting everything degrades to a named empty state");
  ok("no figure",d.getElementById("ansGood").hidden);
  ok("names what is missing",/what you earn an hour/i.test(d.getElementById("missText").textContent),
     d.getElementById("missText").textContent);}
+console.log("\n"+pass+" passed, "+fail+" failed");
+
+const ev=(d,t,k)=>t.dispatchEvent(new (d.defaultView.Event)(k||"input",{bubbles:true}));
+
+console.log("\nM. The limit section is gone");
+{const {d}=onboard(); nav(d,"earn");
+ ok("no limit inputs",!d.getElementById("maxDays")&&!d.getElementById("hoursPerDay"));
+ nav(d,"answer");
+ ok("no limit refinement offered",![...d.querySelectorAll(".refine b")].some(x=>/limit/i.test(x.textContent)));}
+
+console.log("\nN. What an hour pays: the bug I shipped");
+{const {d}=onboard(); nav(d,"earn");
+ const t=d.getElementById("takehome").textContent;
+ ok("no NaN or Infinity with zero usual hours",!/NaN|Infinity/.test(t),t.slice(0,90));
+ ok("deductions are per hour, not annual",/-\D?[0-9]+\.[0-9]{2}/.test(t),t.slice(0,120));
+ ok("says the basis it assumed",/37\.5/.test(t),t.slice(-90));
+ const keep=t.match(/You keep\D*([0-9.]+)/);
+ ok("take-home is below the gross rate",keep&&parseFloat(keep[1])<14.25,keep&&keep[1]);
+ // live update: editing a rate must change take-home WITHOUT a tab switch
+ const before=d.getElementById("takehome").textContent;
+ const r=d.querySelectorAll('#jobList [data-k="value"]')[0];
+ r.value="30"; ev(d,r);
+ ok("take-home updates immediately on edit",d.getElementById("takehome").textContent!==before);
+ ok("still no NaN after the edit",!/NaN|Infinity/.test(d.getElementById("takehome").textContent));
+ const h=d.querySelector('#jobList [data-k="hrs"]');
+ h.value="40"; ev(d,h);
+ ok("entering usual hours changes the stated basis",/40 hours a week/.test(d.getElementById("takehome").textContent),
+    d.getElementById("takehome").textContent.slice(-80));}
+
+console.log("\nO. Weekly outgoings");
+{const {d,st}=onboard();
+ const before=parseFloat(d.getElementById("hours").textContent);
+ nav(d,"out");
+ const sel=d.querySelector('#outList [data-k="every"]');
+ ok("every row offers a frequency",!!sel);
+ ok("month is the default",sel.value==="month");
+ sel.value="week"; ev(d,sel,"change");
+ ok("stored as weekly",JSON.parse(st["shiftPlanner.2"]).outgoings[0].every==="week");
+ ok("shows the monthly equivalent",/a month/.test(d.getElementById("outList").textContent),
+    d.getElementById("outList").textContent.slice(-60));
+ nav(d,"answer");
+ const after=parseFloat(d.getElementById("hours").textContent);
+ ok("1240 a week needs far more hours than 1240 a month",after>before*4,{before,after});
+ ok("no Infinity or NaN",!/Infinity|NaN/.test(d.getElementById("answer").textContent));}
+
+console.log("\nP. Compact layout, structurally");
+{const {d}=onboard(); nav(d,"earn");
+ ok("no nested filled panels inside cards",d.querySelectorAll("#jobList .item").length===0);
+ ok("rate name and pay sit on one line",d.querySelectorAll("#jobList .line").length>=2);
+ ok("delete targets still 44px in CSS",/\.x\{[^}]*min-height:44px/.test(html));
+ nav(d,"out");
+ ok("outgoings use the same compact block",d.querySelectorAll("#outList .blk").length>=1&&d.querySelectorAll("#outList .item").length===0);}
 console.log("\n"+pass+" passed, "+fail+" failed");

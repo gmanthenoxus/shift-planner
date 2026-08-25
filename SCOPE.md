@@ -167,3 +167,12 @@ with blank data, and explicitly asked that nothing conflicting be carried over. 
 legacy fields that existed only for deferred features, and removes the migration entirely. Cost,
 stated plainly: their existing data is no longer read by the app. It is not destroyed, and the
 archived v11 build still exports it.
+
+**[2026-08-19] Your limit removed; outgoings gain a weekly option.** Both from the human using the
+build. The limit (most days a week, most hours a day) earned its place in v11 because the app
+passed judgement on whether a week was sustainable; 2.0 does not, so the section collected two
+numbers and did nothing with them. Removed, along with the refinement that offered it. Separately,
+an outgoing can now be marked "a week" instead of "a month" and is converted at 4.345 weeks a
+month, with the monthly equivalent shown under any weekly row. Rent and some bills are genuinely
+weekly, and making the user do that conversion is the arithmetic this app exists to remove.
+

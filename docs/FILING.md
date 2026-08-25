@@ -46,6 +46,7 @@ docs/
     SCOPE-HISTORY.md              append-only, one line per frozen version
   process/
     RELEASE-CHECKLIST.md          run before every deploy
+    v2-tests.js                   TEMPORARY, jsdom. Build steps 1 to 3
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Source for 2.0's ported tax tables

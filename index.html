@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Shift Planner</title>
+<style>
+  :root{
+    color-scheme:light;
+    --bg:#F4F0E9; --panel:#FFFDFA; --panel2:#EDE7DD; --line:#E3DACE; --line-strong:#CFC3B2;
+    --ink:#2A241F; --sub:#6D6458;
+    --accent:#A84E29; --accent2:#8E4222; --accent-ink:#FFFDFA; --accent-soft:#F2E4DA;
+    --warn:#8A5B0E; --warn-soft:#F7EBD5;
+    --error:#93342A; --error-soft:#F7E3DF;
+    --covered:#47663F; --covered-soft:#E4EADF;
+    --r:16px; --r-control:12px;
+  }
+  :root[data-theme="dark"]{
+    color-scheme:dark;
+    --bg:#16120E; --panel:#211C17; --panel2:#2C251E; --line:#322A22; --line-strong:#443A2F;
+    --ink:#F4F0E9; --sub:#9B8F80;
+    --accent:#E2825A; --accent2:#C96A44; --accent-ink:#16120E; --accent-soft:#33231A;
+    --warn:#E0AC4E; --warn-soft:#302516;
+    --error:#E89184; --error-soft:#33201C;
+    --covered:#9DBE93; --covered-soft:#222A1E;
+  }
+  @media (prefers-color-scheme:dark){ :root[data-theme="auto"]{
+    color-scheme:dark;
+    --bg:#16120E; --panel:#211C17; --panel2:#2C251E; --line:#322A22; --line-strong:#443A2F;
+    --ink:#F4F0E9; --sub:#9B8F80;
+    --accent:#E2825A; --accent2:#C96A44; --accent-ink:#16120E; --accent-soft:#33231A;
+    --warn:#E0AC4E; --warn-soft:#302516;
+    --error:#E89184; --error-soft:#33201C;
+    --covered:#9DBE93; --covered-soft:#222A1E;
+  }}
+  @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:400 16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  .wrap{max-width:560px;margin:0 auto;padding:24px 20px 40px;
+    min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
+  .card{background:var(--panel);border:0;border-radius:var(--r);padding:24px 20px}
+  :root[data-theme="dark"] .card,:root[data-theme="auto"] .card{border:1px solid var(--line)}
+  h1{font-size:26px;line-height:1.2;font-weight:500;margin:0 0 10px;letter-spacing:-.01em}
+  p{margin:0 0 16px;color:var(--sub);font-size:15px}
+  label{display:block;font-size:13px;color:var(--sub);margin:0 0 6px}
+  .step{font-size:13px;color:var(--sub);margin:0 0 10px}
+  .q{font-size:20px;font-weight:500;color:var(--ink);margin:0 0 4px;line-height:1.3}
+  .hint{font-size:14px;color:var(--sub);margin:0 0 16px}
+  .inwrap{position:relative}
+  .pre{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--sub);font-size:18px;pointer-events:none}
+  input{width:100%;background:var(--panel2);border:1px solid transparent;border-radius:var(--r-control);
+    color:var(--ink);padding:14px 14px 14px 32px;font:inherit;font-size:20px;-webkit-appearance:none;appearance:none}
+  input:focus{outline:none;border-color:var(--accent);background:var(--panel)}
+  input.plain{padding-left:14px;font-size:16px}
+  :root[data-theme="dark"] input,:root[data-theme="auto"] input{border-color:var(--line)}
+  .meter{height:4px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:20px 0 14px}
+  .meter i{display:block;height:100%;background:var(--accent);border-radius:999px;transition:width .2s}
+  .btn{display:block;width:100%;min-height:48px;border:0;border-radius:var(--r-control);
+    background:var(--accent);color:var(--accent-ink);font:inherit;font-size:16px;font-weight:500;
+    cursor:pointer;padding:13px}
+  .btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+  .btn.ghost{background:none;color:var(--accent);font-weight:400;min-height:44px}
+  .btn+.btn{margin-top:8px}
+  .num{font-size:56px;font-weight:500;letter-spacing:-.03em;line-height:1.02;margin:6px 0 0}
+  .unit{font-size:16px;color:var(--sub);margin:2px 0 0}
+  .restate{font-size:14px;color:var(--sub);margin:18px 0 0;line-height:1.5}
+  .centre{text-align:center}
+  .miss{font-size:16px;color:var(--ink);margin:8px 0 0;line-height:1.45}
+  .foot{font-size:12px;color:var(--sub);text-align:center;margin:24px 0 0;line-height:1.6}
+  .err{background:var(--error-soft);color:var(--error);border-radius:var(--r-control);
+    padding:12px 14px;font-size:14px;margin:0 0 16px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section id="cold" class="card centre">
+    <h1>How many hours does your life cost?</h1>
+    <p>Two questions. You get the number, then you can make it more accurate.</p>
+    <button class="btn" id="start">Start</button>
+    <button class="btn ghost" id="importBtn">I have a backup file</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </section>
+
+  <section id="ask" class="card" hidden>
+    <div id="askErr" class="err" hidden></div>
+    <div class="step" id="stepLabel">Question 1 of 2</div>
+    <div class="q" id="qText">What do you earn an hour?</div>
+    <div class="hint" id="qHint">Before tax. Your usual rate is fine.</div>
+    <div class="inwrap">
+      <span class="pre" id="sym">&#163;</span>
+      <input id="qInput" type="text" inputmode="decimal" autocomplete="off" aria-labelledby="qText">
+    </div>
+    <div class="meter"><i id="meterFill" style="width:50%"></i></div>
+    <button class="btn" id="next">Continue</button>
+  </section>
+
+  <section id="answer" class="card centre" hidden>
+    <div id="ansGood" hidden>
+      <div class="step">To cover your month you need</div>
+      <div class="num" id="hours"></div>
+      <div class="unit">hours a week</div>
+      <div class="restate" id="restate"></div>
+    </div>
+    <div id="ansMissing" hidden>
+      <div class="step">Not enough to work it out yet</div>
+      <div class="miss" id="missText"></div>
+    </div>
+    <div class="foot" id="countryLine"></div>
+    <button class="btn ghost" id="redo" style="margin-top:14px">Start again</button>
+  </section>
+
+  <div class="foot">
+    These are simplified effective-rate estimates, not real tax law. Planning guidance, not a
+    payslip. Nothing leaves your browser, ever.
+  </div>
+</div>
+
+<script>
+const COUNTRIES={
+  UK:{symbol:"£",name:"United Kingdom",calc:a=>{const pi=12570,up=50270,top=125140;let it=0,ni=0;
+    if(a>pi){const b=Math.min(a,up)-pi;it+=Math.max(0,b)*.2;if(a>up){it+=(Math.min(a,top)-up)*.4;if(a>top)it+=(a-top)*.45;}}
+    if(a>pi){const b=Math.min(a,up)-pi;ni+=Math.max(0,b)*.08;if(a>up)ni+=(a-up)*.02;}
+    return [["Income tax",it],["National Insurance",ni]];}},
+  IE:{symbol:"€",name:"Ireland",calc:a=>{let it=0;const std=44000;it+=Math.min(a,std)*.2;if(a>std)it+=(a-std)*.4;
+    const credit=4000; it=Math.max(0,it-credit);
+    let usc=0;const u=[[12012,.005],[28700,.02],[70044,.03],[Infinity,.08]];let prev=0;for(const[c,r]of u){if(a>prev){usc+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const prsi=a*.042;
+    return [["Income tax",it],["USC",usc],["PRSI",prsi]];}},
+  DE:{symbol:"€",name:"Germany",calc:a=>{const fb=12348;let it=0;
+    // banded effective-rate approximation of the progressive Einkommensteuer curve, not the exact formula
+    const br=[[40000,.20],[69878,.28],[277825,.38],[Infinity,.45]];let prev=fb;
+    for(const[c,r]of br){if(a>prev){it+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const soc=Math.min(a,85000)*0.21; // blended health+pension+care+unemployment employee share; real law splits into two caps, one blended cap kept for simplicity
+    return [["Income tax (approx)",it],["Social contributions",soc]];}},
+  FR:{symbol:"€",name:"France",calc:a=>{let it=0;const br=[[11600,0],[29579,.11],[84577,.30],[181917,.41],[Infinity,.45]];let prev=0;
+    for(const[c,r]of br){if(a>prev){it+=(Math.min(a,c)-prev)*r;prev=c;}else break;}
+    const soc=a*0.22; return [["Income tax",it],["Cotisations sociales",soc]];}},
+  NL:{symbol:"€",name:"Netherlands",calc:a=>{let it=0;const b1=38883,b2=78426;
+    it+=Math.min(a,b1)*.3575;if(a>b1)it+=(Math.min(a,b2)-b1)*.3756;if(a>b2)it+=(a-b2)*.4950;
+    const genCredit=Math.max(0,3115-Math.max(0,a-29736)*.06398);
+    // arbeidskorting (employee labour credit): simplified single-slope plateau+phase-out, not the
+    // real multi-segment build-up/plateau/phase-out formula -- reasonable within the app's own
+    // "effective-rate estimate" scope, but not statutory precision
+    const laborCredit=Math.max(0,Math.min(5685,5685-Math.max(0,a-40000)*(5685/84934)));
+    it=Math.max(0,it-genCredit-laborCredit);
+    return [["Income tax + NI",it]];}},
+  ES:{symbol:"€",name:"Spain",calc:a=>{let it=0;const br=[[0,.19],[12450,.24],[20200,.30],[35200,.37],[60000,.45],[300000,.47]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    const ss=Math.min(a,61214.40)*0.0647; return [["IRPF",it],["Social security",ss]];}},
+  US:{symbol:"$",name:"United States",calc:a=>{const t=Math.max(0,a-16100);let f=0;const br=[[0,.1],[12400,.12],[50400,.22],[105700,.24],[201775,.32],[256225,.35],[640600,.37]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    const fica=Math.min(a,184500)*.062+a*.0145; // Social Security capped at the wage base, Medicare uncapped
+    return [["Federal tax",f],["FICA",fica]];}},
+  CA:{symbol:"$",name:"Canada",calc:a=>{const t=Math.max(0,a-14829);let f=0;const br=[[0,.14],[58523,.205],[117045,.26],[181440,.29],[258482,.33]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(t>lo)f+=(Math.min(t,hi)-lo)*br[i][1];}
+    const cpp=Math.min(a,74600)*.0595, cpp2=Math.max(0,Math.min(a,85000)-74600)*.04, ei=Math.min(a,68900)*.0163;
+    return [["Federal tax",f],["CPP + CPP2 + EI",cpp+cpp2+ei]];}},
+  AU:{symbol:"$",name:"Australia",calc:a=>{let it=0;const br=[[0,0],[18200,.15],[45000,.30],[135000,.37],[190000,.45]];for(let i=0;i<br.length;i++){const lo=br[i][0],hi=br[i+1]?br[i+1][0]:Infinity;if(a>lo)it+=(Math.min(a,hi)-lo)*br[i][1];}
+    return [["Income tax",it],["Medicare levy",a>29207?a*.02:0]];}},
+  NONE:{symbol:"¤",name:"Flat % (custom)",calc:null},
+}
+
+// ---- storage: a NEW lineage. Nothing is read from shiftPlanner.v5 or .v6, ever.
+// ARCHITECTURE.md section 2. Those keys are left exactly where they are; the archived v11 build
+// at docs/archive/v11/index.html still opens and still exports them.
+var KEY="shiftPlanner.2", SCHEMA=1;
+var APP_VERSION="2.0.0", TAX_DATA_VERSION="2026.1";
+
+function uid(){return Math.random().toString(36).slice(2,9);}
+
+function blank(){
+  return {v:SCHEMA,jobs:[],outgoings:[],goals:[],shifts:[],weeks:[],
+    settings:{country:"UK",customRate:20,maxDays:6,hoursPerDay:10,otherIncome:0,theme:"light"},
+    meta:{firstRun:new Date().toISOString(),onboarded:false,
+          appVersion:APP_VERSION,taxDataVersion:TAX_DATA_VERSION}};
+}
+
+// Shape check is deliberately about the TOP level only: every reader below coerces values
+// defensively, so the real crash risk is a missing array, not a bad number inside one.
+function validShape(o){
+  if(!o||typeof o!=="object")return false;
+  if(o.v!==SCHEMA)return false;
+  var k=["jobs","outgoings","goals","shifts","weeks"];
+  for(var i=0;i<k.length;i++) if(!Array.isArray(o[k[i]])) return false;
+  return !!o.settings&&typeof o.settings==="object"&&!!o.meta&&typeof o.meta==="object";
+}
+
+var FROM_FUTURE=false;
+function load(){
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){
+      var p=JSON.parse(raw);
+      // A blob from a newer build is REFUSED and left untouched. Downgrading it would destroy
+      // data the user cannot get back, and silence would look identical to having no data.
+      if(p&&typeof p.v==="number"&&p.v>SCHEMA){FROM_FUTURE=true;return blank();}
+      if(validShape(p))return p;
+    }
+  }catch(e){}
+  return blank();
+}
+function save(){ if(FROM_FUTURE)return; try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){} }
+
+// ---- country inference. Timezone first: "en-GB" on a US phone is common, "Europe/London" is not.
+// Inferred ONCE on first run and never re-inferred, so correcting a wrong guess is not overruled.
+var TZ_COUNTRY={"Europe/London":"UK","Europe/Dublin":"IE","Europe/Berlin":"DE","Europe/Paris":"FR",
+  "Europe/Amsterdam":"NL","Europe/Madrid":"ES","Europe/Lisbon":"ES",
+  "America/New_York":"US","America/Chicago":"US","America/Denver":"US","America/Los_Angeles":"US",
+  "America/Phoenix":"US","America/Anchorage":"US",
+  "America/Toronto":"CA","America/Vancouver":"CA","America/Edmonton":"CA","America/Winnipeg":"CA",
+  "America/Halifax":"CA","America/St_Johns":"CA",
+  "Australia/Sydney":"AU","Australia/Melbourne":"AU","Australia/Brisbane":"AU",
+  "Australia/Perth":"AU","Australia/Adelaide":"AU","Australia/Hobart":"AU","Australia/Darwin":"AU"};
+var REGION_COUNTRY={GB:"UK",IE:"IE",DE:"DE",FR:"FR",NL:"NL",ES:"ES",US:"US",CA:"CA",AU:"AU"};
+function inferCountry(){
+  try{
+    var tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if(tz&&TZ_COUNTRY[tz])return TZ_COUNTRY[tz];
+  }catch(e){}
+  try{
+    var l=(navigator.language||"").toUpperCase().split("-");
+    var r=l.length>1?l[l.length-1]:"";
+    if(REGION_COUNTRY[r])return REGION_COUNTRY[r];
+  }catch(e){}
+  return "UK";
+}
+
+var S=load();
+if(!S.settings.countryInferred){
+  S.settings.country=inferCountry();
+  S.settings.countryInferred=true;
+  // Deliberately NOT saved here. Opening the page must not write to storage before the user has
+  // done anything; the first answer persists this along with it.
+}
+document.documentElement.setAttribute("data-theme",S.settings.theme||"light");
+
+// ---- money
+var WPM=4.345;
+function clamp(v,lo,hi){var n=+v;if(!isFinite(n))n=0;return Math.min(hi,Math.max(lo,n));}
+function sym(){return (COUNTRIES[S.settings.country]||COUNTRIES.UK).symbol;}
+function money(n){return sym()+Math.round(n).toLocaleString();}
+function money2(n){return sym()+(Math.round(n*100)/100).toFixed(2);}
+
+// Blended rate: the mean of a job's rates when nothing is logged yet, NOT the first rate.
+// v11 took the first and silently ignored the rest, which was visibly wrong on a real screen.
+function blendedRate(){
+  var totH=0,totPay=0;
+  S.jobs.forEach(function(j){
+    var h=clamp(j.typicalHours,0,168);
+    var rs=(j.rates||[]).map(function(r){return clamp(r.value,0,10000);});
+    if(!rs.length)return;
+    var mean=rs.reduce(function(a,b){return a+b;},0)/rs.length;
+    totH+=h; totPay+=mean*h;
+  });
+  if(totH>0)return totPay/totH;
+  // No typical hours entered anywhere: fall back to the mean of every rate, unweighted, so a
+  // brand-new user who skipped hours still gets a number rather than a zero.
+  var all=[];
+  S.jobs.forEach(function(j){(j.rates||[]).forEach(function(r){all.push(clamp(r.value,0,10000));});});
+  return all.length?all.reduce(function(a,b){return a+b;},0)/all.length:0;
+}
+function pensionRate(){
+  var totH=0,acc=0;
+  S.jobs.forEach(function(j){var h=clamp(j.typicalHours,0,168);totH+=h;acc+=(clamp(j.pension,0,100)/100)*h;});
+  if(totH>0)return acc/totH;
+  var ps=S.jobs.map(function(j){return clamp(j.pension,0,100)/100;});
+  return ps.length?ps.reduce(function(a,b){return a+b;},0)/ps.length:0;
+}
+
+function model(){
+  var c=S.settings.country, gross=blendedRate(), pr=pensionRate();
+  var totH=S.jobs.reduce(function(s,j){return s+clamp(j.typicalHours,0,168);},0);
+  // Tax annualises on DECLARED typical hours, never on logged hours: annualising a light week
+  // drops the figure into a lower bracket and RAISES the net rate, so working less would make
+  // each hour look worth more. Backwards, and invisible.
+  var basisH = totH>0?totH:37.5;
+  var annual = gross*basisH*52;
+  var comps=[],taxTotal=0;
+  if(c==="NONE"){var r=Math.min(.95,Math.max(0,clamp(S.settings.customRate,0,95)/100));
+    taxTotal=annual*r;comps=[["Deductions",taxTotal]];}
+  else{comps=(COUNTRIES[c]||COUNTRIES.UK).calc(annual);
+    taxTotal=comps.reduce(function(s,x){return s+x[1];},0);}
+  var taxRate=annual>0?taxTotal/annual:0;
+  var eff=Math.min(.98,taxRate+pr);
+  var net=gross*(1-eff);
+  var monthlyOut=S.outgoings.reduce(function(s,b){return s+clamp(b.amount,0,1e7);},0);
+  var need=Math.max(0,monthlyOut-clamp(S.settings.otherIncome,0,1e7));
+  var hours = net>0 ? need/net/WPM : null;
+  return {gross:gross,net:net,eff:eff,comps:comps,monthlyOut:monthlyOut,need:need,hours:hours};
+}
+
+// ---- what is missing. A zero that means "not set up" and a zero that means "nothing to cover"
+// must never look the same. SCOPE f2.
+function missing(){
+  if(!S.jobs.length) return "Add what you earn an hour.";
+  var anyRate=S.jobs.some(function(j){return (j.rates||[]).some(function(r){return clamp(r.value,0,10000)>0;});});
+  if(!anyRate) return "Add what you earn an hour.";
+  if(!S.outgoings.length) return "Add what your month costs.";
+  var m=model();
+  if(!(m.net>0)) return "Your rate after tax comes to nothing. Check what you earn an hour.";
+  return null;
+}
+
+// ---- screens
+var el=function(id){return document.getElementById(id);};
+function show(name){
+  ["cold","ask","answer"].forEach(function(n){el(n).hidden=(n!==name);});
+}
+
+var step=1, draft={rate:null,cost:null};
+function renderAsk(){
+  el("askErr").hidden=true;
+  el("sym").textContent=sym();
+  el("stepLabel").textContent="Question "+step+" of 2";
+  el("meterFill").style.width=(step===1?50:100)+"%";
+  if(step===1){
+    el("qText").textContent="What do you earn an hour?";
+    el("qHint").textContent="Before tax. Your usual rate is fine.";
+    el("qInput").value=draft.rate==null?"":draft.rate;
+    el("next").textContent="Continue";
+  }else{
+    el("qText").textContent="What does your month cost?";
+    el("qHint").textContent="Rent, bills, food, everything. One number is fine, you can split it later.";
+    el("qInput").value=draft.cost==null?"":draft.cost;
+    el("next").textContent="Show me";
+  }
+  el("qInput").focus();
+}
+
+function readNum(){
+  // Accept "14.25", "14,25", "£14.25" and "1,240". People type currency and thousands separators.
+  var src=String(el("qInput").value||"");
+  // The minus has to be caught BEFORE stripping, or "-5" arrives as 5 and passes as a valid rate.
+  if(/-/.test(src))return -1;
+  var raw=src.replace(/[^0-9.,]/g,"");
+  if(raw.indexOf(",")>-1&&raw.indexOf(".")===-1&&/,\d{1,2}$/.test(raw)) raw=raw.replace(",",".");
+  raw=raw.replace(/,/g,"");
+  var n=parseFloat(raw);
+  return isFinite(n)?n:NaN;
+}
+function fail(msg){el("askErr").textContent=msg;el("askErr").hidden=false;el("qInput").focus();}
+
+el("next").addEventListener("click",function(){
+  var n=readNum();
+  if(!isFinite(n)) return fail(step===1?"Enter what you earn an hour, as a number.":"Enter what your month costs, as a number.");
+  if(n<=0) return fail("That needs to be more than zero.");
+  if(step===1){
+    if(n>10000) return fail("That looks too high for an hourly rate. Check it.");
+    draft.rate=n;
+    // Each answer commits as it is given, so closing the tab mid-flow resumes. SCOPE f1.
+    S.jobs=[{id:uid(),name:"Job",pension:0,typicalHours:0,
+             rates:[{id:uid(),name:"Standard",value:n}]}];
+    save(); step=2; renderAsk(); return;
+  }
+  if(n>1e7) return fail("That looks too high for a month. Check it.");
+  draft.cost=n;
+  S.outgoings=[{id:uid(),label:"Everything",amount:n,cat:"bills"}];
+  S.meta.onboarded=true; save();
+  renderAnswer(); show("answer");
+});
+el("qInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();el("next").click();}});
+
+function renderAnswer(){
+  var miss=missing();
+  el("countryLine").textContent=(COUNTRIES[S.settings.country]||COUNTRIES.UK).name+", change this in settings.";
+  if(miss){
+    el("ansGood").hidden=true; el("ansMissing").hidden=false;
+    el("missText").textContent=miss;
+    return;
+  }
+  var m=model();
+  el("ansGood").hidden=false; el("ansMissing").hidden=true;
+  el("hours").textContent=(Math.round(m.hours*10)/10).toFixed(1);
+  el("restate").textContent=money(m.need)+" a month, at "+money2(m.net)+" an hour after tax.";
+}
+
+el("start").addEventListener("click",function(){step=1;renderAsk();show("ask");});
+el("redo").addEventListener("click",function(){
+  if(!confirm("Start again? This clears what you have entered."))return;
+  S=blank(); S.settings.country=inferCountry(); S.settings.countryInferred=true; save();
+  step=1; draft={rate:null,cost:null}; show("cold");
+});
+el("importBtn").addEventListener("click",function(){el("importFile").click();});
+el("importFile").addEventListener("change",function(e){
+  var f=e.target.files[0]; if(!f)return;
+  var r=new FileReader();
+  r.onload=function(){
+    var p; try{p=JSON.parse(r.result);}catch(err){alert("That file is not valid JSON.");return;}
+    if(!validShape(p)){alert("That file is not a Shift Planner backup.");return;}
+    S=p; save(); renderAnswer(); show("answer");
+  };
+  r.readAsText(f);
+});
+
+// ---- boot
+if(FROM_FUTURE){
+  show("answer");
+  el("ansGood").hidden=true; el("ansMissing").hidden=false;
+  el("missText").textContent="Your saved data was made by a newer version of this app. Nothing was changed or deleted.";
+  el("countryLine").textContent="";
+}else if(S.meta.onboarded){ renderAnswer(); show("answer"); }
+else { show("cold"); }
+</script>
+</body>
+</html>

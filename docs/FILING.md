@@ -21,6 +21,7 @@ If you are adding a file and it is not read at the start of every session, it do
 | `HANDOVER.md` | Append-only session log. The org's only memory | Every session appends |
 | `README.md` | What this is, for a stranger | Human |
 | `index.html` | The app | Builder |
+| `QA-REPORT.md` | Breaker verdict for the current version | Breaker. Read-only to everyone else |
 
 Standing order 7 names `HANDOVER.md`, `SCOPE.md` and `ARCHITECTURE.md` as the start-of-session read.
 That is why they are here and not filed away.
@@ -47,6 +48,7 @@ docs/
   process/
     RELEASE-CHECKLIST.md          run before every deploy
     v2-tests.js                   TEMPORARY, jsdom. 134 tests across all of 2.0
+    cruelty-pass.js               TEMPORARY, jsdom. Breaker cruelty + security, 21 checks
   research/
     COMPETITION-UK.md             UK competitive landscape, four tiers
     TAX-ACCURACY-AUDIT.md         per-country tax model audit. Source for 2.0's ported tax tables

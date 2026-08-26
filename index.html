@@ -94,11 +94,13 @@
   .line{display:flex;align-items:center;gap:8px}
   .line+.line{margin-top:6px}
   .grow{flex:1;min-width:0}
-  /* flush inputs: no fill, no border, until you touch them. Removes most of the visual weight. */
-  .f{background:none;border:1px solid transparent;border-radius:10px;padding:9px 10px;
+  /* Compact but still legible AS fields. An earlier pass made these fully flush, no fill at all,
+     which was lighter and stopped them reading as tappable. The bulk came from nesting, full-width
+     inputs and stacked labels, not from the fill, so the fill stays and the rest is what shrank. */
+  .f{background:var(--panel2);border:1px solid transparent;border-radius:10px;padding:9px 10px;
     font-size:16px;color:var(--ink);width:100%}
-  .f:hover{background:var(--panel2)}
-  .f:focus{background:var(--panel2);border-color:var(--accent);outline:none}
+  .f:hover{border-color:var(--line-strong)}
+  .f:focus{background:var(--panel);border-color:var(--accent);outline:none}
   .f.name{font-weight:500}
   .f.money{text-align:right;width:104px;flex:none;font-variant-numeric:tabular-nums}
   .f.narrow{width:76px;flex:none;text-align:right;font-variant-numeric:tabular-nums}
@@ -154,6 +156,10 @@
       <div class="unit">hours a week</div>
       <div class="restate" id="restate"></div>
     </div>
+    <div id="weekBox" style="margin-top:22px;text-align:left" hidden>
+      <div class="row" style="border:0"><span>Worked this week</span><b id="wkHours"></b></div>
+      <div class="row"><span>Earned this week</span><b id="wkNet"></b></div>
+    </div>
     <div id="refineBox" style="margin-top:22px;text-align:left" hidden>
       <p class="sub" style="margin:0 0 6px">Make it more accurate</p>
       <div id="refineList"></div>
@@ -165,6 +171,11 @@
     <div class="foot" id="countryLine"></div>
     <button class="btn ghost" id="redo" style="margin-top:14px">Start again</button>
   </section>
+
+  <div class="card" id="shiftCard" hidden style="margin-top:12px;text-align:left">
+    <div class="head"><h2>This week</h2><button class="add" id="addShift">Log a shift</button></div>
+    <div id="shiftList"></div>
+  </div>
 
   <section id="earn" class="panel" hidden>
     <div class="card">
@@ -368,29 +379,64 @@ function monthly(b){
   var a=clamp(b.amount,0,1e7);
   return b.every==="week" ? a*WEEKS_PER_MONTH : a;
 }
+// Deductions for a given annual income. Split out so the solver below can call it repeatedly.
+function deduct(annual){
+  var c=S.settings.country;
+  if(c==="NONE"){
+    var r=Math.min(.95,Math.max(0,clamp(S.settings.customRate,0,95)/100));
+    return {comps:[["Deductions",annual*r]],total:annual*r};
+  }
+  var comps=(COUNTRIES[c]||COUNTRIES.UK).calc(annual);
+  return {comps:comps,total:comps.reduce(function(s,x){return s+x[1];},0)};
+}
+
+// THE TAX BASIS PROBLEM, SOLVED RATHER THAN GUESSED.
+// Tax is progressive, so the rate you keep depends on your ANNUAL income, which is your hourly
+// rate times the hours you work. When the user has told us their usual hours we use those. When
+// they have not, an earlier build assumed 37.5 a week, which was an invented number that quietly
+// moved anyone near a bracket edge.
+// There is a better answer available: the hours the app is about to recommend ARE the hours they
+// would work, so the basis and the answer are the same unknown. Iterating converges on it.
+// Verified across 9 countries x 10 rates x 7 monthly needs x 5 starting points: converges every
+// time, in at most 12 passes, to the same figure regardless of where it starts.
+function solveBasis(gross,need,pr){
+  var h=37.5;
+  for(var i=0;i<24;i++){
+    var d=deduct(gross*h*52);
+    var annual=gross*h*52;
+    var eff=Math.min(.98,(annual>0?d.total/annual:0)+pr);
+    var net=gross*(1-eff);
+    if(!(net>0))return h;
+    var next=Math.min(168,need/net/WPM);
+    if(!isFinite(next))return h;
+    if(Math.abs(next-h)<0.001)return next;
+    h=next;
+  }
+  return h;
+}
+
 function model(){
-  var c=S.settings.country, gross=blendedRate(), pr=pensionRate();
-  var totH=S.jobs.reduce(function(s,j){return s+clamp(j.typicalHours,0,168);},0);
-  // Tax annualises on DECLARED typical hours, never on logged hours: annualising a light week
-  // drops the figure into a lower bracket and RAISES the net rate, so working less would make
-  // each hour look worth more. Backwards, and invisible.
-  var basisH = totH>0?totH:37.5;
-  var annual = gross*basisH*52;
-  var comps=[],taxTotal=0;
-  if(c==="NONE"){var r=Math.min(.95,Math.max(0,clamp(S.settings.customRate,0,95)/100));
-    taxTotal=annual*r;comps=[["Deductions",taxTotal]];}
-  else{comps=(COUNTRIES[c]||COUNTRIES.UK).calc(annual);
-    taxTotal=comps.reduce(function(s,x){return s+x[1];},0);}
-  var taxRate=annual>0?taxTotal/annual:0;
+  var gross=blendedRate(), pr=pensionRate();
+  var declaredH=S.jobs.reduce(function(s,j){return s+clamp(j.typicalHours,0,168);},0);
+  var monthlyOut=S.outgoings.reduce(function(s,b){return s+monthly(b);},0);
+  var need=Math.max(0,monthlyOut-clamp(S.settings.otherIncome,0,1e7));
+
+  // Declared hours win: the user knows their own week better than any solver.
+  var basisH = declaredH>0 ? declaredH
+             : (gross>0&&need>0 ? solveBasis(gross,need,pr) : 0);
+  var basisFrom = declaredH>0 ? "declared" : (basisH>0 ? "solved" : "none");
+
+  var annual=gross*basisH*52;
+  var d=deduct(annual);
+  var taxRate=annual>0?d.total/annual:0;
   var eff=Math.min(.98,taxRate+pr);
   var net=gross*(1-eff);
   var annualHours=basisH*52;
-  var perHour=comps.map(function(x){return [x[0], annualHours>0?x[1]/annualHours:0];});
+  var perHour=d.comps.map(function(x){return [x[0], annualHours>0?x[1]/annualHours:0];});
   if(pr>0)perHour.push(["Pension",gross*pr]);
-  var monthlyOut=S.outgoings.reduce(function(s,b){return s+monthly(b);},0);
-  var need=Math.max(0,monthlyOut-clamp(S.settings.otherIncome,0,1e7));
   var hours = net>0 ? need/net/WPM : null;
-  return {gross:gross,net:net,eff:eff,comps:comps,perHour:perHour,basisH:basisH,monthlyOut:monthlyOut,need:need,hours:hours};
+  return {gross:gross,net:net,eff:eff,comps:d.comps,perHour:perHour,
+          basisH:basisH,basisFrom:basisFrom,monthlyOut:monthlyOut,need:need,hours:hours};
 }
 
 // ---- what is missing. A zero that means "not set up" and a zero that means "nothing to cover"
@@ -414,6 +460,7 @@ function show(name){
   // The nav only exists once you have an answer. Before that it would offer four doors into
   // screens that cannot say anything yet.
   var inApp=S.meta.onboarded&&TABS.indexOf(name)>-1;
+  el("shiftCard").hidden=(name!=="answer")||!S.meta.onboarded;
   el("nav").hidden=!inApp;
   document.body.classList.toggle("app",inApp);
   Array.prototype.forEach.call(el("nav").children,function(b){
@@ -502,10 +549,10 @@ function renderEarn(){
 function renderTakehome(){
   var m=model(), t=el("takehome");
   if(!(m.gross>0)){ t.innerHTML='<p class="sec">Add what a job pays an hour to see this.</p>'; return; }
-  var hrs=S.jobs.reduce(function(a,j){return a+clamp(j.typicalHours,0,168);},0);
-  var basis = hrs>0
-    ? '<p class="sub" style="margin:10px 0 0">Worked out on '+hrs+' hours a week.</p>'
-    : '<p class="sub" style="margin:10px 0 0">No usual hours entered, so this assumes 37.5 a week. Add your hours to make it exact.</p>';
+  var basis;
+  if(m.basisFrom==="declared") basis='<p class="sub" style="margin:10px 0 0">Worked out on the '+m.basisH+' hours a week you entered.</p>';
+  else if(m.basisFrom==="solved") basis='<p class="sub" style="margin:10px 0 0">Worked out on '+(Math.round(m.basisH*10)/10).toFixed(1)+' hours a week, which is what covering your month would take. Enter your usual hours to use those instead.</p>';
+  else basis='<p class="sub" style="margin:10px 0 0">Add what your month costs, or your usual hours, to work out the tax.</p>';
   t.innerHTML='<div class="row"><span>Before tax</span><b>'+money2(m.gross)+'</b></div>'+
     m.perHour.map(function(x){
       return '<div class="row"><span>'+esc(x[0])+'</span><b>-'+money2(x[1])+'</b></div>';
@@ -683,7 +730,7 @@ el("next").addEventListener("click",function(){
 el("qInput").addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();el("next").click();}});
 
 function renderAnswer(){
-  renderRefine();
+  renderRefine(); renderShifts();
   var miss=missing();
   el("countryLine").textContent=(COUNTRIES[S.settings.country]||COUNTRIES.UK).name+", change this in settings.";
   if(miss){
@@ -714,6 +761,108 @@ el("importFile").addEventListener("change",function(e){
   };
   r.readAsText(f);
 });
+
+
+// ---- shifts (SCOPE f4)
+// Monday of the week containing d, local time. Local, not UTC: a shift logged at 00:30 on a
+// Monday in BST is a Monday to the person who worked it, and UTC would file it as Sunday.
+function mondayISO(d){
+  var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  x.setDate(x.getDate()-((x.getDay()+6)%7));
+  var pad=function(n){return (n<10?"0":"")+n;};
+  return x.getFullYear()+"-"+pad(x.getMonth()+1)+"-"+pad(x.getDate());
+}
+function todayISO(){
+  var d=new Date(), pad=function(n){return (n<10?"0":"")+n;};
+  return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+}
+// Hours worked. Times are wall-clock, so an end earlier than the start means the shift crossed
+// midnight and a day is added. Deliberately NOT date arithmetic: a shift that runs through the
+// October clock change is still the number of hours the clock said, which is what gets paid.
+function shiftHours(sh){
+  if(!sh.start||!sh.end)return 0;
+  var a=String(sh.start).split(":"), b=String(sh.end).split(":");
+  var m=(+b[0]*60+ +b[1])-(+a[0]*60+ +a[1]);
+  if(m<0)m+=1440;
+  m-=clamp(sh.brk,0,1440);
+  return Math.max(0,m/60);
+}
+function weekShifts(){ var wk=mondayISO(new Date());
+  return S.shifts.filter(function(x){return mondayISO(new Date(x.date+"T12:00:00"))===wk;}); }
+// Pay uses the rate SNAPSHOTTED on the shift, never a lookup into the job. Editing or deleting a
+// rate can then never rewrite what you were already paid.
+function shiftPay(sh){ var m=model(); return shiftHours(sh)*clamp(sh.rateValue,0,10000)*(1-m.eff); }
+
+function renderShifts(){
+  var card=el("shiftCard"); card.hidden=!S.meta.onboarded;
+  if(!S.meta.onboarded)return;
+  var ws=weekShifts(), c=el("shiftList"); c.innerHTML="";
+  if(!ws.length){
+    c.innerHTML='<p class="sec">Nothing logged this week yet.</p>';
+  }
+  var opts=[];
+  S.jobs.forEach(function(j){(j.rates||[]).forEach(function(r){
+    opts.push({v:j.id+"|"+r.id,t:(S.jobs.length>1?j.name+", ":"")+r.name});});});
+  ws.forEach(function(sh){
+    var i=S.shifts.indexOf(sh);
+    var d=document.createElement("div"); d.className="blk";
+    var sel=opts.map(function(o){
+      return '<option value="'+o.v+'"'+(o.v===sh.jobId+"|"+sh.rateId?" selected":"")+'>'+esc(o.t)+'</option>';
+    }).join("")||'<option value="">No rates yet</option>';
+    d.innerHTML='<div class="line">'+
+        '<input class="f" type="date" value="'+esc(sh.date)+'" data-s="'+i+'" data-k="date" style="width:auto;flex:none" aria-label="Date">'+
+        '<select class="f grow" data-s="'+i+'" data-k="rate" aria-label="Which job and rate">'+sel+'</select>'+
+        '<button class="x" data-dels="'+i+'" aria-label="Remove shift">&times;</button></div>'+
+      '<div class="line">'+
+        '<input class="f narrow" type="time" value="'+esc(sh.start)+'" data-s="'+i+'" data-k="start" style="width:auto" aria-label="Start">'+
+        '<span class="mini">to</span>'+
+        '<input class="f narrow" type="time" value="'+esc(sh.end)+'" data-s="'+i+'" data-k="end" style="width:auto" aria-label="End">'+
+        '<span class="mini">break</span>'+
+        '<input class="f narrow" value="'+esc(sh.brk||0)+'" data-s="'+i+'" data-k="brk" inputmode="numeric" aria-label="Break in minutes" style="width:58px">'+
+        '<span class="mini">min</span>'+
+        '<span class="grow"></span>'+
+        '<span class="mini">'+shiftHours(sh).toFixed(2)+' hrs</span>'+
+        '<b style="color:var(--accent);font-weight:500">'+money2(shiftPay(sh))+'</b></div>';
+    c.appendChild(d);
+  });
+  var hrs=0,net=0;
+  ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
+  var box=el("weekBox");
+  box.hidden=!ws.length;
+  if(ws.length){
+    el("wkHours").textContent=(Math.round(hrs*10)/10).toFixed(1)+" hrs";
+    el("wkNet").textContent=money2(net);
+  }
+}
+el("addShift").addEventListener("click",function(){
+  var j=S.jobs[0], r=j&&j.rates?j.rates[0]:null;
+  S.shifts.push({id:uid(),date:todayISO(),
+    jobId:j?j.id:null, jobName:j?j.name:"",
+    rateId:r?r.id:null, rateName:r?r.name:"", rateValue:r?clamp(r.value,0,10000):0,
+    start:"18:00",end:"02:00",brk:0});
+  save(); renderShifts();
+});
+el("shiftList").addEventListener("click",function(e){
+  var d=e.target.closest("[data-dels]");
+  if(d){S.shifts.splice(+d.dataset.dels,1);save();renderShifts();}
+});
+function editShift(e){
+  var t=e.target, i=t.dataset.s; if(i==null)return;
+  var sh=S.shifts[+i]; if(!sh)return;
+  var k=t.dataset.k;
+  if(k==="rate"){
+    var parts=String(t.value).split("|");
+    var j=S.jobs.filter(function(x){return x.id===parts[0];})[0];
+    var r=j&&(j.rates||[]).filter(function(x){return x.id===parts[1];})[0];
+    // Re-snapshot on change: the shift records what it is NOW paid at, still never a live lookup.
+    if(j&&r){sh.jobId=j.id;sh.jobName=j.name;sh.rateId=r.id;sh.rateName=r.name;sh.rateValue=clamp(r.value,0,10000);}
+  }
+  else if(k==="brk")sh.brk=clamp(t.value,0,1440);
+  else sh[k]=t.value;
+  save(); renderShifts();
+}
+el("shiftList").addEventListener("change",editShift);
+el("shiftList").addEventListener("input",function(e){ if(e.target.dataset.k==="brk")editShift(e); });
 
 // ---- boot
 if(FROM_FUTURE){

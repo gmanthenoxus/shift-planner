@@ -185,7 +185,8 @@ console.log("\nN. What an hour pays: the bug I shipped");
  const t=d.getElementById("takehome").textContent;
  ok("no NaN or Infinity with zero usual hours",!/NaN|Infinity/.test(t),t.slice(0,90));
  ok("deductions are per hour, not annual",/-\D?[0-9]+\.[0-9]{2}/.test(t),t.slice(0,120));
- ok("says the basis it assumed",/37\.5/.test(t),t.slice(-90));
+ ok("no invented 37.5 assumption anywhere",!/37\.5/.test(t),t.slice(-90));
+ ok("states the solved basis and where it came from",/hours a week, which is what covering your month would take/.test(t),t.slice(-140));
  const keep=t.match(/You keep\D*([0-9.]+)/);
  ok("take-home is below the gross rate",keep&&parseFloat(keep[1])<14.25,keep&&keep[1]);
  // live update: editing a rate must change take-home WITHOUT a tab switch
@@ -222,4 +223,83 @@ console.log("\nP. Compact layout, structurally");
  ok("delete targets still 44px in CSS",/\.x\{[^}]*min-height:44px/.test(html));
  nav(d,"out");
  ok("outgoings use the same compact block",d.querySelectorAll("#outList .blk").length>=1&&d.querySelectorAll("#outList .item").length===0);}
+console.log("\n"+pass+" passed, "+fail+" failed");
+
+console.log("\nQ. The tax basis is solved, not assumed");
+{const {d}=onboard(); nav(d,"earn");
+ const t=()=>d.getElementById("takehome").textContent;
+ ok("no 37.5 shown to the user",!/37\.5/.test(t()));
+ const m1=t().match(/on ([0-9.]+) hours a week/);
+ ok("a solved basis is stated",!!m1,t().slice(-120));
+ // The solved basis must equal the answer the app gives, because they are the same unknown.
+ nav(d,"answer");
+ const hrs=parseFloat(d.getElementById("hours").textContent);
+ ok("the basis equals the hours it recommends",Math.abs(parseFloat(m1[1])-hrs)<0.15,{basis:m1[1],hours:hrs});
+ // Declared hours must win over the solver.
+ nav(d,"earn");
+ const h=d.querySelector('#jobList [data-k="hrs"]'); h.value="40"; ev(d,h);
+ ok("declared hours take over",/the 40 hours a week you entered/.test(t()),t().slice(-110));
+ h.value="0"; ev(d,h);
+ ok("clearing them returns to the solved basis",/which is what covering your month would take/.test(t()),t().slice(-110));
+ ok("still no NaN or Infinity",!/NaN|Infinity/.test(t()));}
+
+console.log("\nR. Inputs read as fields again");
+{ok("fields have a resting fill",/\.f\{background:var\(--panel2\)/.test(html));
+ ok("focus is still distinct",/\.f:focus\{background:var\(--panel\);border-color:var\(--accent\)/.test(html));}
+console.log("\n"+pass+" passed, "+fail+" failed");
+
+console.log("\nS. Shift logging");
+{const {d,st}=onboard();
+ ok("one control to add a shift",d.querySelectorAll("#shiftCard .add").length===1);
+ ok("empty state before anything is logged",/Nothing logged this week/.test(d.getElementById("shiftList").textContent));
+ ok("week summary hidden when empty",d.getElementById("weekBox").hidden);
+ d.getElementById("addShift").click();
+ const blob=()=>JSON.parse(st["shiftPlanner.2"]);
+ ok("shift stored",blob().shifts.length===1);
+ const sh=blob().shifts[0];
+ ok("rate and job snapshotted at log time",sh.rateValue===14.25&&sh.rateName==="Standard"&&sh.jobName==="Job",sh);
+ ok("dated today",/^\d{4}-\d{2}-\d{2}$/.test(sh.date));
+ ok("week summary appears",!d.getElementById("weekBox").hidden);
+ ok("overnight 18:00 to 02:00 is 8 hours",/8\.00 hrs/.test(d.getElementById("shiftList").textContent),
+    d.getElementById("shiftList").textContent.match(/[\d.]+ hrs/));
+ ok("worked this week shows 8.0",d.getElementById("wkHours").textContent==="8.0 hrs",d.getElementById("wkHours").textContent);
+ ok("earned is below gross 8 x 14.25",parseFloat(d.getElementById("wkNet").textContent.replace(/[^0-9.]/g,""))<114,
+    d.getElementById("wkNet").textContent);
+ // break
+ const brk=d.querySelector('#shiftList [data-k="brk"]'); brk.value="30"; ev(d,brk);
+ ok("a 30 minute break gives 7.5 hours",d.getElementById("wkHours").textContent==="7.5 hrs",d.getElementById("wkHours").textContent);
+ // editing the rate afterwards must NOT rewrite the logged shift
+ nav(d,"earn");
+ const r=d.querySelectorAll('#jobList [data-k="value"]')[0]; r.value="99"; ev(d,r);
+ nav(d,"answer");
+ ok("editing a rate does not rewrite a logged shift",blob().shifts[0].rateValue===14.25,blob().shifts[0].rateValue);
+ // deleting the rate must not corrupt it either
+ nav(d,"earn");
+ d.querySelector("[data-delr]").click();
+ nav(d,"answer");
+ ok("deleting the rate leaves the shift intact",blob().shifts[0].rateValue===14.25&&blob().shifts.length===1);
+ ok("no NaN or Infinity anywhere on Now",!/NaN|Infinity/.test(d.getElementById("answer").textContent+d.getElementById("shiftList").textContent));
+ d.querySelector("[data-dels]").click();
+ ok("delete removes it",blob().shifts.length===0);
+ ok("week summary hides again",d.getElementById("weekBox").hidden);}
+
+console.log("\nT. Overnight and clock-change hours");
+{const {d,st}=onboard();
+ const cases=[["18:00","02:00",0,"8.00"],["22:00","06:00",30,"7.50"],
+              ["09:00","17:00",60,"7.00"],["00:30","08:30",0,"8.00"],
+              ["23:00","23:00",0,"0.00"]];
+ for(const [a,b,br,want] of cases){
+   d.getElementById("addShift").click();
+   // every edit re-renders the list, so the row must be re-queried each time. Caching it means
+   // editing a node that has already been thrown away.
+   const set=(k,v)=>{
+     const rows=d.querySelectorAll("#shiftList .blk");
+     const i=rows[rows.length-1].querySelector('[data-k="'+k+'"]');
+     i.value=v; ev(d,i,k==="brk"?"input":"change");
+   };
+   set("start",a); set("end",b); set("brk",String(br));
+   const txt=[...d.querySelectorAll("#shiftList .blk")].pop().textContent;
+   ok(a+" to "+b+" less "+br+"m = "+want+" hrs",txt.indexOf(want+" hrs")>-1,txt.match(/[\d.]+ hrs/));
+   d.querySelectorAll("[data-dels]")[d.querySelectorAll("[data-dels]").length-1].click();
+ }}
 console.log("\n"+pass+" passed, "+fail+" failed");

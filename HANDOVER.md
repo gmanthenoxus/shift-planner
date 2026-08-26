@@ -458,3 +458,21 @@ Risky: (1) I AM BOTH THE BUILDER AND THE BREAKER IN THIS SESSION. The seat exist
 Open: (1) BUG-3, run the copy pass. (2) BUG-1, decide what the advice pointer says outside the UK. (3) Someone must look at the built page; this project has twice shipped faults that only appeared on screen. (4) Confirm the Pages source. (5) Rule on the blended-rate drift flag: ARCHITECTURE section 3 or the build, one of them is wrong. (6) ARCHITECTURE section 4 still lists the removed limit.
 
 Touched: `QA-REPORT.md` (new), `docs/process/cruelty-pass.js` (new, temporary), `docs/FILING.md`, `HANDOVER.md`. No code modified, per the Breaker's read-only rule.
+
+## Session 2026-08-19 (twenty-sixth entry, blockers fixed, ship-ready, push pending)
+
+Done: Cleared both Breaker blockers and confirmed the deploy target. BUG-1: the free-advice pointer named MoneyHelper and Citizens Advice regardless of country, and both are UK only while the app supports nine. Now country-aware: the UK keeps the two named services this project's legal reading was actually done against, and every other country gets a line that is true everywhere and invents nothing. I DELIBERATELY DID NOT NAME SERVICES FOR THE OTHER EIGHT COUNTRIES. I could not verify them this session, and naming a service that cannot help someone is worse in a compliance surface than naming none. Recorded as COPY-DECK C10 with the condition that adding one requires verifying it, not recalling it. BUG-3: the copy pass ran through the `shift-planner-copywriter` seat over every visitor-facing string. Deploy-infra: the human ran `gh api` and returned `build_type: legacy`, `source: main:/`, `https_enforced: true`, `status: built`. Legacy is CORRECT here, there is no build step, so the check passes. QA-REPORT gained a re-test section and the verdict is now SHIP-READY.
+
+A REGRESSION THE COPY PASS CAUSED AND A TEST CAUGHT: it shortened the tax disclaimer from "a simplified estimate" to "an estimate". Weaker, and SCOPE f6 requires the disclaimer be accurate to what is ACTUALLY simplified. Restored and recorded as COPY-DECK C11 so nobody shortens it again. This is the second time in two sessions that tightening prose weakened a compliance string, which suggests compliance copy should be exempt from brevity passes by default.
+
+Also: I corrupted `docs/process/v2-tests.js` by appending another test file to it with `cat >>`, and restored it from git. No test coverage was lost.
+
+Verification: 134 behaviour tests, 21 cruelty and security checks, 6 new advice-pointer checks across all nine countries plus the flat-rate mode. All green.
+
+Assumed: (1) That not naming unverified services beats naming plausible ones. It leaves eight countries with a generic line rather than a route, which is a real gap, just a smaller one than a wrong route. (2) That legacy Pages deploy is right for this project, per ARCHITECTURE section 5.
+
+Risky: (1) **THE PUSH DID NOT HAPPEN.** No git credentials exist in this sandbox: `could not read Username for 'https://github.com'`. 35 commits sit unpushed on `main`. NOTHING IS LIVE. The human must run `git push origin main` themselves. (2) TWO CRITERIA REMAIN UNTESTABLE AND ARE NOT WAIVED: WCAG 2.2 AA on the built page, and the 320px navigation check. Neither has been observed to fail; neither has been observed at all. jsdom computes no layout and no contrast. (3) The blended-rate deviation from ARCHITECTURE section 3 is still unruled. (4) BUG-2 stands: SCOPE f3 still lists a refinement that the changelog removed. (5) I remain both Builder and Breaker for this whole version.
+
+Open: (1) `git push origin main`, then hard-reload https://gmanthenoxus.github.io/shift-planner/ and confirm the version stamp reads 2.0.0. (2) Look at the live page, light and dark, on a phone. (3) Rule on the blended-rate drift. (4) Reconcile SCOPE f3 with the changelog. (5) Verify and add free-advice services for the other eight countries, or record that the generic line is the permanent answer.
+
+Touched: `index.html` (country-aware advice pointer, copy pass, "simplified" restored), `QA-REPORT.md` (re-test, verdict SHIP-READY), `docs/design/COPY-DECK.md` (C10, C11), `docs/process/bug1-advice-pointer.js` (new), `HANDOVER.md`. No dependencies added.

@@ -134,7 +134,7 @@
   </div>
   <section id="cold" class="card centre">
     <h1>How many hours does your life cost?</h1>
-    <p>Two questions. You get the number, then you can make it more accurate.</p>
+    <p>Two questions, then the number. You can make it more accurate after.</p>
     <button class="btn" id="start">Start</button>
     <button class="btn ghost" id="importBtn">I have a backup file</button>
     <input type="file" id="importFile" accept="application/json" hidden>
@@ -198,7 +198,7 @@
       <div id="outList"></div>
       <div class="row"><span>Total</span><b id="outTotal"></b></div>
       <div style="margin-top:14px">
-        <label for="otherIncome">Money in from anywhere else, each month</label>
+        <label for="otherIncome">Money in from anywhere else</label>
         <div class="inwrap"><span class="pre" id="sym2">&#163;</span>
         <input id="otherIncome" type="text" inputmode="decimal"></div>
         <p class="sub" style="margin-top:8px">Salary, benefits, anything not from these shifts. It lowers the hours your shifts have to cover.</p>
@@ -238,7 +238,7 @@
     </div>
     <div class="card">
       <div class="head"><h2>Your data</h2></div>
-      <p class="sec">It lives in this browser and nowhere else. Keep a backup if it matters.</p>
+      <p class="sec">It lives in this browser and nowhere else. Keep a backup if it matters to you.</p>
       <div class="line">
         <button class="add" id="exportBtn">Export</button>
         <button class="add" id="importBtn2">Import</button>
@@ -733,7 +733,7 @@ function renderAsk(){
     el("next").textContent="Continue";
   }else{
     el("qText").textContent="What does your month cost?";
-    el("qHint").textContent="Rent, bills, food, everything. One number is fine, you can split it later.";
+    el("qHint").textContent="Rent, bills, food, everything. One number is fine. You can split it later.";
     el("qInput").value=draft.cost==null?"":draft.cost;
     el("next").textContent="Show me";
   }
@@ -942,7 +942,7 @@ function renderWeeks(){
   ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
   el("bankBtn").textContent = ws.length ? "Bank this week" : "Nothing to bank";
   if(!S.weeks.length){
-    c.innerHTML='<p class="sec">No weeks banked yet. Log some shifts, then bank the week to keep a record of what it reached.</p>';
+    c.innerHTML='<p class="sec">No weeks banked yet. Log some shifts, then bank the week to keep what it reached.</p>';
   }
   S.weeks.slice().reverse().forEach(function(w){
     var d=document.createElement("div"); d.className="blk";
@@ -978,15 +978,21 @@ function renderSettings(){
   Array.prototype.forEach.call(document.querySelectorAll(".themebtn"),function(b){
     b.setAttribute("aria-pressed",b.dataset.themeSet===(S.settings.theme||"light")?"true":"false");
   });
-  // COPY: shift-planner-copywriter still owes this a pass. Placed and honest, not yet written by
-  // the seat that owns it.
+  // BUG-1 FIX. The pointer used to name MoneyHelper and Citizens Advice whatever country you were
+  // in, and both are UK only. Naming a service that cannot help you is worse in a compliance
+  // surface than naming none. UK gets the two services this project's legal reading was actually
+  // done against; every other country gets a line that is true everywhere and invents nothing.
+  // Adding a named service for another country needs it verified first, not recalled.
+  var advice = S.settings.country==="UK"
+    ? "Free advice is available from MoneyHelper and Citizens Advice."
+    : "Free debt advice services exist in most countries, usually run by charities or by government.";
   el("legal").innerHTML=
-    '<div class="row" style="border:0;display:block"><p class="sub" style="margin:0 0 10px">'+
-    'The tax here is a simplified estimate. It does not know about your allowances, credits, '+
-    'student loan, or overtime rules. Treat it as planning, not a payslip.</p>'+
-    '<p class="sub" style="margin:0 0 10px">This is not debt advice. It works out hours from '+
-    'numbers you enter, in the order you put them in. It will not tell you what to pay or when. '+
-    'For free advice you can trust, look up MoneyHelper or Citizens Advice.</p>'+
+    '<div class="row" style="border:0;display:block">'+
+    '<p class="sub" style="margin:0 0 10px">The tax here is a simplified estimate. It does not know about '+
+    'your allowances, credits, student loan, or overtime rules. Treat it as planning, not a payslip.</p>'+
+    '<p class="sub" style="margin:0 0 10px">This is not debt advice. It works out hours from the '+
+    'numbers you enter, in the order you enter them. It will not tell you what to pay or when. '+
+    esc(advice)+'</p>'+
     '<p class="sub" style="margin:0">Nothing leaves your browser, ever. Version '+
     esc(APP_VERSION)+', tax data '+esc(TAX_DATA_VERSION)+'.</p></div>';
 }

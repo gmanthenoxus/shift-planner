@@ -138,3 +138,35 @@ Also required before the human's ship decision, neither of which I can perform:
 
 Not blocking, but the human owns them: BUG-2 and the two drift flags are all cases where a
 document and the build disagree, and only the human can say which is wrong.
+
+---
+
+# Re-test, 2026-08-19
+
+Fix cycle. Per the re-test rule, only previously failed items plus what the fix touched.
+
+| Item | Verdict | Evidence |
+|---|---|---|
+| BUG-1, UK-only advice pointer | **FIXED** | New check at `docs/process/bug1-advice-pointer.js`: all nine countries plus the flat-rate mode verified. No UK-only service is named outside the UK; the generic line appears everywhere else; the not-debt-advice statement and "will not tell you what to pay or when" survive every country; no steering language |
+| BUG-3, copy pass | **RUN** | `shift-planner-copywriter` seat ran over every visitor-facing string. Two decisions recorded as COPY-DECK C10 and C11 |
+| Criterion 6.3, free advice pointer | PASS | Was FAIL |
+| Criterion 7.1, copy written by the seat | PASS | Was FAIL |
+| Deploy-infra: Pages source | PASS | `gh api` returned `build_type: legacy`, `source: main:/`, `https_enforced: true`, `status: built`. Legacy is CORRECT for this project: no build step, so a workflow build would ship the same file through more machinery |
+| Regression: full suite | PASS | 134 behaviour tests, 21 cruelty and security checks, 6 advice-pointer checks. All green |
+
+**A regression the fix caused and a test caught:** the copy pass shortened the tax disclaimer from
+"a simplified estimate" to "an estimate". That is weaker, and SCOPE f6 requires the disclaimer be
+accurate to what is *actually* simplified. Restored, and recorded as COPY-DECK C11 so it is not
+shortened again.
+
+## Revised verdict: SHIP-READY, with two things the human is shipping knowingly
+
+Both blockers are cleared and the deploy target is confirmed. Two items remain UNTESTABLE from
+here and are **not** waived, they are simply outside what this seat can execute:
+
+1. **Criterion 6.4, WCAG 2.2 AA on the built page.** Token pairs were measured at design time.
+   The rendered page has never been measured, and jsdom computes no layout or contrast.
+2. **The 320px navigation check**, same reason.
+
+Neither has been observed to fail. Neither has been observed at all.
+

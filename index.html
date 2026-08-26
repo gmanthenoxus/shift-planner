@@ -128,6 +128,10 @@
 </head>
 <body>
 <div class="wrap">
+  <div class="line" id="appbar" hidden style="margin:0 0 14px">
+    <span class="grow"></span>
+    <button class="add" id="settingsBtn" aria-label="Settings">Settings</button>
+  </div>
   <section id="cold" class="card centre">
     <h1>How many hours does your life cost?</h1>
     <p>Two questions. You get the number, then you can make it more accurate.</p>
@@ -208,8 +212,45 @@
   </section>
 
   <section id="weeks" class="panel" hidden>
-    <div class="card"><div class="head"><h2>Weeks</h2></div>
-      <p class="sec" id="weeksEmpty">Nothing banked yet. Log a shift first.</p></div>
+    <div class="card">
+      <div class="head"><h2>Weeks</h2><button class="add" id="bankBtn">Bank this week</button></div>
+      <div id="weekList"></div>
+    </div>
+  </section>
+
+  <section id="settings" class="panel" hidden>
+    <div class="card">
+      <div class="head"><h2>Where you are</h2></div>
+      <p class="sec">Sets your currency and which tax model is used.</p>
+      <select class="f" id="country" style="width:100%" aria-label="Country"></select>
+      <div id="customWrap" hidden style="margin-top:10px">
+        <label for="customRate">Flat deduction rate</label>
+        <div class="line"><input class="f narrow" id="customRate" inputmode="decimal"><span class="mini">%</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Appearance</h2></div>
+      <div class="line">
+        <button class="add themebtn" data-theme-set="light" aria-pressed="true">Light</button>
+        <button class="add themebtn" data-theme-set="dark" aria-pressed="false">Dark</button>
+        <button class="add themebtn" data-theme-set="auto" aria-pressed="false">Match device</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Your data</h2></div>
+      <p class="sec">It lives in this browser and nowhere else. Keep a backup if it matters.</p>
+      <div class="line">
+        <button class="add" id="exportBtn">Export</button>
+        <button class="add" id="importBtn2">Import</button>
+        <span class="grow"></span>
+        <button class="add" id="resetBtn" style="color:var(--error);border-color:var(--error)">Delete everything</button>
+      </div>
+      <div id="ioMsg" class="err" hidden style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>What this is, and is not</h2></div>
+      <div id="legal"></div>
+    </div>
   </section>
 
   <nav class="nav" id="nav" hidden role="tablist" aria-label="Sections">
@@ -453,13 +494,13 @@ function missing(){
 
 // ---- screens
 var el=function(id){return document.getElementById(id);};
-var SCREENS=["cold","ask","answer","earn","out","weeks"];
+var SCREENS=["cold","ask","answer","earn","out","weeks","settings"];
 var TABS=["answer","earn","out","weeks"];
 function show(name){
   SCREENS.forEach(function(n){el(n).hidden=(n!==name);});
   // The nav only exists once you have an answer. Before that it would offer four doors into
   // screens that cannot say anything yet.
-  var inApp=S.meta.onboarded&&TABS.indexOf(name)>-1;
+  var inApp=S.meta.onboarded&&(TABS.indexOf(name)>-1||name==="settings");
   el("shiftCard").hidden=(name!=="answer")||!S.meta.onboarded;
   el("nav").hidden=!inApp;
   document.body.classList.toggle("app",inApp);
@@ -467,6 +508,9 @@ function show(name){
     var on=b.dataset.tab===name;
     b.classList.toggle("on",on); b.setAttribute("aria-selected",on?"true":"false");
   });
+  el("appbar").hidden=!(S.meta.onboarded&&name!=="cold"&&name!=="ask");
+  if(name==="weeks")renderWeeks();
+  if(name==="settings")renderSettings();
   if(name==="earn")renderEarn();
   if(name==="out")renderOut();
   if(name==="answer")renderAnswer();
@@ -863,6 +907,124 @@ function editShift(e){
 }
 el("shiftList").addEventListener("change",editShift);
 el("shiftList").addEventListener("input",function(e){ if(e.target.dataset.k==="brk")editShift(e); });
+
+
+// ---- coverage and banking (SCOPE f5)
+// The waterfall runs in the user's STORED ORDER and is never re-sorted. Re-ordering it, or
+// suggesting which item to reach first, is advice about the liquidation of a debt and a regulated
+// activity under art. 39E RAO. The app states what the money reached. It does not rank.
+function coverageFor(net){
+  var left=net, out=[];
+  S.outgoings.forEach(function(b){
+    var weekly=monthly(b)/WPM;
+    if(left>=weekly-0.005){ out.push({label:b.label,state:"covered",short:0}); left-=weekly; }
+    else if(left>0.005){ out.push({label:b.label,state:"part",short:weekly-left}); left=0; }
+    else { out.push({label:b.label,state:"none",short:weekly}); }
+  });
+  return out;
+}
+function covMarkup(cov){
+  if(!cov||!cov.length)return '<p class="sub">Nothing to reach yet.</p>';
+  return cov.map(function(c){
+    var right = c.state==="covered" ? '<b style="color:var(--covered)">Covered</b>'
+      : c.state==="part" ? '<b style="color:var(--warn)">'+money(c.short)+' short</b>'
+      : '<b style="color:var(--sub);font-weight:400">Not reached</b>';
+    return '<div class="row"><span>'+esc(c.label)+'</span>'+right+'</div>';
+  }).join("");
+}
+function weekLabel(iso){
+  var d=new Date(iso+"T12:00:00");
+  return d.toLocaleDateString(undefined,{day:"numeric",month:"short"});
+}
+function renderWeeks(){
+  var c=el("weekList"); c.innerHTML="";
+  var ws=weekShifts(), hrs=0, net=0;
+  ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
+  el("bankBtn").textContent = ws.length ? "Bank this week" : "Nothing to bank";
+  if(!S.weeks.length){
+    c.innerHTML='<p class="sec">No weeks banked yet. Log some shifts, then bank the week to keep a record of what it reached.</p>';
+  }
+  S.weeks.slice().reverse().forEach(function(w){
+    var d=document.createElement("div"); d.className="blk";
+    d.innerHTML='<div class="line"><b class="grow">Week of '+esc(weekLabel(w.weekStart))+'</b>'+
+      '<span class="mini">'+(Math.round(w.hours*10)/10).toFixed(1)+' hrs</span>'+
+      '<b style="color:var(--accent);font-weight:500">'+money2(w.net)+'</b></div>'+
+      '<div style="margin-top:4px">'+covMarkup(w.coverage)+'</div>';
+    c.appendChild(d);
+  });
+}
+el("bankBtn").addEventListener("click",function(){
+  var ws=weekShifts();
+  if(!ws.length){ return; }
+  var hrs=0,net=0; ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
+  // Coverage is FROZEN into the row here. Editing an outgoing next month must not rewrite what a
+  // week that has already happened reached.
+  S.weeks.push({id:uid(),weekStart:mondayISO(new Date()),hours:hrs,net:net,coverage:coverageFor(net)});
+  S.shifts=S.shifts.filter(function(x){return ws.indexOf(x)===-1;});
+  save(); renderWeeks(); renderShifts(); renderAnswer();
+});
+
+// ---- settings (SCOPE f6)
+function renderSettings(){
+  var sel=el("country");
+  if(!sel.options.length){
+    Object.keys(COUNTRIES).forEach(function(k){
+      var o=document.createElement("option"); o.value=k; o.textContent=COUNTRIES[k].name; sel.appendChild(o);
+    });
+  }
+  sel.value=S.settings.country;
+  el("customWrap").hidden=(S.settings.country!=="NONE");
+  el("customRate").value=S.settings.customRate;
+  Array.prototype.forEach.call(document.querySelectorAll(".themebtn"),function(b){
+    b.setAttribute("aria-pressed",b.dataset.themeSet===(S.settings.theme||"light")?"true":"false");
+  });
+  // COPY: shift-planner-copywriter still owes this a pass. Placed and honest, not yet written by
+  // the seat that owns it.
+  el("legal").innerHTML=
+    '<div class="row" style="border:0;display:block"><p class="sub" style="margin:0 0 10px">'+
+    'The tax here is a simplified estimate. It does not know about your allowances, credits, '+
+    'student loan, or overtime rules. Treat it as planning, not a payslip.</p>'+
+    '<p class="sub" style="margin:0 0 10px">This is not debt advice. It works out hours from '+
+    'numbers you enter, in the order you put them in. It will not tell you what to pay or when. '+
+    'For free advice you can trust, look up MoneyHelper or Citizens Advice.</p>'+
+    '<p class="sub" style="margin:0">Nothing leaves your browser, ever. Version '+
+    esc(APP_VERSION)+', tax data '+esc(TAX_DATA_VERSION)+'.</p></div>';
+}
+el("country").addEventListener("change",function(){
+  S.settings.country=el("country").value; save();
+  el("customWrap").hidden=(S.settings.country!=="NONE");
+  renderSettings(); renderAnswer();
+});
+el("customRate").addEventListener("input",function(){
+  S.settings.customRate=clamp(el("customRate").value,0,95); save(); renderAnswer();
+});
+Array.prototype.forEach.call(document.querySelectorAll(".themebtn"),function(b){
+  b.addEventListener("click",function(){
+    S.settings.theme=b.dataset.themeSet; save();
+    document.documentElement.setAttribute("data-theme",S.settings.theme);
+    renderSettings();
+  });
+});
+el("settingsBtn").addEventListener("click",function(){
+  show(el("settings").hidden?"settings":"answer");
+});
+function ioMsg(t,bad){
+  var m=el("ioMsg"); m.textContent=t; m.hidden=!t;
+  m.style.background=bad?"var(--error-soft)":"var(--covered-soft)";
+  m.style.color=bad?"var(--error)":"var(--covered)";
+}
+el("exportBtn").addEventListener("click",function(){
+  var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
+  var a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download="shift-planner-backup.json"; a.click();
+  ioMsg("Saved. Keep it somewhere you will find it again.",false);
+});
+el("importBtn2").addEventListener("click",function(){el("importFile").click();});
+el("resetBtn").addEventListener("click",function(){
+  if(!confirm("Delete everything and start over? This cannot be undone."))return;
+  S=blank(); S.settings.country=inferCountry(); S.settings.countryInferred=true; save();
+  step=1; draft={rate:null,cost:null}; show("cold");
+});
 
 // ---- boot
 if(FROM_FUTURE){

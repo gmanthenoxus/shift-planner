@@ -303,3 +303,74 @@ console.log("\nT. Overnight and clock-change hours");
    d.querySelectorAll("[data-dels]")[d.querySelectorAll("[data-dels]").length-1].click();
  }}
 console.log("\n"+pass+" passed, "+fail+" failed");
+
+console.log("\nU. Weeks and banking");
+{const {d,st}=onboard();
+ nav(d,"weeks");
+ ok("empty weeks screen says so",/No weeks banked yet/.test(d.getElementById("weekList").textContent));
+ ok("bank button says there is nothing to bank",d.getElementById("bankBtn").textContent==="Nothing to bank");
+ nav(d,"answer"); d.getElementById("addShift").click();
+ nav(d,"weeks");
+ ok("bank button offers to bank",d.getElementById("bankBtn").textContent==="Bank this week");
+ d.getElementById("bankBtn").click();
+ const blob=()=>JSON.parse(st["shiftPlanner.2"]);
+ ok("week stored",blob().weeks.length===1);
+ ok("the shift left the current week",blob().shifts.length===0);
+ const w=blob().weeks[0];
+ ok("hours and pay recorded",w.hours===8&&w.net>0,{h:w.hours,n:w.net});
+ ok("coverage frozen at bank time",Array.isArray(w.coverage)&&w.coverage.length===1,w.coverage);
+ ok("row rendered newest first with a date",/Week of/.test(d.getElementById("weekList").textContent));
+ // editing an outgoing afterwards must NOT rewrite a banked week
+ const before=JSON.stringify(blob().weeks[0].coverage);
+ nav(d,"out");
+ const a=d.querySelector('#outList [data-k="amount"]'); a.value="99999"; ev(d,a);
+ nav(d,"weeks");
+ ok("editing an outgoing does not rewrite a banked week",JSON.stringify(blob().weeks[0].coverage)===before);
+ ok("no Infinity or NaN",!/Infinity|NaN/.test(d.getElementById("weekList").textContent));}
+
+console.log("\nV. Coverage never ranks");
+{const {d,st}=onboard();
+ nav(d,"out");
+ d.getElementById("addOut").click();
+ let rows=d.querySelectorAll('#outList [data-k="label"]');
+ rows[rows.length-1].value="Savings"; ev(d,rows[rows.length-1]);
+ rows=d.querySelectorAll('#outList [data-k="amount"]');
+ rows[rows.length-1].value="100"; ev(d,rows[rows.length-1]);
+ nav(d,"answer"); d.getElementById("addShift").click();
+ nav(d,"weeks"); d.getElementById("bankBtn").click();
+ const cov=JSON.parse(st["shiftPlanner.2"]).weeks[0].coverage;
+ const stored=JSON.parse(st["shiftPlanner.2"]).outgoings.map(o=>o.label);
+ ok("coverage follows the stored order exactly",JSON.stringify(cov.map(c=>c.label))===JSON.stringify(stored),
+    {cov:cov.map(c=>c.label),stored});
+ const txt=d.getElementById("weekList").textContent;
+ ok("no steering language anywhere",
+    !/prioritise|consider|you should|pay this first|instead of|we recommend/i.test(txt));
+ ok("states reached or not, nothing more",/Covered|short|Not reached/.test(txt),txt.slice(0,120));}
+
+console.log("\nW. Settings and the compliance surface");
+{const {d,st}=onboard();
+ d.getElementById("settingsBtn").click();
+ ok("settings opens",!d.getElementById("settings").hidden);
+ ok("country picker is here, with all countries",d.getElementById("country").options.length>=9);
+ ok("appearance has three choices",d.querySelectorAll(".themebtn").length===3);
+ ok("export, import and delete are all here",
+    !!d.getElementById("exportBtn")&&!!d.getElementById("importBtn2")&&!!d.getElementById("resetBtn"));
+ const legal=d.getElementById("legal").textContent;
+ ok("tax disclaimer present",/simplified estimate/i.test(legal));
+ ok("not-debt-advice statement present",/not debt advice/i.test(legal));
+ ok("points at free regulated advice",/MoneyHelper|Citizens Advice/.test(legal));
+ ok("says it will not tell you what to pay",/will not tell you what to pay/i.test(legal));
+ ok("version stamp present",/Version 2\.0\.0/.test(legal)&&/tax data/i.test(legal));
+ ok("nothing leaves the browser is stated",/Nothing leaves your browser/i.test(legal));
+ // theme
+ d.querySelector('[data-theme-set="dark"]').click();
+ ok("theme applies and persists",d.documentElement.getAttribute("data-theme")==="dark"
+    &&JSON.parse(st["shiftPlanner.2"]).settings.theme==="dark");
+ // country change moves the number
+ nav(d,"answer"); const before=parseFloat(d.getElementById("hours").textContent);
+ d.getElementById("settingsBtn").click();
+ const c=d.getElementById("country"); c.value="US"; ev(d,c,"change");
+ nav(d,"answer");
+ ok("changing country changes the number",parseFloat(d.getElementById("hours").textContent)!==before);
+ ok("and does not break it",!/NaN|Infinity/.test(d.getElementById("answer").textContent));}
+console.log("\n"+pass+" passed, "+fail+" failed");

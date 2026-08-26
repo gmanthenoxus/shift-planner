@@ -35,6 +35,7 @@ That is why they are here and not filed away.
 | `research/` | Findings consulted when deciding, not when building | Is it evidence rather than instruction? |
 | `design/` | Visual and copy source-of-truth | Does it define what the thing looks or sounds like? |
 | `archive/` | Superseded and version-closed material | Is it now historically true but operationally dead? |
+| `launch/` | Distribution and launch copy, per version | Is it words aimed at people outside the project? |
 
 ### Current contents
 
@@ -55,6 +56,8 @@ docs/
   design/
     COPY-DECK.md                  voice, register, resolved copy decisions
     DESIGN-TOKENS.md              Guide (warm), contrast-verified
+  launch/
+    LINKEDIN-2.0.md               2.0 LinkedIn anchor post, get-involved ladder, 4-week plan, fact sheet
   archive/
     v11/                          THE WHOLE OF v11. README.md records why it closed
       README.md  index.html  SCOPE.md  ARCHITECTURE.md  TECH-PACK.md  PROMPTS.md

@@ -1,4 +1,4 @@
-# Shift Planner
+# Evenweek
 
 **How many hours does your life cost?**
 
@@ -8,13 +8,13 @@ A single-page web app for gig workers and multi-job earners to plan weekly shift
 
 ## What it does
 
-Enter your monthly bills, savings goals, and job rates. Shift Planner calculates:
+Enter your monthly bills, savings goals, and job rates. Evenweek calculates:
 - **Baseline hours/week** to cover your life
 - **Weekly shifts needed** including any one-off financial goals
 - **Tax-adjusted net earnings** for 8 countries (or a flat custom rate)
 - **Visual breakdown** showing exactly where each earned hour goes—rent, savings, taxes, etc.
 
-Log each week's actual shifts. Shift Planner shows you what you earned, whether you hit your target, and which obligations you covered in priority order.
+Log each week's actual shifts. Evenweek shows you what you earned, whether you hit your target, and which obligations you covered in priority order.
 
 ## Quick start
 

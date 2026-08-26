@@ -3,7 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Shift Planner</title>
+<title>Evenweek</title>
+<link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="icons/favicon.ico" sizes="16x16 32x32 48x48">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#F4F0E9">
 <style>
   :root{
     color-scheme:light;
@@ -43,6 +47,7 @@
     min-height:100dvh;display:flex;flex-direction:column;justify-content:center}
   .card{background:var(--panel);border:0;border-radius:var(--r);padding:24px 20px}
   :root[data-theme="dark"] .card,:root[data-theme="auto"] .card{border:1px solid var(--line)}
+  .brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:500;margin:0 0 10px}
   h1{font-size:26px;line-height:1.2;font-weight:500;margin:0 0 10px;letter-spacing:-.01em}
   p{margin:0 0 16px;color:var(--sub);font-size:15px}
   label{display:block;font-size:13px;color:var(--sub);margin:0 0 6px}
@@ -133,8 +138,9 @@
     <button class="add" id="settingsBtn" aria-label="Settings">Settings</button>
   </div>
   <section id="cold" class="card centre">
-    <h1>How many hours does your life cost?</h1>
-    <p>Two questions, then the number. You can make it more accurate after.</p>
+    <div class="brand">Evenweek</div>
+    <h1>How many hours a week do you need?</h1>
+    <p>Tell it what you earn an hour and what your month costs. It works out the rest. Two questions, about a minute.</p>
     <button class="btn" id="start">Start</button>
     <button class="btn ghost" id="importBtn">I have a backup file</button>
     <input type="file" id="importFile" accept="application/json" hidden>
@@ -144,7 +150,7 @@
     <div id="askErr" class="err" hidden></div>
     <div class="step" id="stepLabel">Question 1 of 2</div>
     <div class="q" id="qText">What do you earn an hour?</div>
-    <div class="hint" id="qHint">Before tax. Your usual rate is fine.</div>
+    <div class="hint" id="qHint">Before tax. Your usual rate is fine, you can add others later.</div>
     <div class="inwrap">
       <span class="pre" id="sym">&#163;</span>
       <input id="qInput" type="text" inputmode="decimal" autocomplete="off" aria-labelledby="qText">
@@ -187,14 +193,14 @@
       <div id="jobList"></div>
     </div>
     <div class="card">
-      <div class="head"><h2>What an hour pays</h2></div>
+      <div class="head"><h2>What you keep an hour</h2></div>
       <div id="takehome"></div>
     </div>
   </section>
 
   <section id="out" class="panel" hidden>
     <div class="card">
-      <div class="head"><h2>Every month</h2><button class="add" id="addOut">Add item</button></div>
+      <div class="head"><h2>What your month costs</h2><button class="add" id="addOut">Add item</button></div>
       <div id="outList"></div>
       <div class="row"><span>Total</span><b id="outTotal"></b></div>
       <div style="margin-top:14px">
@@ -205,8 +211,8 @@
       </div>
     </div>
     <div class="card">
-      <div class="head"><h2>One off goals</h2><button class="add" id="addGoal">Add goal</button></div>
-      <p class="sec">A lump sum by a deadline. Adds hours on top, only while it runs.</p>
+      <div class="head"><h2>Saving for something</h2><button class="add" id="addGoal">Add goal</button></div>
+      <p class="sec">A lump sum you want by a certain point. It adds hours on top of your month, and only while it runs.</p>
       <div id="goalList"></div>
     </div>
   </section>
@@ -220,8 +226,8 @@
 
   <section id="settings" class="panel" hidden>
     <div class="card">
-      <div class="head"><h2>Where you are</h2></div>
-      <p class="sec">Sets your currency and which tax model is used.</p>
+      <div class="head"><h2>Where you work</h2></div>
+      <p class="sec">This sets your currency and how tax is worked out.</p>
       <select class="f" id="country" style="width:100%" aria-label="Country"></select>
       <div id="customWrap" hidden style="margin-top:10px">
         <label for="customRate">Flat deduction rate</label>
@@ -248,7 +254,7 @@
       <div id="ioMsg" class="err" hidden style="margin-top:12px"></div>
     </div>
     <div class="card">
-      <div class="head"><h2>What this is, and is not</h2></div>
+      <div class="head"><h2>What this is</h2></div>
       <div id="legal"></div>
     </div>
   </section>
@@ -456,6 +462,22 @@ function solveBasis(gross,need,pr){
   return h;
 }
 
+// A goal is a lump sum over a number of weeks. It contributes while it runs and stops when the
+// weeks are up, which is what the hint has always promised. Expired goals stay visible so you know
+// one ran out rather than wondering where it went.
+var WEEK_MS=7*24*60*60*1000;
+function goalWeeksLeft(g){
+  var wks=clamp(g.weeks,1,520);
+  var gone=(Date.now()-(g.addedAt||Date.now()))/WEEK_MS;
+  return Math.max(0,wks-gone);
+}
+function goalExpired(g){ return goalWeeksLeft(g)<=0; }
+function goalWeekly(g){
+  if(goalExpired(g))return 0;
+  return clamp(g.amount,0,1e7)/clamp(g.weeks,1,520);
+}
+function goalsWeekly(){ return S.goals.reduce(function(s2,g){return s2+goalWeekly(g);},0); }
+
 function model(){
   var gross=blendedRate(), pr=pensionRate();
   var declaredH=S.jobs.reduce(function(s,j){return s+clamp(j.typicalHours,0,168);},0);
@@ -464,7 +486,7 @@ function model(){
 
   // Declared hours win: the user knows their own week better than any solver.
   var basisH = declaredH>0 ? declaredH
-             : (gross>0&&need>0 ? solveBasis(gross,need,pr) : 0);
+             : (gross>0&&(need>0||goalsWeekly()>0) ? solveBasis(gross,need+goalsWeekly()*WPM,pr) : 0);
   var basisFrom = declaredH>0 ? "declared" : (basisH>0 ? "solved" : "none");
 
   var annual=gross*basisH*52;
@@ -475,9 +497,15 @@ function model(){
   var annualHours=basisH*52;
   var perHour=d.comps.map(function(x){return [x[0], annualHours>0?x[1]/annualHours:0];});
   if(pr>0)perHour.push(["Pension",gross*pr]);
-  var hours = net>0 ? need/net/WPM : null;
+  // Goals are already WEEKLY amounts, so they divide by net directly. Outgoings are monthly and
+  // go through WPM first. Mixing those two up silently multiplies a goal by 4.345.
+  var gw=goalsWeekly();
+  var baseHours = net>0 ? need/net/WPM : null;
+  var goalHours = net>0 ? gw/net : null;
+  var hours = net>0 ? baseHours+goalHours : null;
   return {gross:gross,net:net,eff:eff,comps:d.comps,perHour:perHour,
-          basisH:basisH,basisFrom:basisFrom,monthlyOut:monthlyOut,need:need,hours:hours};
+          basisH:basisH,basisFrom:basisFrom,monthlyOut:monthlyOut,need:need,
+          goalWeekly:gw,baseHours:baseHours,goalHours:goalHours,hours:hours};
 }
 
 // ---- what is missing. A zero that means "not set up" and a zero that means "nothing to cover"
@@ -486,7 +514,7 @@ function missing(){
   if(!S.jobs.length) return "Add what you earn an hour.";
   var anyRate=S.jobs.some(function(j){return (j.rates||[]).some(function(r){return clamp(r.value,0,10000)>0;});});
   if(!anyRate) return "Add what you earn an hour.";
-  if(!S.outgoings.length) return "Add what your month costs.";
+  if(!S.outgoings.length&&!S.goals.length) return "Add what your month costs.";
   var m=model();
   if(!(m.net>0)) return "Your rate after tax comes to nothing. Check what you earn an hour.";
   return null;
@@ -525,13 +553,13 @@ el("nav").addEventListener("click",function(e){
 function refinements(){
   var r=[], j=S.jobs[0];
   if(j&&(j.rates||[]).length<2)
-    r.push({t:"Add another rate",w:"If you are paid differently for different work.",go:"earn",act:"rate"});
+    r.push({t:"Add another rate",w:"If some work pays more than other work.",go:"earn",act:"rate"});
   if(S.outgoings.length<2)
-    r.push({t:"Split what your month costs",w:"See which parts of it cost you the most hours.",go:"out",act:"out"});
+    r.push({t:"Break your month into items",w:"See which parts of it take the most hours.",go:"out",act:"out"});
   if(!clamp(j&&j.typicalHours,0,168))
-    r.push({t:"Say how many hours you usually work",w:"Makes the tax on your rate more accurate.",go:"earn",act:"hours"});
+    r.push({t:"Add the hours you usually work",w:"Makes the tax on your pay more accurate.",go:"earn",act:"hours"});
   if(!S.goals.length)
-    r.push({t:"Add a one off goal",w:"A lump sum by a deadline, on top of your month.",go:"out",act:"goal"});
+    r.push({t:"Add something you are saving for",w:"Something you are saving for, on top of your month.",go:"out",act:"goal"});
   if(S.jobs.length<2)
     r.push({t:"Add a second job",w:"If more than one place pays you.",go:"earn",act:"job"});
   return r;
@@ -662,6 +690,8 @@ function renderOut(){
   if(!S.goals.length) g.innerHTML='<p class="sec">No goals.</p>';
   S.goals.forEach(function(x){
     var d=document.createElement("div"); d.className="blk";
+    var exp=goalExpired(x), left=Math.ceil(goalWeeksLeft(x));
+    if(exp)d.style.opacity="0.6";
     d.innerHTML='<div class="line">'+
       '<input class="f name grow" value="'+esc(x.label)+'" data-g="'+x.id+'" data-k="label" aria-label="What it is for">'+
       '<span class="cur">'+sym()+'</span>'+
@@ -669,7 +699,10 @@ function renderOut(){
       '<button class="x" data-delg="'+x.id+'" aria-label="Remove goal">&times;</button></div>'+
       '<div class="line"><span class="grow"></span><span class="mini">Over</span>'+
       '<input class="f narrow" value="'+esc(x.weeks)+'" data-g="'+x.id+'" data-k="weeks" inputmode="numeric" aria-label="Over how many weeks">'+
-      '<span class="mini">weeks</span></div>';
+      '<span class="mini">weeks</span></div>'+
+      '<div class="mini" style="text-align:right;margin-top:4px">'+
+        (exp ? "Finished. It is not adding hours any more."
+             : money(goalWeekly(x))+" a week, "+left+" week"+(left===1?"":"s")+" to go")+'</div>';
     g.appendChild(d);
   });
   if(act==="out"){el("addOut").click();}
@@ -728,12 +761,12 @@ function renderAsk(){
   el("meterFill").style.width=(step===1?50:100)+"%";
   if(step===1){
     el("qText").textContent="What do you earn an hour?";
-    el("qHint").textContent="Before tax. Your usual rate is fine.";
+    el("qHint").textContent="Before tax. Your usual rate is fine, you can add others later.";
     el("qInput").value=draft.rate==null?"":draft.rate;
     el("next").textContent="Continue";
   }else{
     el("qText").textContent="What does your month cost?";
-    el("qHint").textContent="Rent, bills, food, everything. One number is fine. You can split it later.";
+    el("qHint").textContent="Rent, bills, food, everything you pay for. One number now, you can break it up later.";
     el("qInput").value=draft.cost==null?"":draft.cost;
     el("next").textContent="Show me";
   }
@@ -785,7 +818,11 @@ function renderAnswer(){
   var m=model();
   el("ansGood").hidden=false; el("ansMissing").hidden=true;
   el("hours").textContent=(Math.round(m.hours*10)/10).toFixed(1);
-  el("restate").textContent=money(m.need)+" a month, at "+money2(m.net)+" an hour after tax.";
+  var line=money(m.need)+" a month, at "+money2(m.net)+" an hour after tax.";
+  if(m.goalWeekly>0){
+    line+=" That includes "+(Math.round(m.goalHours*10)/10).toFixed(1)+" hours a week for your goals.";
+  }
+  el("restate").textContent=line;
 }
 
 el("start").addEventListener("click",function(){step=1;renderAsk();show("ask");});
@@ -800,7 +837,7 @@ el("importFile").addEventListener("change",function(e){
   var r=new FileReader();
   r.onload=function(){
     var p; try{p=JSON.parse(r.result);}catch(err){alert("That file is not valid JSON.");return;}
-    if(!validShape(p)){alert("That file is not a Shift Planner backup.");return;}
+    if(!validShape(p)){alert("That file is not a Evenweek backup.");return;}
     S=p; save(); renderAnswer(); show("answer");
   };
   r.readAsText(f);
@@ -942,14 +979,17 @@ function renderWeeks(){
   ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
   el("bankBtn").textContent = ws.length ? "Bank this week" : "Nothing to bank";
   if(!S.weeks.length){
-    c.innerHTML='<p class="sec">No weeks banked yet. Log some shifts, then bank the week to keep what it reached.</p>';
+    c.innerHTML='<p class="sec">Nothing here yet. Log your shifts, then bank the week to keep a record of what it reached.</p>';
   }
   S.weeks.slice().reverse().forEach(function(w){
     var d=document.createElement("div"); d.className="blk";
     d.innerHTML='<div class="line"><b class="grow">Week of '+esc(weekLabel(w.weekStart))+'</b>'+
       '<span class="mini">'+(Math.round(w.hours*10)/10).toFixed(1)+' hrs</span>'+
       '<b style="color:var(--accent);font-weight:500">'+money2(w.net)+'</b></div>'+
-      '<div style="margin-top:4px">'+covMarkup(w.coverage)+'</div>';
+      '<div style="margin-top:4px">'+covMarkup(w.coverage)+'</div>'+
+      (w.goalTarget>0
+        ? '<div class="row"><span>Put towards goals</span><b>'+money(w.goalTarget)+' of the week</b></div>'
+        : "");
     c.appendChild(d);
   });
 }
@@ -959,7 +999,8 @@ el("bankBtn").addEventListener("click",function(){
   var hrs=0,net=0; ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
   // Coverage is FROZEN into the row here. Editing an outgoing next month must not rewrite what a
   // week that has already happened reached.
-  S.weeks.push({id:uid(),weekStart:mondayISO(new Date()),hours:hrs,net:net,coverage:coverageFor(net)});
+  S.weeks.push({id:uid(),weekStart:mondayISO(new Date()),hours:hrs,net:net,
+    coverage:coverageFor(net),goalTarget:goalsWeekly()});
   S.shifts=S.shifts.filter(function(x){return ws.indexOf(x)===-1;});
   save(); renderWeeks(); renderShifts(); renderAnswer();
 });
@@ -1022,7 +1063,7 @@ function ioMsg(t,bad){
 el("exportBtn").addEventListener("click",function(){
   var blob=new Blob([JSON.stringify(S,null,2)],{type:"application/json"});
   var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob); a.download="shift-planner-backup.json"; a.click();
+  a.href=URL.createObjectURL(blob); a.download="evenweek-backup.json"; a.click();
   ioMsg("Saved. Keep it somewhere you will find it again.",false);
 });
 el("importBtn2").addEventListener("click",function(){el("importFile").click();});

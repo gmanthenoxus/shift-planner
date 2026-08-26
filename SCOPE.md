@@ -1,4 +1,4 @@
-# SCOPE: Shift Planner 2.0, answer first
+# SCOPE: Evenweek 2.0, answer first
 
 Date: 2026-08-19
 
@@ -175,4 +175,22 @@ numbers and did nothing with them. Removed, along with the refinement that offer
 an outgoing can now be marked "a week" instead of "a month" and is converted at 4.345 weeks a
 month, with the monthly equivalent shown under any weekly row. Rent and some bills are genuinely
 weekly, and making the user do that conversion is the arithmetic this app exists to remove.
+
+**[2026-08-26] Renamed: Shift Planner is now Evenweek.** Not a scope change; no feature,
+boundary or acceptance criterion moves. Recorded here because a frozen document that quietly
+changes its own title is a frozen document nobody trusts. Reason: "shift planner" is the search
+term for rota-management apps (Supershift, When I Work, Deputy), a category this product does not
+compete in and deliberately is not. `COMPETITION-UK.md` already noted those competitors own that
+app-store term. The name promised a rota and delivered a calculator. Storage key `shiftPlanner.2`
+is UNCHANGED and stays unchanged: renaming it would hide every existing user's data, which is the
+exact failure Feature 8 was written to avoid.
+
+**[2026-08-27] Goals now feed the number. They previously did nothing.** Found while auditing the
+app against the questions it is meant to answer. Goals were stored, editable and rendered, and
+never entered the calculation or the coverage check, so "add something you are saving for" bought
+nothing at all. A refinement that buys nothing is not a refinement. A goal now contributes its
+weekly share while it runs, stops when its weeks are up, stays visible marked finished, and the
+answer screen states how many of the hours are for goals. Goal progress is reported SEPARATELY from
+the coverage waterfall rather than being slotted before or after your monthly items, because
+choosing that order would be the app ranking your obligations.
 

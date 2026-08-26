@@ -1,4 +1,4 @@
-# PROJECT: Shift Planner
+# PROJECT: Evenweek
 
 <!-- Foundational definition. Version-independent: SCOPE.md defines what a given version builds,
      this file defines what the project IS and why it exists. Drafted by the Builder 2026-08-12
@@ -12,7 +12,7 @@
 
 ## 0. The uncomfortable part, first
 
-Shift Planner is a working, QA-passed, publicly deployed product with **one verified external user**.
+Evenweek is a working, QA-passed, publicly deployed product with **one verified external user**.
 [Observed — PARKING.md logs exactly one real end-user, Marlene Asare, via WhatsApp 2026-06-23; no
 other external user appears in any repo document.] Every other signal in this repo, nine countries of
 tax modelling, a 291-line QA report, a competitive landscape scan, twenty parked improvements, is
@@ -58,7 +58,7 @@ and it is narrower than "hourly workers."
 
 ## 2. The solution
 
-**Shift Planner converts a list of monthly obligations into a tax-adjusted weekly hours target across
+**Evenweek converts a list of monthly obligations into a tax-adjusted weekly hours target across
 however many jobs you work, then tracks whether the hours you actually logged covered them.**
 
 Four things it does that, per the landscape scan, nothing else found does together:

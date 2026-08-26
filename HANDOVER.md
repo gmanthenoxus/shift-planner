@@ -476,3 +476,33 @@ Risky: (1) **THE PUSH DID NOT HAPPEN.** No git credentials exist in this sandbox
 Open: (1) `git push origin main`, then hard-reload https://gmanthenoxus.github.io/shift-planner/ and confirm the version stamp reads 2.0.0. (2) Look at the live page, light and dark, on a phone. (3) Rule on the blended-rate drift. (4) Reconcile SCOPE f3 with the changelog. (5) Verify and add free-advice services for the other eight countries, or record that the generic line is the permanent answer.
 
 Touched: `index.html` (country-aware advice pointer, copy pass, "simplified" restored), `QA-REPORT.md` (re-test, verdict SHIP-READY), `docs/design/COPY-DECK.md` (C10, C11), `docs/process/bug1-advice-pointer.js` (new), `HANDOVER.md`. No dependencies added.
+
+## Session 2026-08-26 (branding pass, not a build session)
+Done: Named the product **Evenweek** and built its identity. New `brand/` folder: tile mark, mono
+mark on `currentColor`, light and dark lockups, plus the proof sheet. Replaced `icons/` with the new
+set (192, 512, maskable-512, apple-touch-180, favicon.svg, favicon.ico at 16/32/48) and wired them
+into `index.html`'s head, which had never linked the icons folder at all. Added a single
+`theme-color` of `#F4F0E9`, deliberately not a `prefers-color-scheme` pair, per the 19 Aug
+correction in DESIGN-TOKENS. Renamed "Shift Planner" to "Evenweek" across 13 files (42 strings).
+Export filename is now `evenweek-backup.json`. Wrote `docs/design/BRANDING.md`. Appended a rename
+entry to the SCOPE changelog rather than silently retitling a frozen document. Parked P1-P3.
+Assumed: none. Every skipped rename is listed under Risky below with its reason, and the three
+judgement calls that could have gone the other way are parked as P1-P3 rather than decided here.
+Risky: (1) Storage key `shiftPlanner.2` is UNCHANGED and must stay so, renaming it hides every
+existing user's blob, which is the failure Feature 8 exists to prevent. (2) The repo and live URL
+still read `shift-planner`, so the name in the tab and the name in the address bar now disagree
+until P3 is decided. (3) `shift-planner-copywriter` keeps its name; it lives in the Claude account,
+not this repo, so it cannot be renamed from here without re-saving the skill. (4) HANDOVER.md,
+QA-REPORT.md and SCOPE-HISTORY.md were left untouched on purpose; they are records of what happened
+and rewriting the name through them falsifies the record. (5) The wordmark uses the system font
+stack, so it renders differently per platform. Accepted, and consistent with the product's own
+no-webfont rule. (6) `evenweek.app` and `evenweek.co.uk` were free at time of writing and are NOT
+bought. Squatting risk rises the moment the name is public.
+Open: (1) Decide P3, the repo rename, and whether a redirect from the old Pages URL is needed
+before the LinkedIn post goes out. (2) Buy the domains or accept the risk. (3) Meta description
+needs the copywriter. (4) BUG-3 in QA-REPORT is unrelated to this pass and still open.
+Touched: index.html, SCOPE.md, ARCHITECTURE.md, CLAUDE.md, README.md, PARKING.md, HANDOVER.md,
+docs/design/BRANDING.md (new), docs/design/COPY-DECK.md, docs/design/DESIGN-TOKENS.md,
+docs/research/COMPETITION-UK.md, docs/launch/LINKEDIN-2.0.md, docs/governance/REQUIREMENTS.md,
+docs/governance/PROJECT.md, docs/FILING.md, docs/process/bug1-advice-pointer.js,
+docs/process/cruelty-pass.js, brand/* (new), icons/*

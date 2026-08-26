@@ -22,4 +22,8 @@ Verbatim: "<the idea exactly as stated>"
 
      Nothing else from before 2.0 is a commitment. This list starts empty. -->
 
-_Empty. 2.0 froze 2026-08-19; nothing has been parked against it yet._
+| # | Parked | Raised by | Date | Why parked |
+|---|---|---|---|---|
+| P1 | Show the Evenweek lockup in the app header | Branding pass | 2026-08-26 | A visual change to a frozen build. The name is not currently displayed anywhere in the UI, only in the tab title. Maps to no numbered SCOPE feature |
+| P2 | Meta description for the page `<head>` | Branding pass | 2026-08-26 | Visitor-facing copy. Standing order 11 routes it through `shift-planner-copywriter`, not the Builder and not a branding pass |
+| P3 | Rename the repo and the GitHub Pages URL to `evenweek` | Branding pass | 2026-08-26 | Breaks every link already shared, including the one in `LINKEDIN-2.0.md`. Human decision, needs a redirect plan first |

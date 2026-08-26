@@ -1,7 +1,7 @@
 // TEMPORARY. Breaker cruelty + security pass for 2.0. Run from a dir with jsdom installed:
 //   cd /tmp && npm i jsdom && node "<repo>/docs/process/cruelty-pass.js"
 const fs=require("fs");let JSDOM;try{({JSDOM}=require("jsdom"))}catch(e){console.error("npm i jsdom");process.exit(2)}
-const APP="/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html";
+const APP=require("path").join(__dirname,"..","..","index.html");
 const html=fs.readFileSync(APP,"utf8");
 let out=[];const rec=(id,r,n)=>out.push([id,r,n||""]);
 function boot(store){const st={...store},errs=[];

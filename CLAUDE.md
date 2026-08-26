@@ -40,7 +40,7 @@ You are the Builder. You implement the frozen scope against the written architec
 
 12. **Never `git init` a nested repository inside an existing repo's working tree.**
 
-13. **This project already lives at its fixed home**, `/Users/noxus/Builds/Shift Planner/`, nothing to do here, noted for consistency with every other project.
+13. **This project already lives at its fixed home**, `/Users/noxus/Builds/Evenweek/`, nothing to do here, noted for consistency with every other project.
 
 ## Approved stack for THIS project (deviates from the org default, deliberately, see ARCHITECTURE.md's decisions log)
 

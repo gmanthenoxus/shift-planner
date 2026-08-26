@@ -1,9 +1,9 @@
-# REQUIREMENTS: Shift Planner as a Full Application
+# REQUIREMENTS: Evenweek as a Full Application
 
 Date: 2026-08-15
 Status: **PRE-SCOPE. Candidate input, not a decision.** Human-owned once accepted.
 
-<!-- This document answers "if Shift Planner were a full application, what would have to be in it?"
+<!-- This document answers "if Evenweek were a full application, what would have to be in it?"
      It is deliberately upstream of SCOPE.md. Nothing here is approved, frozen, or buildable.
      The Builder does not act on this file; the human cuts a scope out of it, and only then does
      the architect take over.
@@ -183,7 +183,7 @@ FCA PERG 17.] Four findings that matter here:
    "limited to, and likely to be perceived by the debtor as, assisting the debtor to make his own
    choice," with no judgement on the suitability of any course of action. [Observed — Q5.5.]
 
-**What this means concretely for Shift Planner:**
+**What this means concretely for Evenweek:**
 
 | Behaviour | Verdict |
 |---|---|
@@ -227,7 +227,7 @@ further guidance. [Observed.]
 ### 3.9 Community, forum, comments, shift-swapping between users → Online Safety Act 2023
 
 Triggered by: any user-to-user content. Rodeo's rider forum is the competitor asset
-`COMPETITION-UK.md` §10 identifies as the one Shift Planner most lacks — and it is also the most
+`COMPETITION-UK.md` §10 identifies as the one Evenweek most lacks — and it is also the most
 legally expensive thing to copy.
 
 All providers of regulated user-to-user services owe duties on illegal-content risk assessment,

@@ -1,6 +1,6 @@
-# COPY DECK: Shift Planner
+# COPY DECK: Evenweek
 
-Source of truth for what Shift Planner sounds like, and for copy decisions already resolved.
+Source of truth for what Evenweek sounds like, and for copy decisions already resolved.
 
 <!-- Read by the `shift-planner-copywriter` skill before it writes anything. Same convention as
      Sporelo's COPY-DECK.md. Voice rules live HERE, not in the skill, so there is one place to
@@ -102,6 +102,9 @@ correct, not by being likeable.
 | C9 | Header lede cut to one sentence: **"Enter what you earn an hour and what your month costs. It works out the hours."** | 19 Aug 2026 | The previous lede ran four lines and read as a landing page. On a tool someone opens mid-shift it pushed the first real card below the fold on desktop and further on a phone. The h1 already asks the question; the lede only has to say what you put in and what comes out |
 | C10 | Free-advice pointer is country-aware. UK names MoneyHelper and Citizens Advice. Every other country gets "Free debt advice services exist in most countries, usually run by charities or by government" | 19 Aug 2026 | The build named two UK-only services regardless of country while the app supports nine. Naming a service that cannot help you is worse in a compliance surface than naming none. Adding a named service for another country requires verifying it first, not recalling it |
 | C11 | The tax disclaimer keeps the word "simplified" | 19 Aug 2026 | A copy pass shortened it to "an estimate", which is weaker and breaks SCOPE f6, which requires the disclaimer be accurate to what is ACTUALLY simplified. Caught by a test. Do not shorten this string again |
+
+| C12 | Headline is **"How many hours a week do you need?"**, with the name Evenweek above it | 27 Aug 2026 | The old h1, "How many hours does your life cost?", asked a poetic question the app does not literally answer. It computes hours a week to cover a month; it does not price a life. The new one is the question the answer screen replies to, which is the whole point of answer-first. **Alternate considered and rejected:** "Know what your week has to cover", which is a statement rather than a question and reads as a slogan |
+| C13 | Section headings say what YOU get, not what the app stores. "What you keep an hour", "What your month costs", "Saving for something" | 27 Aug 2026 | "What an hour pays", "Every month" and "One off goals" all named the data. These name the answer |
 
 ## 5. Word swaps
 

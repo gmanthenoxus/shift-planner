@@ -1,7 +1,7 @@
 // TEMPORARY. Verifies BUG-1: no UK-only advice service is named outside the UK.
 // Run: NODE_PATH=<dir>/node_modules node docs/process/bug1-advice-pointer.js
 const fs=require("fs"),{JSDOM}=require("jsdom");
-const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
+const html=fs.readFileSync(require("path").join(__dirname,"..","..","index.html"),"utf8");
 let p=0,f=0;const ok=(n,c,x)=>{c?(p++,console.log("  PASS  "+n)):(f++,console.log("  FAIL  "+n+(x?"  -> "+x:"")))};
 function boot(){const st={};
   const d=new JSDOM(html,{runScripts:"dangerously",pretendToBeVisual:true,beforeParse(w){

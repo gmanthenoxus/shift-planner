@@ -1,4 +1,4 @@
-# UK Competitive Landscape: Shift Planner
+# UK Competitive Landscape: Evenweek
 
 Date: 2026-08-13
 Supersedes nothing. Extends `LANDSCAPE.md` (2026-07-06), which scanned Emma + four gig-finance tools.
@@ -17,7 +17,7 @@ This pass is UK-first, four-tier, and feature-level.
 Before the tables, three assumptions in the question "who is my UK competition?" that are worth testing,
 because if any of them is wrong the tables are decoration.
 
-1. **Assumption: Shift Planner has competitors.**
+1. **Assumption: Evenweek has competitors.**
    Most likely false in the strict sense. Across two research passes, no UK product was found that
    converts monthly obligations into a tax-adjusted weekly hours target. [Observed — nothing surfaced
    in either scan.] What exists is a ring of adjacent products that each own one piece of the job.
@@ -28,12 +28,12 @@ because if any of them is wrong the tables are decoration.
 2. **Assumption: competition means feature overlap.**
    False. Competition is for the same five minutes of the same person's attention. A door supervisor
    already has an employer rota app forced on them, possibly Wagestream because their employer bought
-   it, and possibly Snoop because it was free. [Inference.] Shift Planner competes with *those already
+   it, and possibly Snoop because it was free. [Inference.] Evenweek competes with *those already
    installed apps* and with *a note on their phone*, not with a product that shares its feature list.
 
 3. **The variable being ignored: distribution, not features.**
    `PROJECT.md` §0 already establishes this — one verified external user. Every competitor in these
-   tables has a distribution channel Shift Planner does not: app store search (the trackers), employer
+   tables has a distribution channel Evenweek does not: app store search (the trackers), employer
    procurement (rostering, Wagestream), Open Banking marketplace listings and press (Emma, Snoop),
    or a rider community (Rodeo). [Observed.] A feature-gap analysis answers "what could we build."
    It does not answer the actual constraint.
@@ -44,7 +44,7 @@ because if any of them is wrong the tables are decoration.
 
 ## 1. The four tiers
 
-| Tier | What it is | Who buys it | Threat to Shift Planner |
+| Tier | What it is | Who buys it | Threat to Evenweek |
 |---|---|---|---|
 | **A. Worker-side shift & pay trackers** | Apps an individual downloads to log shifts and calculate what they earned | The worker | **Highest** — same user, same phone, same moment, overlapping features |
 | **B. UK personal finance / budgeting** | Open Banking aggregators that categorise spending after the fact | The worker | **Medium** — same person, different question, far better funded |
@@ -119,7 +119,7 @@ Planner asks the user to type by hand. That is the incumbency problem, and it is
 **Wagestream deserves a paragraph, not a row.** It is the only product found that already holds the
 worker's real shift data, already targets UK shift industries by name, already reaches workers through
 their employer, and is now moving into budgeting. [Observed — its own product pages.] If anything in
-this document eventually eats Shift Planner's lunch, it is most likely this. [Speculation — no evidence
+this document eventually eats Evenweek's lunch, it is most likely this. [Speculation — no evidence
 it intends to build hours-needed planning.]
 
 ---
@@ -128,7 +128,7 @@ it intends to build hours-needed planning.]
 
 ✅ has it · ⚠️ partial / adjacent · ❌ doesn't
 
-| Feature | **Shift Planner** | Tier A trackers | Emma / Snoop | Deputy / Planday | Wagestream | Rodeo |
+| Feature | **Evenweek** | Tier A trackers | Emma / Snoop | Deputy / Planday | Wagestream | Rodeo |
 |---|---|---|---|---|---|---|
 | Monthly bills → required weekly hours | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Tax-adjusted **net** hourly rate | ✅ (9 countries) | ⚠️ flat deduction fields | ❌ | ❌ | ⚠️ actual payslip data | ❌ |
@@ -156,14 +156,14 @@ it intends to build hours-needed planning.]
 ## 7. Itemised: similarities
 
 1. **Shift logging.** Everyone in Tiers A, C and D logs shifts. This is table stakes, not a
-   differentiator, and Shift Planner's version is thinner (no overtime rules, no night premium).
+   differentiator, and Evenweek's version is thinner (no overtime rules, no night premium).
 2. **Hourly rate → pay maths.** Tier A does this well and in some cases with more nuance than Shift
    Planner (per-job overtime thresholds, tips, bonuses).
 3. **Multi-job support.** Shift Hours Logger supports multiple jobs with individual rates. The
-   *blending into one weighted effective rate* is still unique to Shift Planner, but "multi-job" alone
+   *blending into one weighted effective rate* is still unique to Evenweek, but "multi-job" alone
    is not a moat.
 4. **Weekly/monthly history.** Universal.
-5. **Category breakdown of money.** Emma and Snoop do this over transactions; Shift Planner does it
+5. **Category breakdown of money.** Emma and Snoop do this over transactions; Evenweek does it
    over hours. Same visual grammar, different unit.
 6. **Targeting shift workers by name.** Wagestream targets exactly the same occupational segment
    (`PROJECT.md` §3: security, hospitality, care, retail, delivery, warehouse).
@@ -171,9 +171,9 @@ it intends to build hours-needed planning.]
 ## 8. Itemised: differences
 
 1. **Direction of travel.** Every competitor computes *backward* from work already done or money
-   already spent. Shift Planner computes *forward* from obligations not yet earned. This is the
+   already spent. Evenweek computes *forward* from obligations not yet earned. This is the
    single genuine differentiator and everything else follows from it.
-2. **The unit is an hour, not a pound.** Competitors answer "where did my money go." Shift Planner
+2. **The unit is an hour, not a pound.** Competitors answer "where did my money go." Evenweek
    answers "how much of my week does this cost."
 3. **Progressive tax applied at the hourly level, across 9 countries.** Tier A apps offer a flat
    deduction field at best. Nothing found models brackets against an hourly wage.
@@ -184,16 +184,16 @@ it intends to build hours-needed planning.]
 6. **No account, no server, no bank connection.** A deliberate constraint, not a missing feature. It
    is the trust proposition and simultaneously the reason there is no growth loop, no notifications
    and no cross-device sync. [Observed — `PROJECT.md` §2.]
-7. **Zero cost, zero monetisation.** Every Tier B competitor has a £5–£15/mo ladder. Shift Planner has
+7. **Zero cost, zero monetisation.** Every Tier B competitor has a £5–£15/mo ladder. Evenweek has
    no revenue path that doesn't violate its own design commitments. [Observed — `PROJECT.md` §5.]
 8. **Distribution.** Competitors are in app stores, employer benefit packages and rider forums.
-   Shift Planner is a URL. [Observed.]
+   Evenweek is a URL. [Observed.]
 
 ---
 
 ## 9. Hidden tradeoffs in the current position
 
-| What Shift Planner buys | What it pays for it |
+| What Evenweek buys | What it pays for it |
 |---|---|
 | Trust — "nothing leaves your browser" | No sync, no notifications, no growth loop, no re-engagement hook |
 | No account friction | No user count, no email list, no way to tell a returning user from a new one |
@@ -208,19 +208,19 @@ it intends to build hours-needed planning.]
 1. **Wagestream/Stream** — same audience, employer-distributed, already holds shift data, moving into
    budgeting. Confidence it becomes a direct threat within 24 months: **25%.**
 2. **Tier A trackers** — will not build bills-to-hours [Inference: their model is retrospective], but
-   they already own the app-store search terms a Shift Planner user would type. Confidence they
+   they already own the app-store search terms a Evenweek user would type. Confidence they
    intercept the audience: **70%** (they already do).
 3. **Snoop** — closest in spirit among Tier B (proactive about bills rather than passive about spend).
    Confidence it adds hours-needed: **5%.** It has no hourly-rate concept.
 4. **Employer rostering** — no feature threat, permanent incumbency.
 5. **Rodeo** — different problem, but the only one with a real UK worker community, which is the asset
-   Shift Planner lacks most.
+   Evenweek lacks most.
 
 ---
 
 ## 11. Second-order effects
 
-If Shift Planner adds overtime rules and rota import to close the Tier A gap → it becomes a worse
+If Evenweek adds overtime rules and rota import to close the Tier A gap → it becomes a worse
 version of six existing free apps that have app-store distribution → it loses the one thing that makes
 it findable at all, which is being the only answer to a question nobody else answers. [Inference.]
 

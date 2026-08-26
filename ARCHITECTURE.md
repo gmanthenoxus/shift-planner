@@ -1,4 +1,4 @@
-# ARCHITECTURE: Shift Planner 2.0
+# ARCHITECTURE: Evenweek 2.0
 
 Architect pass, 2026-08-19, against `SCOPE.md` 2.0 (FROZEN 2026-08-19, 8 features) and
 `docs/design/DESIGN-TOKENS.md` (Guide, warm).
@@ -206,7 +206,7 @@ should go in front of the human before step 4 starts.**
 5. **Blended rate with several rates and no shifts is the mean of the rates**, not the first. v11 took the first and silently dropped the rest; it was visibly wrong on the human's own Work screen and had been flagged as an open assumption in three handovers before it shipped.
 6. **Country inferred once and never re-inferred.** A user who corrects a wrong guess must not be overruled on their next visit.
 7. **Timezone before language for inference.** `en-GB` on a US phone is common; `Europe/London` on one is not.
-8. **The no-ranking constraint, with its reason.** The app never reorders, ranks, recommends or evaluates the merits of paying one obligation over another. Ordering is always the user's. **Why: advising a borrower on the liquidation of a debt due under a credit agreement is a regulated activity under article 39E of the Regulated Activities Order.** Per FCA PERG 17, "liquidation" includes paying a debt off in full and on time, it covers future obligations not just overdue ones, a mixed list containing any credit-agreement debt is caught in whole, and "any element of evaluation, value judgment or persuasion is likely to mean that advice is being given." Shift Planner is not FCA authorised. This binds sorting, defaults, copy **and colour**. Sourced to PERG at 65% confidence, not solicitor-reviewed (`REQUIREMENTS.md` §3.6). **A future session that finds this inconvenient escalates to the human, it does not soften it.**
+8. **The no-ranking constraint, with its reason.** The app never reorders, ranks, recommends or evaluates the merits of paying one obligation over another. Ordering is always the user's. **Why: advising a borrower on the liquidation of a debt due under a credit agreement is a regulated activity under article 39E of the Regulated Activities Order.** Per FCA PERG 17, "liquidation" includes paying a debt off in full and on time, it covers future obligations not just overdue ones, a mixed list containing any credit-agreement debt is caught in whole, and "any element of evaluation, value judgment or persuasion is likely to mean that advice is being given." Evenweek is not FCA authorised. This binds sorting, defaults, copy **and colour**. Sourced to PERG at 65% confidence, not solicitor-reviewed (`REQUIREMENTS.md` §3.6). **A future session that finds this inconvenient escalates to the human, it does not soften it.**
 9. **`icons/` retained though unused.** PWA returns in v2.1; deleting and regenerating four PNGs is churn.
 10. **No em-dashes in any repo document.** Two frozen `SCOPE.md` files arrived truncated at one. Mechanical, not stylistic.
 

@@ -2,7 +2,7 @@
 // Requires: npm i jsdom. Delete once the Breaker has passed 2.0.
 const fs=require("fs");
 let JSDOM;try{({JSDOM}=require("jsdom"));}catch(e){console.error("npm i jsdom");process.exit(2);}
-const html=fs.readFileSync("/sessions/beautiful-loving-wozniak/mnt/Shift Planner/index.html","utf8");
+const html=fs.readFileSync(require("path").join(__dirname,"..","..","index.html"),"utf8");
 let pass=0,fail=0;
 const ok=(n,c,x)=>{c?(pass++,console.log("  PASS  "+n)):(fail++,console.log("  FAIL  "+n+(x!==undefined?"  -> "+JSON.stringify(x):"")));};
 function boot(store,tz,lang){
@@ -307,7 +307,7 @@ console.log("\n"+pass+" passed, "+fail+" failed");
 console.log("\nU. Weeks and banking");
 {const {d,st}=onboard();
  nav(d,"weeks");
- ok("empty weeks screen says so",/No weeks banked yet/.test(d.getElementById("weekList").textContent));
+ ok("empty weeks screen says so",/Nothing here yet/.test(d.getElementById("weekList").textContent));
  ok("bank button says there is nothing to bank",d.getElementById("bankBtn").textContent==="Nothing to bank");
  nav(d,"answer"); d.getElementById("addShift").click();
  nav(d,"weeks");

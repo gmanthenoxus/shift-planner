@@ -1,4 +1,4 @@
-# DESIGN TOKENS: Shift Planner
+# DESIGN TOKENS: Evenweek
 
 Style: **Guide (Warm)** · Decided 2026-08-19 (D10, warm accent confirmed)
 Produced from the `noxus-design-system` skill's Guide reference. This is the token document that

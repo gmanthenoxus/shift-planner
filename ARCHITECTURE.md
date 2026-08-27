@@ -193,7 +193,7 @@ should go in front of the human before step 4 starts.**
 6. Log a shift (f4).
 7. Weeks and coverage (f5).
 8. Settings and compliance (f6).
-9. Copy pass (f7), by `shift-planner-copywriter`, never the Builder.
+9. Copy pass (f7), by `evenweek-copywriter`, never the Builder.
 
 ---
 

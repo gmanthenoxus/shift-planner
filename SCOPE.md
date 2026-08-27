@@ -91,7 +91,7 @@ That is the whole idea, and every decision below follows from it.
 - Reading age around 9. Short sentences, common words, second person.
 - **One word for one thing across the whole app.** v11 had "Your jobs" containing "Employer" and a button called "+ Job". 2.0 picks one and uses it everywhere.
 - Nothing appears twice on one screen. v11 showed the same week's figures in two cards.
-- Every string written by `shift-planner-copywriter`, checked against Rule 0.
+- Every string written by `evenweek-copywriter`, checked against Rule 0.
 
 ### 8. Storage, a clean break
 

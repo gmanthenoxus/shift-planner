@@ -102,7 +102,7 @@ appended to `SCOPE-HISTORY.md`. That last step has been missed once already — 
 
 ## What is NOT filed here
 
-Skills live in the user's Claude account, not the repo: `shift-planner-copywriter` (this project's
+Skills live in the user's Claude account, not the repo: `evenweek-copywriter` (this project's
 product copy), `noxus-copywriter` (Moses's first-person brand voice, org-wide), `noxus-design-system`,
 `architect`, `breaker`, `design-translator`, `researcher`, `scope-clerk`. The repo holds the
 documents those seats read and write, not the seats themselves.

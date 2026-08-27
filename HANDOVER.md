@@ -506,3 +506,38 @@ docs/design/BRANDING.md (new), docs/design/COPY-DECK.md, docs/design/DESIGN-TOKE
 docs/research/COMPETITION-UK.md, docs/launch/LINKEDIN-2.0.md, docs/governance/REQUIREMENTS.md,
 docs/governance/PROJECT.md, docs/FILING.md, docs/process/bug1-advice-pointer.js,
 docs/process/cruelty-pass.js, brand/* (new), icons/*
+
+## Session 2026-08-27 (branding sweep and mobile pass)
+Done: Renamed the copywriter seat to `evenweek-copywriter` across CLAUDE.md (order 11), SCOPE.md,
+ARCHITECTURE.md, QA-REPORT.md, docs/FILING.md, docs/process/RELEASE-CHECKLIST.md,
+docs/design/COPY-DECK.md, docs/design/DESIGN-TOKENS.md. Fixed the stale QA-REPORT title
+("Shift Planner 2.0" to "Evenweek 2.0"). Rewrote README.md: it was still v11 throughout, carrying
+the retired headline "How many hours does your life cost?" (superseded by COPY-DECK C12), an emoji
+(banned by the copy deck's hard rules), and a feature list naming a working ceiling, priority
+coverage and a History tab that 2.0 does not have. README is the most visitor-facing file in the
+repo and it described a different product.
+Added the first narrow-screen handling this build has ever had: a max-width:430px block and a
+max-width:340px block. Before this, every width in the app was a desktop width and phones simply
+inherited them. Also added apple-mobile-web-app-capable/-title/-status-bar-style and a
+prefers-color-scheme-split theme-color, plus a meta description.
+Grouped the shift row's start/to/end/break/min run into a `.times` span and tagged the row
+`.shiftrow`, so on a narrow screen the times take their own full-width line instead of five
+controls and four labels competing for roughly 288px.
+Assumed: none.
+Risky: **The mobile layout is still not measured.** This is the fourth session carrying that gap
+and it did not close. Chrome MCP rewrites `file://` to `https://file/`, so the local build is
+unreachable from the browser tools; the sandbox has no Chrome binary and the puppeteer download is
+network-blocked. The 430px/340px numbers are reasoned from the CSS, not observed. Two specific
+claims remain unverified: that "Outgoings" does not wrap in the four-column nav at 320px, and that
+no row overflows. QA-REPORT lists both as UNTESTABLE and they still are.
+Also: this session changed CSS and markup AFTER the Breaker returned SHIP-READY. That verdict now
+covers a build that no longer exists. The 176 tests (134 + 21 + 6 + 15) all pass against the
+current file, but tests are not the Breaker seat and passing them is not a verdict.
+Open: 1) Breaker needs to re-verdict the mobile delta before deploy. 2) The blended-rate deviation
+from ARCHITECTURE section 3 is still unruled by the architect. 3) SCOPE f3 still lists the removed
+limit refinement (BUG-2), still needs a human decision on which of scope or changelog is wrong.
+4) The old `shift-planner-copywriter` skill still exists in Moses's account and only he can delete
+it; until he does, two copywriter skills will compete for the same trigger.
+Touched: index.html, README.md, CLAUDE.md, SCOPE.md, ARCHITECTURE.md, QA-REPORT.md, docs/FILING.md,
+docs/process/RELEASE-CHECKLIST.md, docs/design/COPY-DECK.md, docs/design/DESIGN-TOKENS.md,
+HANDOVER.md

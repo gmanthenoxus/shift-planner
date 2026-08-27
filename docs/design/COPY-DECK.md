@@ -2,7 +2,7 @@
 
 Source of truth for what Evenweek sounds like, and for copy decisions already resolved.
 
-<!-- Read by the `shift-planner-copywriter` skill before it writes anything. Same convention as
+<!-- Read by the `evenweek-copywriter` skill before it writes anything. Same convention as
      Sporelo's COPY-DECK.md. Voice rules live HERE, not in the skill, so there is one place to
      change them. The one exception is Rule 0 (the no-advice legal boundary) which lives in the
      skill and is NOT restated here: it is not a voice decision, it is not editable as taste, and

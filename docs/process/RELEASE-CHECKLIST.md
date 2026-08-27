@@ -41,6 +41,6 @@ can tell which figures someone is looking at, and it only works if it is honest.
 
 ## Only when visitor-facing copy changes
 
-- [ ] Written by `shift-planner-copywriter`, not the Builder. Standing order 11.
+- [ ] Written by `evenweek-copywriter`, not the Builder. Standing order 11.
 - [ ] Every changed string passes that skill's Rule 0 check.
 - [ ] Any decision made during the pass is written back to `docs/design/COPY-DECK.md`, not left in a chat reply.

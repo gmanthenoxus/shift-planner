@@ -7,7 +7,12 @@
 <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="icons/favicon.ico" sizes="16x16 32x32 48x48">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#F4F0E9">
+<meta name="theme-color" content="#F4F0E9" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#16120E" media="(prefers-color-scheme:dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Evenweek">
+<meta name="description" content="Work out how many hours a week you need, after tax.">
 <style>
   :root{
     color-scheme:light;
@@ -129,6 +134,28 @@
     color:var(--sub);border-radius:10px;cursor:pointer;padding:6px 2px;white-space:nowrap}
   .nav button.on{color:var(--accent);font-weight:500;background:var(--accent-soft)}
   .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+  @media (max-width:430px){
+    .wrap{padding:16px 14px 40px}
+    body.app .wrap{padding-bottom:92px}
+    .card{padding:18px 16px}
+    h1{font-size:23px}
+    .num{font-size:46px}
+    .head h2{font-size:18px}
+    /* rows wrap instead of squeezing: a field crushed to 40px is worse than a second line */
+    .line{flex-wrap:wrap;row-gap:6px}
+    .f.money{width:92px}
+    .f.narrow{width:66px}
+    .mini{font-size:11px}
+    /* the shift row's times get their own full-width line so they never collapse */
+    .shiftrow .times{width:100%;display:flex;align-items:center;gap:6px}
+    .shiftrow .times .f{flex:1;min-width:0;width:auto;text-align:center}
+    .nav button{font-size:10px;padding:6px 1px}
+  }
+  @media (max-width:340px){
+    .f.money{width:84px}
+    .nav button{font-size:9.5px}
+  }
 </style>
 </head>
 <body>
@@ -886,7 +913,7 @@ function renderShifts(){
     opts.push({v:j.id+"|"+r.id,t:(S.jobs.length>1?j.name+", ":"")+r.name});});});
   ws.forEach(function(sh){
     var i=S.shifts.indexOf(sh);
-    var d=document.createElement("div"); d.className="blk";
+    var d=document.createElement("div"); d.className="blk shiftrow";
     var sel=opts.map(function(o){
       return '<option value="'+o.v+'"'+(o.v===sh.jobId+"|"+sh.rateId?" selected":"")+'>'+esc(o.t)+'</option>';
     }).join("")||'<option value="">No rates yet</option>';
@@ -895,12 +922,14 @@ function renderShifts(){
         '<select class="f grow" data-s="'+i+'" data-k="rate" aria-label="Which job and rate">'+sel+'</select>'+
         '<button class="x" data-dels="'+i+'" aria-label="Remove shift">&times;</button></div>'+
       '<div class="line">'+
-        '<input class="f narrow" type="time" value="'+esc(sh.start)+'" data-s="'+i+'" data-k="start" style="width:auto" aria-label="Start">'+
-        '<span class="mini">to</span>'+
-        '<input class="f narrow" type="time" value="'+esc(sh.end)+'" data-s="'+i+'" data-k="end" style="width:auto" aria-label="End">'+
-        '<span class="mini">break</span>'+
-        '<input class="f narrow" value="'+esc(sh.brk||0)+'" data-s="'+i+'" data-k="brk" inputmode="numeric" aria-label="Break in minutes" style="width:58px">'+
-        '<span class="mini">min</span>'+
+        '<span class="times">'+
+          '<input class="f narrow" type="time" value="'+esc(sh.start)+'" data-s="'+i+'" data-k="start" style="width:auto" aria-label="Start">'+
+          '<span class="mini">to</span>'+
+          '<input class="f narrow" type="time" value="'+esc(sh.end)+'" data-s="'+i+'" data-k="end" style="width:auto" aria-label="End">'+
+          '<span class="mini">break</span>'+
+          '<input class="f narrow" value="'+esc(sh.brk||0)+'" data-s="'+i+'" data-k="brk" inputmode="numeric" aria-label="Break in minutes" style="width:58px">'+
+          '<span class="mini">min</span>'+
+        '</span>'+
         '<span class="grow"></span>'+
         '<span class="mini">'+shiftHours(sh).toFixed(2)+' hrs</span>'+
         '<b style="color:var(--accent);font-weight:500">'+money2(shiftPay(sh))+'</b></div>';

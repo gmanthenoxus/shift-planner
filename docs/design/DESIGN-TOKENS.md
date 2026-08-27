@@ -24,7 +24,7 @@ skill names as its default deliverable, and it is an input the architect pass re
 **Colour may not editorialise where the copy is forbidden to.**
 
 `COPY-DECK.md` bans judgement about the user's financial position, and Rule 0 of
-`shift-planner-copywriter` bans anything reading as steering. A red "not reached" row would say
+`evenweek-copywriter` bans anything reading as steering. A red "not reached" row would say
 *failure* louder than any sentence, and would say it about a person's life. The palette carries the
 same constraint as the words:
 
@@ -214,7 +214,7 @@ library, no exceptions, no emoji, no keyboard glyphs — the design system's glo
 ## Voice
 
 Plain, candid, never patronising. Full rules live in `COPY-DECK.md`, and the legal boundary lives
-in the `shift-planner-copywriter` skill. Not restated here — one home per fact.
+in the `evenweek-copywriter` skill. Not restated here — one home per fact.
 
 ## Verified contrast
 

@@ -1,4 +1,4 @@
-# QA Report: Shift Planner 2.0, 2026-08-19
+# QA Report: Evenweek 2.0, 2026-08-19
 
 Breaker pass against `SCOPE.md` 2.0 (FROZEN 2026-08-19, 8 features, plus two changelog amendments)
 and `ARCHITECTURE.md` 2.0. Read-only on the build. Nothing was fixed.
@@ -39,7 +39,7 @@ pass (`docs/process/cruelty-pass.js`), both run this session against the committ
 | 6.2 | Tax disclaimer accurate to what is simplified | PASS | |
 | 6.3 | Plain not-debt-advice statement with a pointer to free regulated advice | FAIL | See BUG-1 |
 | 6.4 | WCAG 2.2 AA: 4.5:1 pairs, no colour-only state, visible keyboard focus | UNTESTABLE here | jsdom computes no layout or contrast. Token pairs were measured at design time; the built page has never been measured or seen |
-| 7.1 | Every string written by `shift-planner-copywriter`, checked against Rule 0 | FAIL | See BUG-3 |
+| 7.1 | Every string written by `evenweek-copywriter`, checked against Rule 0 | FAIL | See BUG-3 |
 | 7.2 | One word for one thing across the app | PASS | "job" throughout, no "employer" in any visible string |
 | 7.3 | Nothing appears twice on one screen | PASS | |
 | 8.1 | New key and schema, nothing migrated | PASS | `shiftPlanner.2` at `v:1` |
@@ -72,7 +72,7 @@ the human can decide which one is wrong.
 
 ### BUG-3: The copy pass has not run [severity: blocker]
 Steps to reproduce: 1) Read any string in the app. 2) Check `HANDOVER.md` for a copywriter pass.
-Expected, per SCOPE f7: every string written by `shift-planner-copywriter` and checked against Rule 0.
+Expected, per SCOPE f7: every string written by `evenweek-copywriter` and checked against Rule 0.
 Actual: every string is Builder-written. The mechanical Rule 0 sweep (banned words, judgement words,
 em-dashes, emoji, exclamation marks, first-person plural) is clean, but that checks vocabulary, not
 tone, reading age, or whether a sentence helps. The seat that owns this has not run.
@@ -148,7 +148,7 @@ Fix cycle. Per the re-test rule, only previously failed items plus what the fix 
 | Item | Verdict | Evidence |
 |---|---|---|
 | BUG-1, UK-only advice pointer | **FIXED** | New check at `docs/process/bug1-advice-pointer.js`: all nine countries plus the flat-rate mode verified. No UK-only service is named outside the UK; the generic line appears everywhere else; the not-debt-advice statement and "will not tell you what to pay or when" survive every country; no steering language |
-| BUG-3, copy pass | **RUN** | `shift-planner-copywriter` seat ran over every visitor-facing string. Two decisions recorded as COPY-DECK C10 and C11 |
+| BUG-3, copy pass | **RUN** | `evenweek-copywriter` seat ran over every visitor-facing string. Two decisions recorded as COPY-DECK C10 and C11 |
 | Criterion 6.3, free advice pointer | PASS | Was FAIL |
 | Criterion 7.1, copy written by the seat | PASS | Was FAIL |
 | Deploy-infra: Pages source | PASS | `gh api` returned `build_type: legacy`, `source: main:/`, `https_enforced: true`, `status: built`. Legacy is CORRECT for this project: no build step, so a workflow build would ship the same file through more machinery |

@@ -17,8 +17,9 @@ console.log("\nGoals actually change the number");
 {const {d,st,errs}=onboard();
  const before=parseFloat(d.getElementById("hours").textContent);
  nav(d,"out"); d.getElementById("addGoal").click();
- const set=(k,v)=>{const i=d.querySelector('#goalList [data-k="'+k+'"]');i.value=v;ev(d,i);};
- set("label","Car"); set("amount","2000"); set("weeks","20");
+ const set=(k,v)=>{const i=d.getElementById("sf_"+k);i.value=v;};
+ const saveGoal=()=>{d.getElementById("sheetSave").click();if(!d.getElementById("sheet").hidden)d.getElementById("sheetClose").click();};
+ set("label","Car"); set("label","Car"); set("amount","2000"); set("weeks","20"); saveGoal(); saveGoal();
  nav(d,"answer");
  const after=parseFloat(d.getElementById("hours").textContent);
  ok("no errors",errs.length===0,errs.join("; "));
@@ -63,13 +64,23 @@ console.log("\nA goal alone is enough to work something out");
 console.log("\nBanking records what the week put towards goals");
 {const {d,st}=onboard();
  nav(d,"out"); d.getElementById("addGoal").click();
- const set=(k,v)=>{const i=d.querySelector('#goalList [data-k="'+k+'"]');i.value=v;ev(d,i);};
- set("amount","2000"); set("weeks","20");
- nav(d,"answer"); d.getElementById("addShift").click();
+ const set=(k,v)=>{const i=d.getElementById("sf_"+k);i.value=v;};
+ const saveGoal=()=>{d.getElementById("sheetSave").click();if(!d.getElementById("sheet").hidden)d.getElementById("sheetClose").click();};
+ set("label","Car"); set("amount","2000"); set("weeks","20"); saveGoal();
+ nav(d,"answer"); d.getElementById("addShift").click(); d.getElementById("sheetSave").click();
+ if(!d.getElementById("sheet").hidden)d.getElementById("sheetClose").click();
  nav(d,"weeks"); d.getElementById("bankBtn").click();
  const wk=JSON.parse(st["shiftPlanner.2"]).weeks[0];
  ok("goal target frozen into the week",wk.goalTarget>0,wk.goalTarget);
  ok("shown on the week row",/Put towards goals/.test(d.getElementById("weekList").textContent));
  ok("goals are NOT slotted into the coverage waterfall",
-    wk.coverage.every(c=>c.label!=="New goal"),wk.coverage.map(c=>c.label));}
+    wk.coverage.every(c=>c.label!=="Car"),wk.coverage.map(c=>c.label));
+ ok("the week records WHICH goal got what, not one lump",
+    wk.goalSplit&&typeof wk.goalSplit==="object",wk.goalSplit);
+ nav(d,"out");
+ ok("the goal row now shows progress against the target",
+    /of .?2,000/.test(d.getElementById("goalList").textContent),
+    d.getElementById("goalList").textContent.slice(0,90));
+ ok("progress never exceeds the target",
+    !/2,0[0-9][0-9] of .?2,000/.test(d.getElementById("goalList").textContent));}
 console.log("\n"+p+" pass, "+f+" fail"); if(f)process.exitCode=1;

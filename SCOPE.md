@@ -194,3 +194,34 @@ answer screen states how many of the hours are for goals. Goal progress is repor
 the coverage waterfall rather than being slotted before or after your monthly items, because
 choosing that order would be the app ranking your obligations.
 
+
+**[2026-08-27] Entry model: settled rows plus a sheet, replacing always-open fields.** From the
+human testing the build on a phone. Every value in the app was a permanently-open text input, so
+nothing ever read as decided and the screen looked like a form abandoned halfway through. Worse,
+open fields carry their own width: a job row of five controls could not fit a 393px screen, and one
+overflowing row widened its card and clipped every value to its right. Jobs, outgoings, goals and
+shifts now render as read-only rows at rest and open a single sheet to add or edit. Save is the
+moment something commits; Cancel discards. The sheet reopens blank after a save so adding several
+in a row stays quick. Cost, stated plainly: setup takes more taps than typing down a list did.
+Option B (keep every field on the card, stacked) was shown and rejected: it fixed the width and
+none of the permanence.
+
+**[2026-08-27] What you keep an hour becomes a figure and a bar, not a table.** The answer was the
+last row of a five-row table, which is the least prominent place on the card. It is now the
+headline, with a segmented bar showing the split. The bar states composition only. It does not
+rank deductions, label any of them, or imply anything should be done about them, and colour carries
+nothing the text labels do not already say. Pension uses ochre rather than sage because sage means
+"covered" everywhere else in the app and reusing it would imply pension is a good outcome, which is
+the app holding an opinion about the user's arrangements. Small segments carry a minimum width so a
+low rate with no pension does not render a slice too thin to see.
+
+**[2026-08-27] Goal progress and the mid-week figure.** Both found auditing the app against the
+questions it exists to answer, and both are gaps in features already frozen rather than new ideas.
+Goals had a deadline and a weekly cost but no accumulation, so "help me work towards that" was
+answered only in the sense that the hours went up. Banked weeks now accumulate per goal: put aside
+so far, against the target, with weeks remaining. Separately, the app could tell you the hours you
+need and list the shifts you logged, but never the one number a shift worker wants mid-week: how
+far through the week's target you are. This week now states hours so far against hours needed.
+Neither reports whether you are doing well; both report position only.
+
+FROZEN: 2026-08-27

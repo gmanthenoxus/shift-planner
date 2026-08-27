@@ -22,6 +22,7 @@
     --warn:#8A5B0E; --warn-soft:#F7EBD5;
     --error:#93342A; --error-soft:#F7E3DF;
     --covered:#47663F; --covered-soft:#E4EADF;
+    --c-bills:#5C2410; --c-save:#3A5A31; --c-repay:#8A5B0E; --c-spend:#8E6A60; --c-tax:#4A443C;
     --r:16px; --r-control:12px;
   }
   :root[data-theme="dark"]{
@@ -32,6 +33,7 @@
     --warn:#E0AC4E; --warn-soft:#302516;
     --error:#E89184; --error-soft:#33201C;
     --covered:#9DBE93; --covered-soft:#222A1E;
+    --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
   }
   @media (prefers-color-scheme:dark){ :root[data-theme="auto"]{
     color-scheme:dark;
@@ -41,6 +43,7 @@
     --warn:#E0AC4E; --warn-soft:#302516;
     --error:#E89184; --error-soft:#33201C;
     --covered:#9DBE93; --covered-soft:#222A1E;
+    --c-bills:#DD7C55; --c-save:#A3C79A; --c-repay:#D19B3B; --c-spend:#D8C2BA; --c-tax:#8E8578;
   }}
   @media (prefers-reduced-motion:reduce){ *{animation:none!important;transition:none!important} }
 
@@ -135,6 +138,63 @@
   .nav button.on{color:var(--accent);font-weight:500;background:var(--accent-soft)}
   .nav button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 
+  /* ---- Sheet. One modal serves every add and edit in the app. Four screens with four bespoke
+     forms is how four screens drift apart, and open-field-everywhere is what made the phone
+     overflow: a row of five controls cannot fit 393px, a labelled column always can. */
+  .sheet{position:fixed;inset:0;z-index:50;display:flex;align-items:flex-end;justify-content:center}
+  .sheet .scrim{position:absolute;inset:0;background:rgba(20,16,12,.42)}
+  .sheetcard{position:relative;background:var(--panel);width:100%;max-width:560px;
+    border-radius:var(--r) var(--r) 0 0;padding:20px 18px calc(20px + env(safe-area-inset-bottom));
+    max-height:90dvh;overflow-y:auto;border:1px solid var(--line);border-bottom:0}
+  @media (min-width:561px){ .sheet{align-items:center} .sheetcard{border-radius:var(--r);border-bottom:1px solid var(--line)} }
+  .sheethead{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .sheethead h3{font-size:19px;font-weight:500;margin:0;color:var(--ink)}
+  .sheetnote{font-size:13px;color:var(--sub);margin:4px 0 16px}
+  #sheetBody{display:flex;flex-wrap:wrap;gap:12px}
+  .fld{width:100%;min-width:0}
+  .fld.half{width:calc(50% - 6px)}
+  .flab{display:block;font-size:12px;color:var(--sub);margin:0 0 5px}
+  .fhint{font-size:12px;color:var(--sub);margin:5px 0 0;line-height:1.5}
+  .moneyline{display:flex;gap:6px;align-items:center}
+  .moneyline .cur{flex:none}
+  .sheet .f{font-size:16px;padding:12px 10px}
+  .sheeterr{background:var(--error-soft);color:var(--error);border-radius:var(--r-control);
+    padding:10px 12px;font-size:14px;margin:12px 0 0;width:100%}
+  .sheetacts{margin:18px 0 0}
+  .sheetdel{display:block;width:100%;background:none;border:0;color:var(--error);font:inherit;
+    font-size:15px;padding:12px;margin:4px 0 0;cursor:pointer;border-radius:var(--r-control)}
+
+  /* ---- Settled rows. A value at rest is text, not a form field. */
+  .item{display:block;width:100%;text-align:left;background:none;border:0;font:inherit;color:var(--ink);
+    padding:11px 0;cursor:pointer;border-radius:var(--r-control)}
+  .item+.item{border-top:1px solid var(--line)}
+  .item:hover{background:var(--panel2)}
+  .item:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .itop{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+  .iname{font-size:15px;color:var(--ink);min-width:0;overflow-wrap:anywhere}
+  .ival{font-size:15px;font-weight:500;color:var(--ink);flex:none;font-variant-numeric:tabular-nums}
+  .isub{font-size:13px;color:var(--sub);margin:3px 0 0;line-height:1.5;overflow-wrap:anywhere}
+  .totalrow{display:flex;justify-content:space-between;padding:12px 0 0;border-top:1px solid var(--line);margin:2px 0 0}
+
+  /* ---- Segmented bar. Composition only: it does not rank the parts or say anything about them.
+     Minimum segment width exists because a low rate with no pension renders a slice a few pixels
+     wide, which reads as a rendering fault rather than a small number. */
+  .barwrap{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:14px 0 12px;background:var(--panel2)}
+  .barwrap i{display:block;height:100%}
+  .keyrow{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:8px 0;font-size:15px}
+  .keyrow+.keyrow{border-top:1px solid var(--line)}
+  .swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:8px;flex:none}
+  .bignum{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+  .bignum b{font-size:40px;font-weight:500;letter-spacing:-.03em;color:var(--ink);line-height:1.05}
+  .bignum span{font-size:15px;color:var(--sub)}
+  .prog{height:4px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:9px 0 0}
+  .prog i{display:block;height:100%;background:var(--accent);border-radius:999px}
+
+  .metarow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:10px}
+  .pair{display:flex;align-items:center;gap:6px}
+  .f.date{width:auto;flex:none}
+  .f.brk{width:58px}
+
   @media (max-width:430px){
     .wrap{padding:16px 14px 40px}
     body.app .wrap{padding-bottom:92px}
@@ -151,6 +211,17 @@
     .shiftrow .times{width:100%;display:flex;align-items:center;gap:6px}
     .shiftrow .times .f{flex:1;min-width:0;width:auto;text-align:center}
     .nav button{font-size:10px;padding:6px 1px}
+
+    /* Nothing may be wider than the column it sits in. A single overflowing row widens its card,
+       and the card then clips every value on its right, which is what the phone screenshots
+       showed: the culprit was one row, the symptom was the whole screen. */
+    .card,.blk,.line,.metarow,.head,.row{max-width:100%;min-width:0}
+    .head{flex-wrap:wrap;row-gap:8px}
+    .line>*,.metarow>*{max-width:100%}
+    .f{min-width:0}
+    /* an empty spacer on a wrapping row eats a whole line to push nothing anywhere */
+    .line>.grow:empty,.metarow>.grow:empty{display:none}
+    .f.date{flex:1 1 auto;width:auto;min-width:130px}
   }
   @media (max-width:340px){
     .f.money{width:84px}
@@ -193,10 +264,6 @@
       <div class="unit">hours a week</div>
       <div class="restate" id="restate"></div>
     </div>
-    <div id="weekBox" style="margin-top:22px;text-align:left" hidden>
-      <div class="row" style="border:0"><span>Worked this week</span><b id="wkHours"></b></div>
-      <div class="row"><span>Earned this week</span><b id="wkNet"></b></div>
-    </div>
     <div id="refineBox" style="margin-top:22px;text-align:left" hidden>
       <p class="sub" style="margin:0 0 6px">Make it more accurate</p>
       <div id="refineList"></div>
@@ -212,6 +279,7 @@
   <div class="card" id="shiftCard" hidden style="margin-top:12px;text-align:left">
     <div class="head"><h2>This week</h2><button class="add" id="addShift">Log a shift</button></div>
     <div id="shiftList"></div>
+    <div id="weekTotal"></div>
   </div>
 
   <section id="earn" class="panel" hidden>
@@ -285,6 +353,19 @@
       <div id="legal"></div>
     </div>
   </section>
+
+  <div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="scrim" id="sheetScrim"></div>
+    <div class="sheetcard">
+      <div class="sheethead"><h3 id="sheetTitle"></h3>
+        <button class="x" id="sheetClose" aria-label="Close">&times;</button></div>
+      <div class="sheetnote" id="sheetNote"></div>
+      <div id="sheetBody"></div>
+      <div class="sheeterr" id="sheetErr" hidden></div>
+      <div class="sheetacts"><button class="btn" id="sheetSave"></button></div>
+      <button class="sheetdel" id="sheetDel" hidden></button>
+    </div>
+  </div>
 
   <nav class="nav" id="nav" hidden role="tablist" aria-label="Sections">
     <button role="tab" data-tab="answer" class="on" aria-selected="true">Now</button>
@@ -604,6 +685,118 @@ function renderRefine(){
     c.appendChild(b);
   });
 }
+
+// ---- Sheet -----------------------------------------------------------------
+// One modal for every add and edit. Values go in through DOM properties, never innerHTML, so a
+// label containing markup cannot become markup. Save is the only thing that writes to storage:
+// before 2026-08-27 every keystroke wrote, which is why nothing in the app ever read as decided.
+var sheetPrev=null, sheetCfg=null, sheetInputs=null;
+
+function sheetErr(msg){
+  var e=el("sheetErr");
+  if(!msg){e.hidden=true;e.textContent="";return;}
+  e.textContent=msg; e.hidden=false;
+  // guarded: scrollIntoView is missing in some engines, and an error message that throws while
+  // trying to make itself visible loses the message AND breaks the save
+  if(e.scrollIntoView)try{e.scrollIntoView({block:"nearest"});}catch(_){}
+}
+function closeSheet(){
+  el("sheet").hidden=true; el("sheetBody").innerHTML=""; sheetErr("");
+  sheetCfg=null; sheetInputs=null;
+  // return focus to whatever opened the sheet, or the tab bar if that element is gone
+  if(sheetPrev&&document.body.contains(sheetPrev)&&sheetPrev.focus)sheetPrev.focus();
+  sheetPrev=null;
+}
+function openSheet(cfg){
+  sheetPrev=document.activeElement;
+  sheetCfg=cfg; sheetInputs={};
+  el("sheetTitle").textContent=cfg.title;
+  el("sheetNote").textContent=cfg.note||"Nothing changes until you save.";
+  el("sheetSave").textContent=cfg.saveLabel||"Save";
+  var del=el("sheetDel");
+  if(cfg.onDelete){del.hidden=false;del.textContent=cfg.deleteLabel||"Delete";}else{del.hidden=true;}
+  sheetErr("");
+  var body=el("sheetBody"); body.innerHTML="";
+  (cfg.fields||[]).forEach(function(f){
+    var w=document.createElement("div");
+    w.className="fld"+(f.half?" half":"");
+    var id="sf_"+f.k;
+    var lab=document.createElement("label");
+    lab.className="flab"; lab.textContent=f.label; lab.setAttribute("for",id);
+    w.appendChild(lab);
+    var inp;
+    if(f.type==="select"){
+      inp=document.createElement("select"); inp.className="f"; inp.style.width="100%";
+      (f.options||[]).forEach(function(o){
+        var op=document.createElement("option");
+        op.value=o[0]; op.textContent=o[1];
+        if(String(f.value)===String(o[0]))op.selected=true;
+        inp.appendChild(op);
+      });
+    }else{
+      inp=document.createElement("input"); inp.className="f";
+      inp.type=(f.type==="date"||f.type==="time")?f.type:"text";
+      if(f.type==="money")inp.inputMode="decimal";
+      if(f.type==="number")inp.inputMode="numeric";
+      if(f.placeholder)inp.placeholder=f.placeholder;
+      inp.value=(f.value==null?"":String(f.value));
+    }
+    inp.id=id;
+    if(f.type==="money"){
+      var ln=document.createElement("div"); ln.className="moneyline";
+      var c=document.createElement("span"); c.className="cur"; c.textContent=sym();
+      ln.appendChild(c); ln.appendChild(inp); w.appendChild(ln);
+    }else w.appendChild(inp);
+    if(f.hint){
+      var h=document.createElement("div"); h.className="fhint"; h.textContent=f.hint; w.appendChild(h);
+    }
+    body.appendChild(w);
+    sheetInputs[f.k]=inp;
+  });
+  el("sheet").hidden=false;
+  var first=cfg.fields&&cfg.fields.length?sheetInputs[cfg.fields[0].k]:null;
+  if(first&&first.focus){first.focus(); if(first.select&&first.type==="text")first.select();}
+}
+function sheetValues(){
+  var v={};
+  for(var k in sheetInputs){ if(sheetInputs.hasOwnProperty(k)) v[k]=sheetInputs[k].value; }
+  return v;
+}
+el("sheetSave").addEventListener("click",function(){
+  if(!sheetCfg)return;
+  var v=sheetValues();
+  // validate returns a string to refuse, anything falsy to proceed
+  var bad=sheetCfg.validate?sheetCfg.validate(v):null;
+  if(bad){sheetErr(bad);return;}
+  var again=sheetCfg.again;
+  var reopen=sheetCfg.reopen;
+  sheetCfg.onSave(v);
+  save();
+  if(again&&reopen){closeSheet();reopen();}
+  else closeSheet();
+});
+el("sheetDel").addEventListener("click",function(){
+  if(!sheetCfg||!sheetCfg.onDelete)return;
+  sheetCfg.onDelete(); save(); closeSheet();
+});
+el("sheetClose").addEventListener("click",closeSheet);
+el("sheetScrim").addEventListener("click",closeSheet);
+document.addEventListener("keydown",function(e){
+  if(el("sheet").hidden)return;
+  if(e.key==="Escape"){e.preventDefault();closeSheet();return;}
+  if(e.key==="Enter"&&e.target&&e.target.tagName==="INPUT"&&e.target.type!=="date"&&e.target.type!=="time"){
+    e.preventDefault(); el("sheetSave").click(); return;
+  }
+  // focus trap: a modal you can tab out of is a modal in name only
+  if(e.key!=="Tab")return;
+  var f=el("sheet").querySelectorAll('button:not([hidden]),input,select,[tabindex]:not([tabindex="-1"])');
+  var vis=[]; for(var i=0;i<f.length;i++){ if(f[i].offsetParent!==null)vis.push(f[i]); }
+  if(!vis.length)return;
+  var first=vis[0], last=vis[vis.length-1];
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
+});
+
 var pending=null;
 function esc(t){return String(t==null?"":t).replace(/[&<>"\']/g,function(c){
   return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","\'":"&#39;"}[c];});}
@@ -614,168 +807,440 @@ function renderEarn(){
   var c=el("jobList"); c.innerHTML="";
   if(!S.jobs.length) c.innerHTML='<p class="sec">Add a job and what it pays an hour.</p>';
   S.jobs.forEach(function(j){
-    var d=document.createElement("div"); d.className="blk";
-    var rates=(j.rates||[]).map(function(r){
-      return '<div class="line">'+
-        '<input class="f grow" value="'+esc(r.name)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="name" aria-label="Rate name">'+
-        '<span class="cur">'+sym()+'</span>'+
-        '<input class="f money" value="'+esc(r.value)+'" data-j="'+j.id+'" data-r="'+r.id+'" data-k="value" inputmode="decimal" aria-label="Pay an hour">'+
-        '<button class="x" data-delr="'+r.id+'" data-j="'+j.id+'" aria-label="Remove rate">&times;</button></div>';
-    }).join("");
-    d.innerHTML='<div class="line">'+
-        '<input class="f name jobname grow" value="'+esc(j.name)+'" data-j="'+j.id+'" data-k="jobname" aria-label="Job name">'+
-        '<button class="x" data-delj="'+j.id+'" aria-label="Remove job">&times;</button></div>'+
-      rates+
-      '<div class="line" style="margin-top:8px">'+
-        '<button class="add" data-addr="'+j.id+'">Add rate</button>'+
-        '<span class="grow"></span>'+
-        '<span class="mini">Usual hours</span>'+
-        '<input class="f narrow" value="'+esc(j.typicalHours||"")+'" data-j="'+j.id+'" data-k="hrs" inputmode="numeric" aria-label="Hours you usually work a week">'+
-        '<span class="mini">Pension</span>'+
-        '<input class="f narrow" value="'+esc(j.pension||"")+'" data-j="'+j.id+'" data-k="pension" inputmode="decimal" aria-label="Pension percent">'+
-        '<span class="mini">%</span></div>';
-    c.appendChild(d);
+    var wrap=document.createElement("div"); wrap.className="blk";
+    var head=document.createElement("button");
+    head.className="item"; head.type="button"; head.setAttribute("data-editjob",j.id);
+    var top=document.createElement("div"); top.className="itop";
+    var nm=document.createElement("span"); nm.className="iname"; nm.style.fontWeight="500";
+    nm.textContent=j.name||"Untitled job";
+    var ed=document.createElement("span"); ed.className="isub"; ed.style.margin="0"; ed.textContent="Edit";
+    top.appendChild(nm); top.appendChild(ed); head.appendChild(top);
+    var meta=document.createElement("div"); meta.className="isub";
+    var hrs=clamp(j.typicalHours,0,168), pen=clamp(j.pension,0,100);
+    meta.textContent=(hrs>0?hrs+" hrs a week":"hours not set")+" · "+(pen>0?pen+"% pension":"no pension");
+    head.appendChild(meta); wrap.appendChild(head);
+    // Each rate is its own row. A job sheet that edited only the first rate would quietly remove
+    // multi-rate support, which is one of the things this app exists to handle.
+    (j.rates||[]).forEach(function(r){
+      var b=document.createElement("button");
+      b.className="item"; b.type="button";
+      b.setAttribute("data-editrate",r.id); b.setAttribute("data-job",j.id);
+      var t=document.createElement("div"); t.className="itop";
+      var n=document.createElement("span"); n.className="iname"; n.style.color="var(--sub)";
+      n.textContent=r.name||"Rate";
+      var v=document.createElement("span"); v.className="ival"; v.textContent=money2(clamp(r.value,0,10000));
+      t.appendChild(n); t.appendChild(v); b.appendChild(t);
+      wrap.appendChild(b);
+    });
+    if(!(j.rates||[]).length){
+      var w=document.createElement("p"); w.className="sec"; w.style.margin="10px 0 0";
+      w.textContent="No rate yet."; wrap.appendChild(w);
+    }
+    var addr=document.createElement("button");
+    addr.className="add"; addr.type="button"; addr.style.marginTop="12px";
+    addr.setAttribute("data-addrate",j.id); addr.textContent="Add rate";
+    wrap.appendChild(addr);
+    c.appendChild(wrap);
   });
   renderTakehome();
-  if(act==="rate"&&S.jobs[0]){addRate(S.jobs[0].id);}
-  else if(act==="job"){el("addJob").click();}
-  else if(act==="hours"){var i=c.querySelector('[data-k="hrs"]'); if(i)i.focus();}
+  if(act==="rate"&&S.jobs[0])newRate(S.jobs[0].id);
+  else if(act==="job")newJob();
+  else if(act==="hours"&&S.jobs[0])editJob(S.jobs[0].id);
 }
+function findJob(id){var j=null;S.jobs.forEach(function(x){if(x.id===id)j=x;});return j;}
 
-// Split out so an edit can refresh it without re-rendering the whole screen and stealing focus
-// from the field being typed in. The old version only recomputed on a full render, so it looked
-// frozen while you typed.
+function jobFields(j){
+  return [
+    {k:"name",label:"Job name",value:j.name||"",placeholder:"Door supervision"},
+    {k:"hrs",label:"Usual hours a week",type:"number",value:j.typicalHours||"",half:true,
+      hint:"Used to work out which tax band you are in."},
+    {k:"pension",label:"Pension %",type:"number",value:j.pension||"",half:true}
+  ];
+}
+function newJob(){
+  openSheet({title:"Add job",saveLabel:"Save job",
+    fields:jobFields({}).concat([
+      {k:"rname",label:"Rate name",value:"Standard",half:true},
+      {k:"rval",label:"Pays an hour",type:"money",value:"",half:true}]),
+    validate:function(v){
+      if(!String(v.name).trim())return "Give the job a name.";
+      if(String(v.rval).trim()===""||!(+v.rval>0))return "Enter what this job pays an hour.";
+      return null;
+    },
+    onSave:function(v){
+      S.jobs.push({id:uid(),name:String(v.name).slice(0,60),
+        typicalHours:clamp(v.hrs,0,168),pension:clamp(v.pension,0,100),
+        rates:[{id:uid(),name:String(v.rname).slice(0,40)||"Standard",value:clamp(v.rval,0,10000)}]});
+      renderEarn();
+    }});
+}
+function editJob(id){
+  var j=findJob(id); if(!j)return;
+  openSheet({title:"Edit job",fields:jobFields(j),saveLabel:"Save job",
+    deleteLabel:"Remove this job and its rates",
+    validate:function(v){ return String(v.name).trim()?null:"Give the job a name."; },
+    onSave:function(v){
+      j.name=String(v.name).slice(0,60);
+      j.typicalHours=clamp(v.hrs,0,168);
+      j.pension=clamp(v.pension,0,100);
+      renderEarn();
+    },
+    onDelete:function(){
+      S.jobs=S.jobs.filter(function(x){return x.id!==id;}); renderEarn();
+    }});
+}
+function rateFields(r){
+  return [
+    {k:"rname",label:"Rate name",value:r.name||"",placeholder:"Nights",half:true},
+    {k:"rval",label:"Pays an hour",type:"money",value:r.value||"",half:true}
+  ];
+}
+function rateValidate(v){
+  if(!String(v.rname).trim())return "Give the rate a name.";
+  if(String(v.rval).trim()===""||!(+v.rval>0))return "Enter what this rate pays an hour.";
+  return null;
+}
+function newRate(jid){
+  var j=findJob(jid); if(!j)return;
+  openSheet({title:"Add rate",fields:rateFields({}),validate:rateValidate,saveLabel:"Save rate",
+    again:true,reopen:function(){newRate(jid);},
+    onSave:function(v){
+      if(!j.rates)j.rates=[];
+      j.rates.push({id:uid(),name:String(v.rname).slice(0,40),value:clamp(v.rval,0,10000)});
+      renderEarn();
+    }});
+}
+function editRate(jid,rid){
+  var j=findJob(jid); if(!j)return;
+  var r=null; (j.rates||[]).forEach(function(x){if(x.id===rid)r=x;});
+  if(!r)return;
+  openSheet({title:"Edit rate",fields:rateFields(r),validate:rateValidate,saveLabel:"Save rate",
+    deleteLabel:"Remove this rate",
+    onSave:function(v){
+      r.name=String(v.rname).slice(0,40); r.value=clamp(v.rval,0,10000); renderEarn();
+    },
+    onDelete:function(){
+      j.rates=(j.rates||[]).filter(function(x){return x.id!==rid;}); renderEarn();
+    }});
+}
+el("jobList").addEventListener("click",function(e){
+  if(!e.target.closest)return;
+  var a=e.target.closest("[data-addrate]");
+  if(a){newRate(a.getAttribute("data-addrate"));return;}
+  var r=e.target.closest("[data-editrate]");
+  if(r){editRate(r.getAttribute("data-job"),r.getAttribute("data-editrate"));return;}
+  var j=e.target.closest("[data-editjob]");
+  if(j)editJob(j.getAttribute("data-editjob"));
+});
+
 function renderTakehome(){
   var m=model(), t=el("takehome");
   if(!(m.gross>0)){ t.innerHTML='<p class="sec">Add what a job pays an hour to see this.</p>'; return; }
-  var basis;
-  if(m.basisFrom==="declared") basis='<p class="sub" style="margin:10px 0 0">Worked out on the '+m.basisH+' hours a week you entered.</p>';
-  else if(m.basisFrom==="solved") basis='<p class="sub" style="margin:10px 0 0">Worked out on '+(Math.round(m.basisH*10)/10).toFixed(1)+' hours a week, which is what covering your month would take. Enter your usual hours to use those instead.</p>';
-  else basis='<p class="sub" style="margin:10px 0 0">Add what your month costs, or your usual hours, to work out the tax.</p>';
-  t.innerHTML='<div class="row"><span>Before tax</span><b>'+money2(m.gross)+'</b></div>'+
-    m.perHour.map(function(x){
-      return '<div class="row"><span>'+esc(x[0])+'</span><b>-'+money2(x[1])+'</b></div>';
-    }).join("")+
-    '<div class="row"><span>You keep</span><b style="color:var(--accent)">'+money2(m.net)+'</b></div>'+basis;
+  t.innerHTML="";
+  // The answer is the headline. It used to be the last row of a five-row table, which is the least
+  // prominent place on the card, and it is the one number the screen exists to give.
+  var big=document.createElement("div"); big.className="bignum";
+  var b=document.createElement("b"); b.textContent=money2(m.net);
+  var of=document.createElement("span"); of.textContent="of "+money2(m.gross);
+  big.appendChild(b); big.appendChild(of); t.appendChild(big);
+
+  var parts=[{label:"You keep",value:m.net,colour:"var(--accent)"}];
+  m.perHour.forEach(function(x,i){
+    parts.push({label:x[0],value:x[1],colour:HOUR_COLOURS[i%HOUR_COLOURS.length]});
+  });
+  var total=parts.reduce(function(a,x){return a+(x.value>0?x.value:0);},0);
+
+  if(total>0){
+    // Minimum 3% per visible slice so a small deduction reads as a small number rather than a
+    // rendering fault, with the remainder taken proportionally from the slices that can spare it.
+    var vis=parts.filter(function(x){return x.value>0;});
+    var pct=vis.map(function(x){return x.value/total*100;});
+    var MIN=3, owed=0;
+    pct.forEach(function(v,i){ if(v<MIN){ owed+=MIN-v; pct[i]=MIN; } });
+    if(owed>0){
+      var spare=0;
+      pct.forEach(function(v){ if(v>MIN)spare+=v-MIN; });
+      if(spare>0)pct=pct.map(function(v){ return v>MIN ? v-(v-MIN)/spare*owed : v; });
+    }
+    var bar=document.createElement("div"); bar.className="barwrap";
+    vis.forEach(function(x,i){
+      var seg=document.createElement("i");
+      seg.style.width=pct[i]+"%"; seg.style.background=x.colour;
+      bar.appendChild(seg);
+    });
+    t.appendChild(bar);
+  }
+
+  parts.forEach(function(x,i){
+    var row=document.createElement("div"); row.className="keyrow";
+    var l=document.createElement("span");
+    var sw=document.createElement("span"); sw.className="swatch"; sw.style.background=x.colour;
+    l.appendChild(sw);
+    l.appendChild(document.createTextNode(x.label));
+    var v=document.createElement("b"); v.style.fontWeight="500";
+    if(i===0)v.style.color="var(--accent)";
+    v.textContent=(i===0?"":"-")+money2(x.value);
+    row.appendChild(l); row.appendChild(v); t.appendChild(row);
+  });
+
+  var basis=document.createElement("p"); basis.className="sub"; basis.style.margin="12px 0 0";
+  if(m.basisFrom==="declared") basis.textContent="Worked out on the "+m.basisH+" hours a week you entered.";
+  else if(m.basisFrom==="solved") basis.textContent="Worked out on "+(Math.round(m.basisH*10)/10).toFixed(1)+
+    " hours a week, which is what covering your month would take. Enter your usual hours to use those instead.";
+  else basis.textContent="Add what your month costs, or your usual hours, to work out the tax.";
+  t.appendChild(basis);
 }
-function addRate(jid){
-  var j=S.jobs.filter(function(x){return x.id===jid;})[0]; if(!j)return;
-  j.rates=j.rates||[]; j.rates.push({id:uid(),name:"Another rate",value:0});
-  save(); renderEarn();
-  var last=el("jobList").querySelectorAll('[data-k="value"]');
-  if(last.length)last[last.length-1].focus();
+// Deduction colours come from the token doc's category ramp. Pension is ochre, NOT sage: sage means
+// "covered" everywhere else in this app, and reusing it here would imply pension is a good outcome,
+// which is the app holding an opinion about the user's arrangements.
+var HOUR_COLOURS=["var(--c-tax)","var(--sub)","var(--warn)","var(--c-spend)"];
+
+function findJob(id){var j=null;S.jobs.forEach(function(x){if(x.id===id)j=x;});return j;}
+
+function jobFields(j){
+  return [
+    {k:"name",label:"Job name",value:j.name||"",placeholder:"Door supervision"},
+    {k:"hrs",label:"Usual hours a week",type:"number",value:j.typicalHours||"",half:true,
+      hint:"Used to work out which tax band you are in."},
+    {k:"pension",label:"Pension %",type:"number",value:j.pension||"",half:true}
+  ];
 }
-el("addJob").addEventListener("click",function(){
-  S.jobs.push({id:uid(),name:"Second job",pension:0,typicalHours:0,
-    rates:[{id:uid(),name:"Standard",value:0}]});
-  save(); renderEarn();
-});
-el("jobList").addEventListener("input",function(e){
-  var t=e.target, jid=t.dataset.j; if(!jid)return;
-  var j=S.jobs.filter(function(x){return x.id===jid;})[0]; if(!j)return;
-  if(t.dataset.r){
-    var r=(j.rates||[]).filter(function(x){return x.id===t.dataset.r;})[0]; if(!r)return;
-    if(t.dataset.k==="value")r.value=clamp(t.value,0,10000); else r.name=t.value;
-  } else if(t.dataset.k==="jobname"){ j.name=t.value; }
-  else if(t.dataset.k==="hrs"){ j.typicalHours=clamp(t.value,0,168); }
-  else if(t.dataset.k==="pension"){ j.pension=clamp(t.value,0,100); }
-  save(); renderTakehome();
-});
+function newJob(){
+  openSheet({title:"Add job",saveLabel:"Save job",
+    fields:jobFields({}).concat([
+      {k:"rname",label:"Rate name",value:"Standard",half:true},
+      {k:"rval",label:"Pays an hour",type:"money",value:"",half:true}]),
+    validate:function(v){
+      if(!String(v.name).trim())return "Give the job a name.";
+      if(String(v.rval).trim()===""||!(+v.rval>0))return "Enter what this job pays an hour.";
+      return null;
+    },
+    onSave:function(v){
+      S.jobs.push({id:uid(),name:String(v.name).slice(0,60),
+        typicalHours:clamp(v.hrs,0,168),pension:clamp(v.pension,0,100),
+        rates:[{id:uid(),name:String(v.rname).slice(0,40)||"Standard",value:clamp(v.rval,0,10000)}]});
+      renderEarn();
+    }});
+}
+function editJob(id){
+  var j=findJob(id); if(!j)return;
+  openSheet({title:"Edit job",fields:jobFields(j),saveLabel:"Save job",
+    deleteLabel:"Remove this job and its rates",
+    validate:function(v){ return String(v.name).trim()?null:"Give the job a name."; },
+    onSave:function(v){
+      j.name=String(v.name).slice(0,60);
+      j.typicalHours=clamp(v.hrs,0,168);
+      j.pension=clamp(v.pension,0,100);
+      renderEarn();
+    },
+    onDelete:function(){
+      S.jobs=S.jobs.filter(function(x){return x.id!==id;}); renderEarn();
+    }});
+}
+function rateFields(r){
+  return [
+    {k:"rname",label:"Rate name",value:r.name||"",placeholder:"Nights",half:true},
+    {k:"rval",label:"Pays an hour",type:"money",value:r.value||"",half:true}
+  ];
+}
+function rateValidate(v){
+  if(!String(v.rname).trim())return "Give the rate a name.";
+  if(String(v.rval).trim()===""||!(+v.rval>0))return "Enter what this rate pays an hour.";
+  return null;
+}
+function newRate(jid){
+  var j=findJob(jid); if(!j)return;
+  openSheet({title:"Add rate",fields:rateFields({}),validate:rateValidate,saveLabel:"Save rate",
+    again:true,reopen:function(){newRate(jid);},
+    onSave:function(v){
+      if(!j.rates)j.rates=[];
+      j.rates.push({id:uid(),name:String(v.rname).slice(0,40),value:clamp(v.rval,0,10000)});
+      renderEarn();
+    }});
+}
+function editRate(jid,rid){
+  var j=findJob(jid); if(!j)return;
+  var r=null; (j.rates||[]).forEach(function(x){if(x.id===rid)r=x;});
+  if(!r)return;
+  openSheet({title:"Edit rate",fields:rateFields(r),validate:rateValidate,saveLabel:"Save rate",
+    deleteLabel:"Remove this rate",
+    onSave:function(v){
+      r.name=String(v.rname).slice(0,40); r.value=clamp(v.rval,0,10000); renderEarn();
+    },
+    onDelete:function(){
+      j.rates=(j.rates||[]).filter(function(x){return x.id!==rid;}); renderEarn();
+    }});
+}
 el("jobList").addEventListener("click",function(e){
-  var a=e.target.closest("[data-addr]"); if(a){addRate(a.dataset.addr);return;}
-  var dr=e.target.closest("[data-delr]");
-  if(dr){var j=S.jobs.filter(function(x){return x.id===dr.dataset.j;})[0];
-    if(j)j.rates=(j.rates||[]).filter(function(x){return x.id!==dr.dataset.delr;});
-    save(); renderEarn(); return;}
-  var dj=e.target.closest("[data-delj]");
-  if(dj){S.jobs=S.jobs.filter(function(x){return x.id!==dj.dataset.delj;});save();renderEarn();}
+  if(!e.target.closest)return;
+  var a=e.target.closest("[data-addrate]");
+  if(a){newRate(a.getAttribute("data-addrate"));return;}
+  var r=e.target.closest("[data-editrate]");
+  if(r){editRate(r.getAttribute("data-job"),r.getAttribute("data-editrate"));return;}
+  var j=e.target.closest("[data-editjob]");
+  if(j)editJob(j.getAttribute("data-editjob"));
 });
+
+el("addJob").addEventListener("click",newJob);
 
 // ---- Outgoings
 function renderOut(){
   var act=pending; pending=null;
-  el("sym2").textContent=sym();
   var c=el("outList"); c.innerHTML="";
   if(!S.outgoings.length) c.innerHTML='<p class="sec">Add what you pay each month.</p>';
   S.outgoings.forEach(function(b){
-    var d=document.createElement("div"); d.className="blk";
     var wk=b.every==="week";
-    d.innerHTML='<div class="line">'+
-      '<input class="f grow" value="'+esc(b.label)+'" data-b="'+b.id+'" data-k="label" aria-label="What it is">'+
-      '<span class="cur">'+sym()+'</span>'+
-      '<input class="f money" value="'+esc(b.amount)+'" data-b="'+b.id+'" data-k="amount" inputmode="decimal" aria-label="How much">'+
-      '<select class="f" data-b="'+b.id+'" data-k="every" aria-label="How often">'+
-        '<option value="month"'+(wk?"":" selected")+'>a month</option>'+
-        '<option value="week"'+(wk?" selected":"")+'>a week</option></select>'+
-      '<button class="x" data-delb="'+b.id+'" aria-label="Remove item">&times;</button></div>'+
-      (wk?'<div class="mini" style="text-align:right;margin-top:2px">'+money(monthly(b))+' a month</div>':"");
-    c.appendChild(d);
+    var btn=document.createElement("button");
+    btn.className="item"; btn.type="button"; btn.setAttribute("data-editout",b.id);
+    var top=document.createElement("div"); top.className="itop";
+    var n=document.createElement("span"); n.className="iname"; n.textContent=b.label||"Untitled";
+    if(wk){
+      var tag=document.createElement("span"); tag.style.color="var(--sub)"; tag.style.fontSize="13px";
+      tag.textContent=" · weekly"; n.appendChild(tag);
+    }
+    var v=document.createElement("span"); v.className="ival"; v.textContent=money(clamp(b.amount,0,1e7));
+    top.appendChild(n); top.appendChild(v); btn.appendChild(top);
+    if(wk){
+      var sub=document.createElement("div"); sub.className="isub";
+      sub.textContent=money(monthly(b))+" a month";
+      btn.appendChild(sub);
+    }
+    c.appendChild(btn);
   });
   renderOutTotal();
   el("otherIncome").value=S.settings.otherIncome||"";
-  var g=el("goalList"); g.innerHTML="";
-  if(!S.goals.length) g.innerHTML='<p class="sec">No goals.</p>';
-  S.goals.forEach(function(x){
-    var d=document.createElement("div"); d.className="blk";
-    var exp=goalExpired(x), left=Math.ceil(goalWeeksLeft(x));
-    if(exp)d.style.opacity="0.6";
-    d.innerHTML='<div class="line">'+
-      '<input class="f name grow" value="'+esc(x.label)+'" data-g="'+x.id+'" data-k="label" aria-label="What it is for">'+
-      '<span class="cur">'+sym()+'</span>'+
-      '<input class="f money" value="'+esc(x.amount)+'" data-g="'+x.id+'" data-k="amount" inputmode="decimal" aria-label="How much">'+
-      '<button class="x" data-delg="'+x.id+'" aria-label="Remove goal">&times;</button></div>'+
-      '<div class="line"><span class="grow"></span><span class="mini">Over</span>'+
-      '<input class="f narrow" value="'+esc(x.weeks)+'" data-g="'+x.id+'" data-k="weeks" inputmode="numeric" aria-label="Over how many weeks">'+
-      '<span class="mini">weeks</span></div>'+
-      '<div class="mini" style="text-align:right;margin-top:4px">'+
-        (exp ? "Finished. It is not adding hours any more."
-             : money(goalWeekly(x))+" a week, "+left+" week"+(left===1?"":"s")+" to go")+'</div>';
-    g.appendChild(d);
-  });
-  if(act==="out"){el("addOut").click();}
-  else if(act==="goal"){el("addGoal").click();}
+  renderGoals();
+  if(act==="out")newOut();
+  else if(act==="goal")newGoal();
 }
+
+function outFields(b){
+  return [
+    {k:"label",label:"What it is",value:b.label,placeholder:"Rent"},
+    {k:"amount",label:"How much",type:"money",value:b.amount||"",half:true},
+    {k:"every",label:"How often",type:"select",value:b.every||"month",half:true,
+      options:[["month","a month"],["week","a week"]]}
+  ];
+}
+function outValidate(v){
+  if(!String(v.label).trim())return "Give this item a name.";
+  if(String(v.amount).trim()===""||!(+v.amount>0))return "Enter how much it costs.";
+  return null;
+}
+function newOut(){
+  openSheet({title:"Add an item",fields:outFields({}),validate:outValidate,saveLabel:"Save item",
+    again:true,reopen:newOut,
+    onSave:function(v){
+      S.outgoings.push({id:uid(),label:String(v.label).slice(0,60),
+        amount:clamp(v.amount,0,1e7),cat:"bills",every:v.every==="week"?"week":"month"});
+      renderOut();
+    }});
+}
+function editOut(id){
+  var b=null; S.outgoings.forEach(function(x){if(x.id===id)b=x;});
+  if(!b)return;
+  openSheet({title:"Edit item",fields:outFields(b),validate:outValidate,saveLabel:"Save item",
+    deleteLabel:"Remove this item",
+    onSave:function(v){
+      b.label=String(v.label).slice(0,60); b.amount=clamp(v.amount,0,1e7);
+      b.every=v.every==="week"?"week":"month"; renderOut();
+    },
+    onDelete:function(){
+      S.outgoings=S.outgoings.filter(function(x){return x.id!==id;}); renderOut();
+    }});
+}
+el("outList").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest("[data-editout]"):null;
+  if(b)editOut(b.getAttribute("data-editout"));
+});
+
+// Goal progress accumulates from BANKED weeks only. A logged-but-unbanked week is not yet a fact
+// about the past, and letting it count would make the figure move backwards when a shift is edited.
+function goalSaved(g){
+  var t=0;
+  S.weeks.forEach(function(w){
+    if(!w.goalSplit)return;
+    var v=w.goalSplit[g.id];
+    if(typeof v==="number"&&isFinite(v)&&v>0)t+=v;
+  });
+  return t;
+}
+function renderGoals(){
+  var c=el("goalList"); c.innerHTML="";
+  if(!S.goals.length){ c.innerHTML='<p class="sec">Add something you are saving for.</p>'; return; }
+  S.goals.forEach(function(g){
+    var exp=goalExpired(g), left=Math.ceil(goalWeeksLeft(g));
+    var target=clamp(g.amount,0,1e7), got=Math.min(goalSaved(g),target);
+    var btn=document.createElement("button");
+    btn.className="item"; btn.type="button"; btn.setAttribute("data-editgoal",g.id);
+    if(exp)btn.style.opacity="0.6";
+    var top=document.createElement("div"); top.className="itop";
+    var n=document.createElement("span"); n.className="iname"; n.textContent=g.label||"Untitled goal";
+    var v=document.createElement("span"); v.className="ival";
+    v.textContent=money(got)+" of "+money(target);
+    top.appendChild(n); top.appendChild(v); btn.appendChild(top);
+    var bar=document.createElement("div"); bar.className="prog";
+    var fill=document.createElement("i");
+    fill.style.width=(target>0?Math.min(100,got/target*100):0)+"%";
+    bar.appendChild(fill); btn.appendChild(bar);
+    var sub=document.createElement("div"); sub.className="isub";
+    sub.textContent = exp
+      ? "Finished. It is not adding hours any more."
+      : money(goalWeekly(g))+" a week, "+left+" week"+(left===1?"":"s")+" to go";
+    btn.appendChild(sub);
+    c.appendChild(btn);
+  });
+}
+function goalFields(g){
+  return [
+    {k:"label",label:"What it is for",value:g.label,placeholder:"Laptop"},
+    {k:"amount",label:"How much",type:"money",value:g.amount||"",half:true},
+    {k:"weeks",label:"Over how many weeks",type:"number",value:g.weeks||"",half:true,
+      hint:"It adds hours on top of your month, and stops when the weeks are up."}
+  ];
+}
+function goalValidate(v){
+  if(!String(v.label).trim())return "Say what the goal is for.";
+  if(String(v.amount).trim()===""||!(+v.amount>0))return "Enter how much you need.";
+  if(String(v.weeks).trim()===""||!(+v.weeks>=1))return "Enter how many weeks, at least 1.";
+  return null;
+}
+function newGoal(){
+  openSheet({title:"Add a goal",fields:goalFields({}),validate:goalValidate,saveLabel:"Save goal",
+    again:true,reopen:newGoal,
+    onSave:function(v){
+      S.goals.push({id:uid(),label:String(v.label).slice(0,60),amount:clamp(v.amount,0,1e7),
+        weeks:clamp(v.weeks,1,520),addedAt:Date.now()});
+      renderOut();
+    }});
+}
+function editGoal(id){
+  var g=null; S.goals.forEach(function(x){if(x.id===id)g=x;});
+  if(!g)return;
+  openSheet({title:"Edit goal",fields:goalFields(g),validate:goalValidate,saveLabel:"Save goal",
+    deleteLabel:"Remove this goal",
+    onSave:function(v){
+      g.label=String(v.label).slice(0,60); g.amount=clamp(v.amount,0,1e7);
+      g.weeks=clamp(v.weeks,1,520); renderOut();
+    },
+    onDelete:function(){
+      S.goals=S.goals.filter(function(x){return x.id!==id;}); renderOut();
+    }});
+}
+el("goalList").addEventListener("click",function(e){
+  var b=e.target.closest?e.target.closest("[data-editgoal]"):null;
+  if(b)editGoal(b.getAttribute("data-editgoal"));
+});
+
 function renderOutTotal(){
   var t=S.outgoings.reduce(function(s2,b){return s2+monthly(b);},0);
   var anyWeek=S.outgoings.some(function(b){return b.every==="week";});
   el("outTotal").textContent=money(t)+(anyWeek?" a month":"");
 }
-el("addOut").addEventListener("click",function(){
-  S.outgoings.push({id:uid(),label:"New item",amount:0,cat:"bills"}); save(); renderOut();
-  var i=el("outList").querySelectorAll('[data-k="label"]'); if(i.length)i[i.length-1].select();
-});
-el("addGoal").addEventListener("click",function(){
-  S.goals.push({id:uid(),label:"New goal",amount:0,weeks:8,addedAt:Date.now()}); save(); renderOut();
-});
-el("outList").addEventListener("input",function(e){
-  var t=e.target, id=t.dataset.b; if(!id)return;
-  var b=S.outgoings.filter(function(x){return x.id===id;})[0]; if(!b)return;
-  if(t.dataset.k==="amount")b.amount=clamp(t.value,0,1e7); else b.label=t.value;
-  renderOutTotal(); save();
-});
+el("addOut").addEventListener("click",newOut);
+el("addGoal").addEventListener("click",newGoal);
 // A frequency change alters what the row means, so it re-renders: the "x a month" hint under a
 // weekly row appears and disappears with it.
-el("outList").addEventListener("change",function(e){
-  var t=e.target; if(t.dataset.k!=="every")return;
-  var b=S.outgoings.filter(function(x){return x.id===t.dataset.b;})[0];
-  if(b){b.every=t.value==="week"?"week":"month";save();renderOut();}
-});
-el("outList").addEventListener("click",function(e){
-  var d=e.target.closest("[data-delb]");
-  if(d){S.outgoings=S.outgoings.filter(function(x){return x.id!==d.dataset.delb;});save();renderOut();}
-});
-el("goalList").addEventListener("input",function(e){
-  var t=e.target, id=t.dataset.g; if(!id)return;
-  var g=S.goals.filter(function(x){return x.id===id;})[0]; if(!g)return;
-  if(t.dataset.k==="amount")g.amount=clamp(t.value,0,1e7);
-  else if(t.dataset.k==="weeks")g.weeks=clamp(t.value,1,520);
-  else g.label=t.value;
-  save();
-});
-el("goalList").addEventListener("click",function(e){
-  var d=e.target.closest("[data-delg]");
-  if(d){S.goals=S.goals.filter(function(x){return x.id!==d.dataset.delg;});save();renderOut();}
-});
 el("otherIncome").addEventListener("input",function(){
   S.settings.otherIncome=clamp(el("otherIncome").value,0,1e7); save();
 });
@@ -902,83 +1367,133 @@ function weekShifts(){ var wk=mondayISO(new Date());
 function shiftPay(sh){ var m=model(); return shiftHours(sh)*clamp(sh.rateValue,0,10000)*(1-m.eff); }
 
 function renderShifts(){
-  var card=el("shiftCard"); card.hidden=!S.meta.onboarded;
-  if(!S.meta.onboarded)return;
-  var ws=weekShifts(), c=el("shiftList"); c.innerHTML="";
-  if(!ws.length){
-    c.innerHTML='<p class="sec">Nothing logged this week yet.</p>';
-  }
-  var opts=[];
-  S.jobs.forEach(function(j){(j.rates||[]).forEach(function(r){
-    opts.push({v:j.id+"|"+r.id,t:(S.jobs.length>1?j.name+", ":"")+r.name});});});
-  ws.forEach(function(sh){
-    var i=S.shifts.indexOf(sh);
-    var d=document.createElement("div"); d.className="blk shiftrow";
-    var sel=opts.map(function(o){
-      return '<option value="'+o.v+'"'+(o.v===sh.jobId+"|"+sh.rateId?" selected":"")+'>'+esc(o.t)+'</option>';
-    }).join("")||'<option value="">No rates yet</option>';
-    d.innerHTML='<div class="line">'+
-        '<input class="f" type="date" value="'+esc(sh.date)+'" data-s="'+i+'" data-k="date" style="width:auto;flex:none" aria-label="Date">'+
-        '<select class="f grow" data-s="'+i+'" data-k="rate" aria-label="Which job and rate">'+sel+'</select>'+
-        '<button class="x" data-dels="'+i+'" aria-label="Remove shift">&times;</button></div>'+
-      '<div class="line">'+
-        '<span class="times">'+
-          '<input class="f narrow" type="time" value="'+esc(sh.start)+'" data-s="'+i+'" data-k="start" style="width:auto" aria-label="Start">'+
-          '<span class="mini">to</span>'+
-          '<input class="f narrow" type="time" value="'+esc(sh.end)+'" data-s="'+i+'" data-k="end" style="width:auto" aria-label="End">'+
-          '<span class="mini">break</span>'+
-          '<input class="f narrow" value="'+esc(sh.brk||0)+'" data-s="'+i+'" data-k="brk" inputmode="numeric" aria-label="Break in minutes" style="width:58px">'+
-          '<span class="mini">min</span>'+
-        '</span>'+
-        '<span class="grow"></span>'+
-        '<span class="mini">'+shiftHours(sh).toFixed(2)+' hrs</span>'+
-        '<b style="color:var(--accent);font-weight:500">'+money2(shiftPay(sh))+'</b></div>';
-    c.appendChild(d);
-  });
-  var hrs=0,net=0;
+  var c=el("shiftList"); c.innerHTML="";
+  var ws=weekShifts(), hrs=0, net=0;
   ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
-  var box=el("weekBox");
-  box.hidden=!ws.length;
-  if(ws.length){
-    el("wkHours").textContent=(Math.round(hrs*10)/10).toFixed(1)+" hrs";
-    el("wkNet").textContent=money2(net);
+  if(!ws.length){
+    c.innerHTML='<p class="sec">No shifts logged this week.</p>';
+  }
+  ws.forEach(function(sh){
+    var btn=document.createElement("button");
+    btn.className="item"; btn.type="button"; btn.setAttribute("data-editshift",sh.id);
+    var top=document.createElement("div"); top.className="itop";
+    var d=document.createElement("span"); d.className="iname"; d.textContent=weekLabel(sh.date);
+    var v=document.createElement("span"); v.className="ival"; v.textContent=money2(shiftPay(sh));
+    top.appendChild(d); top.appendChild(v); btn.appendChild(top);
+    var sub=document.createElement("div"); sub.className="isub";
+    var brk=clamp(sh.brk,0,1440);
+    sub.textContent=sh.start+" to "+sh.end+" · "+(brk>0?brk+" min break · ":"")+
+      (Math.round(shiftHours(sh)*100)/100).toFixed(2)+" hrs · "+(sh.rateName||"Rate");
+    btn.appendChild(sub);
+    c.appendChild(btn);
+  });
+  // The mid-week figure. Hours so far against the hours the week needs: position only, no verdict
+  // about whether that position is good, which would be the app having an opinion.
+  var m=model(), tot=el("weekTotal");
+  if(tot){
+    tot.innerHTML="";
+    if(!ws.length)return;
+    var row=document.createElement("div"); row.className="totalrow";
+    var lab=document.createElement("span"); lab.style.color="var(--sub)"; lab.style.fontSize="15px";
+    lab.textContent = (m.hours!=null&&m.hours>0)
+      ? (Math.round(hrs*10)/10).toFixed(1)+" of "+(Math.round(m.hours*10)/10).toFixed(1)+" hrs"
+      : (Math.round(hrs*10)/10).toFixed(1)+" hrs";
+    var val=document.createElement("b"); val.style.fontWeight="500"; val.textContent=money2(net);
+    row.appendChild(lab); row.appendChild(val); tot.appendChild(row);
+    if(m.hours!=null&&m.hours>0){
+      var bar=document.createElement("div"); bar.className="prog";
+      var f=document.createElement("i");
+      f.style.width=Math.min(100,hrs/m.hours*100)+"%";
+      bar.appendChild(f); tot.appendChild(bar);
+    }
   }
 }
-el("addShift").addEventListener("click",function(){
-  var j=S.jobs[0], r=j&&j.rates?j.rates[0]:null;
-  S.shifts.push({id:uid(),date:todayISO(),
-    jobId:j?j.id:null, jobName:j?j.name:"",
-    rateId:r?r.id:null, rateName:r?r.name:"", rateValue:r?clamp(r.value,0,10000):0,
-    start:"18:00",end:"02:00",brk:0});
-  save(); renderShifts();
-});
+function rateOptions(){
+  var o=[];
+  S.jobs.forEach(function(j){
+    (j.rates||[]).forEach(function(r){
+      o.push([j.id+"|"+r.id,(S.jobs.length>1?j.name+" · ":"")+(r.name||"Rate")]);
+    });
+  });
+  return o;
+}
+function shiftFields(sh){
+  var opts=rateOptions();
+  return [
+    {k:"date",label:"Date",type:"date",value:sh.date||todayISO()},
+    {k:"rate",label:"Job and rate",type:"select",value:sh.jobId?sh.jobId+"|"+sh.rateId:(opts[0]?opts[0][0]:""),
+      options:opts},
+    {k:"start",label:"Start",type:"time",value:sh.start||"09:00",half:true},
+    {k:"end",label:"End",type:"time",value:sh.end||"17:00",half:true},
+    {k:"brk",label:"Break in minutes",type:"number",value:(sh.brk==null?0:sh.brk),
+      hint:"An end time before the start counts as an overnight shift."}
+  ];
+}
+function shiftValidate(v){
+  if(!v.rate)return "Add a job with an hourly rate first.";
+  if(!v.date)return "Pick a date.";
+  if(!v.start||!v.end)return "Enter a start and an end time.";
+  return null;
+}
+// The rate is SNAPSHOTTED onto the shift at save time. Editing a rate later must never rewrite what
+// an already-logged shift paid.
+function applyShift(sh,v){
+  var parts=String(v.rate).split("|");
+  var j=null,r=null;
+  S.jobs.forEach(function(x){ if(x.id===parts[0]){ j=x; (x.rates||[]).forEach(function(y){ if(y.id===parts[1])r=y; }); } });
+  sh.date=v.date; sh.start=v.start; sh.end=v.end; sh.brk=clamp(v.brk,0,1440);
+  if(j&&r){
+    sh.jobId=j.id; sh.jobName=j.name; sh.rateId=r.id;
+    sh.rateName=r.name; sh.rateValue=clamp(r.value,0,10000);
+  }
+  return sh;
+}
+function newShift(){
+  if(!rateOptions().length){ openSheet({title:"Log a shift",fields:[],
+    note:"You need a job with an hourly rate before you can log a shift.",
+    saveLabel:"Close",onSave:function(){}}); return; }
+  openSheet({title:"Log a shift",fields:shiftFields({}),validate:shiftValidate,saveLabel:"Save shift",
+    again:true,reopen:newShift,
+    onSave:function(v){
+      var sh=applyShift({id:uid()},v); S.shifts.push(sh); renderShifts(); renderAnswer();
+    }});
+}
+function editShiftSheet(id){
+  var sh=null; S.shifts.forEach(function(x){if(x.id===id)sh=x;});
+  if(!sh)return;
+  openSheet({title:"Edit shift",fields:shiftFields(sh),validate:shiftValidate,saveLabel:"Save shift",
+    deleteLabel:"Remove this shift",
+    onSave:function(v){ applyShift(sh,v); renderShifts(); renderAnswer(); },
+    onDelete:function(){
+      S.shifts=S.shifts.filter(function(x){return x.id!==id;}); renderShifts(); renderAnswer();
+    }});
+}
 el("shiftList").addEventListener("click",function(e){
-  var d=e.target.closest("[data-dels]");
-  if(d){S.shifts.splice(+d.dataset.dels,1);save();renderShifts();}
+  var b=e.target.closest?e.target.closest("[data-editshift]"):null;
+  if(b)editShiftSheet(b.getAttribute("data-editshift"));
 });
-function editShift(e){
-  var t=e.target, i=t.dataset.s; if(i==null)return;
-  var sh=S.shifts[+i]; if(!sh)return;
-  var k=t.dataset.k;
-  if(k==="rate"){
-    var parts=String(t.value).split("|");
-    var j=S.jobs.filter(function(x){return x.id===parts[0];})[0];
-    var r=j&&(j.rates||[]).filter(function(x){return x.id===parts[1];})[0];
-    // Re-snapshot on change: the shift records what it is NOW paid at, still never a live lookup.
-    if(j&&r){sh.jobId=j.id;sh.jobName=j.name;sh.rateId=r.id;sh.rateName=r.name;sh.rateValue=clamp(r.value,0,10000);}
-  }
-  else if(k==="brk")sh.brk=clamp(t.value,0,1440);
-  else sh[k]=t.value;
-  save(); renderShifts();
+el("addShift").addEventListener("click",newShift);
+
+// What a banked week actually put toward each goal. The month's items come out first because the
+// coverage waterfall already spends them; what is left, up to the goals' combined weekly share, is
+// split BETWEEN goals in proportion to each one's weekly share. Proportional, never sequential:
+// paying goal A before goal B would be the app choosing an order between two things the user
+// wants, which is exactly the ranking Rule 0 forbids.
+function goalSplitFor(net){
+  var out={};
+  var want=goalsWeekly();
+  if(!(want>0)||!(net>0))return out;
+  var monthlyNeed=0;
+  S.outgoings.forEach(function(b){ monthlyNeed+=monthly(b)/WPM; });
+  var spare=Math.max(0,net-monthlyNeed);
+  var pot=Math.min(spare,want);
+  if(!(pot>0))return out;
+  S.goals.forEach(function(g){
+    var w=goalWeekly(g);
+    if(w>0)out[g.id]=pot*(w/want);
+  });
+  return out;
 }
-el("shiftList").addEventListener("change",editShift);
-el("shiftList").addEventListener("input",function(e){ if(e.target.dataset.k==="brk")editShift(e); });
-
-
-// ---- coverage and banking (SCOPE f5)
-// The waterfall runs in the user's STORED ORDER and is never re-sorted. Re-ordering it, or
-// suggesting which item to reach first, is advice about the liquidation of a debt and a regulated
-// activity under art. 39E RAO. The app states what the money reached. It does not rank.
 function coverageFor(net){
   var left=net, out=[];
   S.outgoings.forEach(function(b){
@@ -1028,7 +1543,7 @@ el("bankBtn").addEventListener("click",function(){
   var hrs=0,net=0; ws.forEach(function(x){hrs+=shiftHours(x);net+=shiftPay(x);});
   // Coverage is FROZEN into the row here. Editing an outgoing next month must not rewrite what a
   // week that has already happened reached.
-  S.weeks.push({id:uid(),weekStart:mondayISO(new Date()),hours:hrs,net:net,
+  S.weeks.push({goalSplit:goalSplitFor(net),id:uid(),weekStart:mondayISO(new Date()),hours:hrs,net:net,
     coverage:coverageFor(net),goalTarget:goalsWeekly()});
   S.shifts=S.shifts.filter(function(x){return ws.indexOf(x)===-1;});
   save(); renderWeeks(); renderShifts(); renderAnswer();

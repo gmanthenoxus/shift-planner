@@ -18,39 +18,54 @@ function onboard(){const b=boot({});b.d.getElementById("start").click();
   type(b.d,"14.25");b.d.getElementById("next").click();
   type(b.d,"1240");b.d.getElementById("next").click();return b;}
 
+// The app moved to a settled-row + sheet model on 2026-08-27. Hostile values now go in through the
+// sheet, which is the only path a real user has, and the sheet's validate() is part of what is
+// being attacked: a refused value must leave the stored blob untouched, not half-written.
+const sSet=(d,k,v)=>{const i=d.getElementById("sf_"+k); if(i){i.value=v;} return i;};
+const sSave=(d)=>d.getElementById("sheetSave").click();
+const sClose=(d)=>d.getElementById("sheetClose").click();
+const sOpen=(d)=>!d.getElementById("sheet").hidden;
+const rowsIn=(d,id)=>[...d.querySelectorAll("#"+id+" .item")];
+const addShiftQ=(d)=>{d.getElementById("addShift").click();sSave(d);if(sOpen(d))sClose(d);};
+
 const nasty=["0","-1","-999999","1e9","999999999999","0.000001","abc","   ","<script>alert(1)</script>",
  "<img src=x onerror=alert(1)>","'\"><b>x</b>","NaN","Infinity","1,2,3,4",".",",","--5","1e309","A".repeat(3000)];
 
 {const {d,errs}=onboard();
  tab(d,"earn");
- for(const v of nasty) ["value","name","hrs","pension","jobname"].forEach(k=>{
-   const i=d.querySelector('#jobList [data-k="'+k+'"]'); if(i){i.value=v;ev(d,i)}});
+ for(const v of nasty){
+   rowsIn(d,"jobList")[0].click();
+   ["name","hrs","pension"].forEach(k=>sSet(d,k,v)); sSave(d); if(sOpen(d))sClose(d);
+   rowsIn(d,"jobList")[1].click();
+   ["rname","rval"].forEach(k=>sSet(d,k,v)); sSave(d); if(sOpen(d))sClose(d);
+ }
  tab(d,"out");
- for(const v of nasty) ["label","amount"].forEach(k=>{
-   const i=d.querySelector('#outList [data-k="'+k+'"]'); if(i){i.value=v;ev(d,i)}});
- d.getElementById("addGoal").click();
- for(const v of nasty) ["label","amount","weeks"].forEach(k=>{
-   const i=d.querySelector('#goalList [data-k="'+k+'"]'); if(i){i.value=v;ev(d,i)}});
+ for(const v of nasty){
+   rowsIn(d,"outList")[0].click();
+   ["label","amount"].forEach(k=>sSet(d,k,v)); sSave(d); if(sOpen(d))sClose(d);
+   d.getElementById("addGoal").click();
+   ["label","amount","weeks"].forEach(k=>sSet(d,k,v)); sSave(d); if(sOpen(d))sClose(d);
+ }
  tab(d,"answer");
  const txt=d.getElementById("answer").textContent+d.getElementById("shiftList").textContent;
  rec("absurd input into every field",errs.length===0?"PASS":"FAIL",errs.slice(0,2).join(" | "));
  rec("no NaN/Infinity/undefined on screen",!/NaN|Infinity|undefined/.test(txt)?"PASS":"FAIL",txt.slice(0,80));
  tab(d,"out");
- const lab=d.querySelector('#outList [data-k="label"]'); lab.value='<img src=x onerror=alert(1)>'; ev(d,lab);
+ rowsIn(d,"outList")[0].click(); sSet(d,"label",'<img src=x onerror=alert(1)>'); sSet(d,"amount","500"); sSave(d);
  tab(d,"answer"); tab(d,"out");
  rec("HTML in a label is escaped, not injected",d.querySelectorAll("#outList img,#outList script").length===0?"PASS":"FAIL",
    "injected nodes: "+d.querySelectorAll("#outList img,#outList script").length);
 }
 {const {d,errs}=onboard();
- tab(d,"out"); const l=d.querySelector('#outList [data-k="label"]'); l.value='<b onclick="x">B</b>'; ev(d,l);
- tab(d,"answer"); d.getElementById("addShift").click();
+ tab(d,"out"); rowsIn(d,"outList")[0].click(); sSet(d,"label",'<b onclick="x">B</b>'); sSet(d,"amount","500"); sSave(d);
+ tab(d,"answer"); addShiftQ(d);
  tab(d,"weeks"); d.getElementById("bankBtn").click();
  rec("HTML escaped on the banked-week screen",d.querySelectorAll("#weekList b[onclick]").length===0?"PASS":"FAIL",
    "unescaped: "+d.querySelectorAll("#weekList b[onclick]").length);
  rec("banking a week raises no errors",errs.length===0?"PASS":"FAIL",errs.slice(0,2).join(" | "));
 }
 {const {d,errs,st}=onboard();
- for(let i=0;i<200;i++) d.getElementById("addShift").click();
+ for(let i=0;i<200;i++) addShiftQ(d);
  const n=JSON.parse(st["shiftPlanner.2"]).shifts.length;
  rec("200 shifts logged rapidly",(errs.length===0&&n===200)?"PASS":"FAIL","count="+n+" errs="+errs.length);
  tab(d,"weeks"); d.getElementById("bankBtn").click();

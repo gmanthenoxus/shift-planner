@@ -106,6 +106,11 @@ correct, not by being likeable.
 | C12 | Headline is **"How many hours a week do you need?"**, with the name Evenweek above it | 27 Aug 2026 | The old h1, "How many hours does your life cost?", asked a poetic question the app does not literally answer. It computes hours a week to cover a month; it does not price a life. The new one is the question the answer screen replies to, which is the whole point of answer-first. **Alternate considered and rejected:** "Know what your week has to cover", which is a statement rather than a question and reads as a slogan |
 | C13 | Section headings say what YOU get, not what the app stores. "What you keep an hour", "What your month costs", "Saving for something" | 27 Aug 2026 | "What an hour pays", "Every month" and "One off goals" all named the data. These name the answer |
 
+| C14 | The sheet always carries the line **"Nothing changes until you save."** | 27 Aug 2026 | The app moved from always-open fields to settled rows plus a sheet. The whole point of the change is that a value should read as decided, so the sheet has to state its own contract: editing is not committing. Without it the model is invisible and a user who taps Close will assume their typing was kept, which is the same uncertainty the change existed to remove |
+| C15 | "first, then" is banned in ALL strings, not only strings about money | 27 Aug 2026 | The Builder wrote "Add a job with an hourly rate first, then you can log shifts against it" for an app-setup empty state. Rule 0 bans the phrase outright and the ban has no exception for benign subjects, because the reader cannot tell which subject a habit of phrasing came from. Now: "You need a job with an hourly rate before you can log a shift." Recorded because the violation looked harmless, which is exactly why it got written |
+| C16 | Field labels use the data model's words: "Job and rate", not "Which work" | 27 Aug 2026 | One word, one meaning. "Job", "rate", "outgoing", "goal" and "week" all name things in the stored blob. A label that invents a synonym makes the user learn two vocabularies for one thing |
+
+
 ## 5. Word swaps
 
 | Don't | Do |

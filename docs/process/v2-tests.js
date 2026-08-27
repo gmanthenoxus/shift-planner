@@ -18,6 +18,21 @@ function boot(store,tz,lang){
   return {w:dom.window,d,st,errs,vis:()=>["cold","ask","answer"].filter(n=>!d.getElementById(n).hidden)};
 }
 const type=(d,v)=>{d.getElementById("qInput").value=v;};
+// ---- sheet helpers. The app moved from always-open fields to a settled-row + sheet model on
+// 2026-08-27, so tests now drive the sheet the way a person does: open, fill, save.
+const sOpen=(d)=>!d.getElementById("sheet").hidden;
+const sSet=(d,k,v)=>{const i=d.getElementById("sf_"+k); if(!i)throw new Error("no sheet field "+k); i.value=v; return i;};
+const sSave=(d)=>d.getElementById("sheetSave").click();
+const sErr=(d)=>d.getElementById("sheetErr").hidden?null:d.getElementById("sheetErr").textContent;
+const sClose=(d)=>d.getElementById("sheetClose").click();
+const rowsIn=(d,id)=>[...d.querySelectorAll("#"+id+" .item")];
+const editRow=(d,id,i)=>{const r=rowsIn(d,id)[i||0]; r.click(); return r;};
+const addOut=(d,label,amount,every)=>{d.getElementById("addOut").click();sSet(d,"label",label);sSet(d,"amount",amount);if(every)sSet(d,"every",every);sSave(d);sClose(d);};
+const addGoal=(d,label,amount,weeks)=>{d.getElementById("addGoal").click();sSet(d,"label",label);sSet(d,"amount",amount);sSet(d,"weeks",weeks);sSave(d);sClose(d);};
+const addShift=(d,o)=>{d.getElementById("addShift").click();Object.keys(o).forEach(k=>sSet(d,k,o[k]));sSave(d);sClose(d);};
+const setRate=(d,v)=>{editRow(d,"jobList",1);sSet(d,"rval",v);sSave(d);};
+const setRateTo99=(d)=>{editRow(d,"jobList",1);sSet(d,"rval","99");sSave(d);};
+const setHrs=(d,v)=>{editRow(d,"jobList",0);sSet(d,"hrs",v);sSave(d);};
 
 console.log("\nA. Cold open");
 {const {d,errs,vis,st}=boot({});
@@ -125,8 +140,9 @@ console.log("\nI. Refinements");
  ok("offers a second rate",items.some(t=>/another rate/i.test(t)),items);
  d.querySelectorAll(".refine")[0].click();
  ok("tapping one navigates and acts",!d.getElementById("earn").hidden);
- ok("a second rate now exists",JSON.parse(boot?"{}":"{}")||d.querySelectorAll('#jobList [data-k="value"]').length===2,
-    d.querySelectorAll('#jobList [data-k="value"]').length);
+ ok("tapping the rate refinement opens the rate sheet",sOpen(d));
+ sSet(d,"rname","Nights"); sSet(d,"rval","16.50"); sSave(d); sClose(d);
+ ok("a second rate now exists",rowsIn(d,"jobList").length===3,rowsIn(d,"jobList").length);
  nav(d,"answer");
  const after=[...d.querySelectorAll(".refine b")].map(x=>x.textContent);
  ok("the taken refinement drops off the list",!after.some(t=>/another rate/i.test(t)),after);}
@@ -135,8 +151,7 @@ console.log("\nJ. Earn edits change the number");
 {const {d,st}=onboard();
  const before=parseFloat(d.getElementById("hours").textContent);
  nav(d,"earn");
- const rate=d.querySelectorAll('#jobList [data-k="value"]')[0];
- rate.value="20"; rate.dispatchEvent(new (d.defaultView.Event)("input",{bubbles:true}));
+ setRate(d,"20");
  nav(d,"answer");
  const after=parseFloat(d.getElementById("hours").textContent);
  ok("a higher rate means fewer hours",after<before,{before,after});
@@ -147,11 +162,8 @@ console.log("\nK. Outgoings edits change the number");
  const before=parseFloat(d.getElementById("hours").textContent);
  nav(d,"out");
  ok("the onboarding item is there, labelled plainly",
-    d.querySelector('#outList [data-k="label"]').value==="Everything");
- d.getElementById("addOut").click();
- const rows=d.querySelectorAll('#outList [data-k="amount"]');
- rows[rows.length-1].value="200";
- rows[rows.length-1].dispatchEvent(new (d.defaultView.Event)("input",{bubbles:true}));
+    /Everything/.test(d.getElementById("outList").textContent));
+ addOut(d,"Extra","200");
  nav(d,"answer");
  ok("more outgoings means more hours",parseFloat(d.getElementById("hours").textContent)>before);
  nav(d,"out");
@@ -165,7 +177,7 @@ console.log("\nK. Outgoings edits change the number");
 console.log("\nL. Deleting everything degrades to a named empty state");
 {const {d}=onboard();
  nav(d,"earn");
- d.querySelector("[data-delj]").click();
+ editRow(d,"jobList",0); d.getElementById("sheetDel").click();
  nav(d,"answer");
  ok("no figure",d.getElementById("ansGood").hidden);
  ok("names what is missing",/what you earn an hour/i.test(d.getElementById("missText").textContent),
@@ -191,12 +203,10 @@ console.log("\nN. What an hour pays: the bug I shipped");
  ok("take-home is below the gross rate",keep&&parseFloat(keep[1])<14.25,keep&&keep[1]);
  // live update: editing a rate must change take-home WITHOUT a tab switch
  const before=d.getElementById("takehome").textContent;
- const r=d.querySelectorAll('#jobList [data-k="value"]')[0];
- r.value="30"; ev(d,r);
- ok("take-home updates immediately on edit",d.getElementById("takehome").textContent!==before);
+ setRate(d,"30");
+ ok("take-home updates immediately on save",d.getElementById("takehome").textContent!==before);
  ok("still no NaN after the edit",!/NaN|Infinity/.test(d.getElementById("takehome").textContent));
- const h=d.querySelector('#jobList [data-k="hrs"]');
- h.value="40"; ev(d,h);
+ setHrs(d,"40");
  ok("entering usual hours changes the stated basis",/40 hours a week/.test(d.getElementById("takehome").textContent),
     d.getElementById("takehome").textContent.slice(-80));}
 
@@ -204,10 +214,11 @@ console.log("\nO. Weekly outgoings");
 {const {d,st}=onboard();
  const before=parseFloat(d.getElementById("hours").textContent);
  nav(d,"out");
- const sel=d.querySelector('#outList [data-k="every"]');
- ok("every row offers a frequency",!!sel);
+ editRow(d,"outList",0);
+ const sel=d.getElementById("sf_every");
+ ok("every item offers a frequency",!!sel);
  ok("month is the default",sel.value==="month");
- sel.value="week"; ev(d,sel,"change");
+ sel.value="week"; sSave(d);
  ok("stored as weekly",JSON.parse(st["shiftPlanner.2"]).outgoings[0].every==="week");
  ok("shows the monthly equivalent",/a month/.test(d.getElementById("outList").textContent),
     d.getElementById("outList").textContent.slice(-60));
@@ -216,13 +227,18 @@ console.log("\nO. Weekly outgoings");
  ok("1240 a week needs far more hours than 1240 a month",after>before*4,{before,after});
  ok("no Infinity or NaN",!/Infinity|NaN/.test(d.getElementById("answer").textContent));}
 
-console.log("\nP. Compact layout, structurally");
+console.log("\nP. Settled rows, structurally");
 {const {d}=onboard(); nav(d,"earn");
- ok("no nested filled panels inside cards",d.querySelectorAll("#jobList .item").length===0);
- ok("rate name and pay sit on one line",d.querySelectorAll("#jobList .line").length>=2);
+ ok("a job renders as rows, not open fields",d.querySelectorAll("#jobList .item").length>=2
+    &&d.querySelectorAll("#jobList input").length===0,d.querySelectorAll("#jobList input").length);
+ ok("the rate row shows its value as text",/14\.25/.test(d.getElementById("jobList").textContent));
  ok("delete targets still 44px in CSS",/\.x\{[^}]*min-height:44px/.test(html));
+ ok("every settled row is a real button, so it is keyboard reachable",
+    [...d.querySelectorAll("#jobList .item")].every(x=>x.tagName==="BUTTON"));
  nav(d,"out");
- ok("outgoings use the same compact block",d.querySelectorAll("#outList .blk").length>=1&&d.querySelectorAll("#outList .item").length===0);}
+ ok("outgoings use settled rows too",d.querySelectorAll("#outList .item").length>=1
+    &&d.querySelectorAll("#outList input").length===0);
+ ok("goals use settled rows too",d.querySelectorAll("#goalList input").length===0);}
 console.log("\n"+pass+" passed, "+fail+" failed");
 
 console.log("\nQ. The tax basis is solved, not assumed");
@@ -237,51 +253,53 @@ console.log("\nQ. The tax basis is solved, not assumed");
  ok("the basis equals the hours it recommends",Math.abs(parseFloat(m1[1])-hrs)<0.15,{basis:m1[1],hours:hrs});
  // Declared hours must win over the solver.
  nav(d,"earn");
- const h=d.querySelector('#jobList [data-k="hrs"]'); h.value="40"; ev(d,h);
+ setHrs(d,"40");
  ok("declared hours take over",/the 40 hours a week you entered/.test(t()),t().slice(-110));
- h.value="0"; ev(d,h);
+ setHrs(d,"0");
  ok("clearing them returns to the solved basis",/which is what covering your month would take/.test(t()),t().slice(-110));
  ok("still no NaN or Infinity",!/NaN|Infinity/.test(t()));}
 
 console.log("\nR. Inputs read as fields again");
 {ok("fields have a resting fill",/\.f\{background:var\(--panel2\)/.test(html));
+ ok("settled rows are buttons, not inputs",/\.item\{display:block/.test(html));
  ok("focus is still distinct",/\.f:focus\{background:var\(--panel\);border-color:var\(--accent\)/.test(html));}
 console.log("\n"+pass+" passed, "+fail+" failed");
 
 console.log("\nS. Shift logging");
 {const {d,st}=onboard();
  ok("one control to add a shift",d.querySelectorAll("#shiftCard .add").length===1);
- ok("empty state before anything is logged",/Nothing logged this week/.test(d.getElementById("shiftList").textContent));
- ok("week summary hidden when empty",d.getElementById("weekBox").hidden);
- d.getElementById("addShift").click();
+ ok("no always-open inputs on the shift list",d.querySelectorAll("#shiftList input").length===0);
+ ok("empty state before anything is logged",/No shifts logged this week/.test(d.getElementById("shiftList").textContent));
+ addShift(d,{start:"18:00",end:"02:00",brk:"0"});
  const blob=()=>JSON.parse(st["shiftPlanner.2"]);
  ok("shift stored",blob().shifts.length===1);
  const sh=blob().shifts[0];
  ok("rate and job snapshotted at log time",sh.rateValue===14.25&&sh.rateName==="Standard"&&sh.jobName==="Job",sh);
  ok("dated today",/^\d{4}-\d{2}-\d{2}$/.test(sh.date));
- ok("week summary appears",!d.getElementById("weekBox").hidden);
+ ok("week summary appears",/8\.0 of|8\.0 hrs/.test(d.getElementById("weekTotal").textContent),
+    d.getElementById("weekTotal").textContent);
  ok("overnight 18:00 to 02:00 is 8 hours",/8\.00 hrs/.test(d.getElementById("shiftList").textContent),
     d.getElementById("shiftList").textContent.match(/[\d.]+ hrs/));
- ok("worked this week shows 8.0",d.getElementById("wkHours").textContent==="8.0 hrs",d.getElementById("wkHours").textContent);
- ok("earned is below gross 8 x 14.25",parseFloat(d.getElementById("wkNet").textContent.replace(/[^0-9.]/g,""))<114,
-    d.getElementById("wkNet").textContent);
- // break
- const brk=d.querySelector('#shiftList [data-k="brk"]'); brk.value="30"; ev(d,brk);
- ok("a 30 minute break gives 7.5 hours",d.getElementById("wkHours").textContent==="7.5 hrs",d.getElementById("wkHours").textContent);
+ ok("earned is below gross 8 x 14.25",parseFloat(d.getElementById("weekTotal").textContent.replace(/^[^0-9]*[\d.]+ of [\d.]+ hrs\D*/,"").replace(/[^0-9.]/g,""))<114,
+    d.getElementById("weekTotal").textContent);
+ // break, applied through the sheet
+ editRow(d,"shiftList",0); sSet(d,"brk","30"); sSave(d);
+ ok("a 30 minute break gives 7.5 hours",/7\.50 hrs/.test(d.getElementById("shiftList").textContent),
+    d.getElementById("shiftList").textContent.match(/[\d.]+ hrs/));
  // editing the rate afterwards must NOT rewrite the logged shift
  nav(d,"earn");
- const r=d.querySelectorAll('#jobList [data-k="value"]')[0]; r.value="99"; ev(d,r);
+ setRateTo99(d);
  nav(d,"answer");
  ok("editing a rate does not rewrite a logged shift",blob().shifts[0].rateValue===14.25,blob().shifts[0].rateValue);
  // deleting the rate must not corrupt it either
  nav(d,"earn");
- d.querySelector("[data-delr]").click();
+ editRow(d,"jobList",1); d.getElementById("sheetDel").click();
  nav(d,"answer");
  ok("deleting the rate leaves the shift intact",blob().shifts[0].rateValue===14.25&&blob().shifts.length===1);
  ok("no NaN or Infinity anywhere on Now",!/NaN|Infinity/.test(d.getElementById("answer").textContent+d.getElementById("shiftList").textContent));
- d.querySelector("[data-dels]").click();
+ editRow(d,"shiftList",0); d.getElementById("sheetDel").click();
  ok("delete removes it",blob().shifts.length===0);
- ok("week summary hides again",d.getElementById("weekBox").hidden);}
+ ok("empty state returns",/No shifts logged this week/.test(d.getElementById("shiftList").textContent));}
 
 console.log("\nT. Overnight and clock-change hours");
 {const {d,st}=onboard();
@@ -289,18 +307,10 @@ console.log("\nT. Overnight and clock-change hours");
               ["09:00","17:00",60,"7.00"],["00:30","08:30",0,"8.00"],
               ["23:00","23:00",0,"0.00"]];
  for(const [a,b,br,want] of cases){
-   d.getElementById("addShift").click();
-   // every edit re-renders the list, so the row must be re-queried each time. Caching it means
-   // editing a node that has already been thrown away.
-   const set=(k,v)=>{
-     const rows=d.querySelectorAll("#shiftList .blk");
-     const i=rows[rows.length-1].querySelector('[data-k="'+k+'"]');
-     i.value=v; ev(d,i,k==="brk"?"input":"change");
-   };
-   set("start",a); set("end",b); set("brk",String(br));
-   const txt=[...d.querySelectorAll("#shiftList .blk")].pop().textContent;
+   addShift(d,{start:a,end:b,brk:String(br)});
+   const txt=rowsIn(d,"shiftList").pop().textContent;
    ok(a+" to "+b+" less "+br+"m = "+want+" hrs",txt.indexOf(want+" hrs")>-1,txt.match(/[\d.]+ hrs/));
-   d.querySelectorAll("[data-dels]")[d.querySelectorAll("[data-dels]").length-1].click();
+   editRow(d,"shiftList",rowsIn(d,"shiftList").length-1); d.getElementById("sheetDel").click();
  }}
 console.log("\n"+pass+" passed, "+fail+" failed");
 
@@ -309,7 +319,7 @@ console.log("\nU. Weeks and banking");
  nav(d,"weeks");
  ok("empty weeks screen says so",/Nothing here yet/.test(d.getElementById("weekList").textContent));
  ok("bank button says there is nothing to bank",d.getElementById("bankBtn").textContent==="Nothing to bank");
- nav(d,"answer"); d.getElementById("addShift").click();
+ nav(d,"answer"); addShift(d,{start:"18:00",end:"02:00",brk:"0"});
  nav(d,"weeks");
  ok("bank button offers to bank",d.getElementById("bankBtn").textContent==="Bank this week");
  d.getElementById("bankBtn").click();
@@ -323,7 +333,7 @@ console.log("\nU. Weeks and banking");
  // editing an outgoing afterwards must NOT rewrite a banked week
  const before=JSON.stringify(blob().weeks[0].coverage);
  nav(d,"out");
- const a=d.querySelector('#outList [data-k="amount"]'); a.value="99999"; ev(d,a);
+ editRow(d,"outList",0); sSet(d,"amount","99999"); sSave(d);
  nav(d,"weeks");
  ok("editing an outgoing does not rewrite a banked week",JSON.stringify(blob().weeks[0].coverage)===before);
  ok("no Infinity or NaN",!/Infinity|NaN/.test(d.getElementById("weekList").textContent));}
@@ -331,12 +341,8 @@ console.log("\nU. Weeks and banking");
 console.log("\nV. Coverage never ranks");
 {const {d,st}=onboard();
  nav(d,"out");
- d.getElementById("addOut").click();
- let rows=d.querySelectorAll('#outList [data-k="label"]');
- rows[rows.length-1].value="Savings"; ev(d,rows[rows.length-1]);
- rows=d.querySelectorAll('#outList [data-k="amount"]');
- rows[rows.length-1].value="100"; ev(d,rows[rows.length-1]);
- nav(d,"answer"); d.getElementById("addShift").click();
+ addOut(d,"Savings","100");
+ nav(d,"answer"); addShift(d,{start:"18:00",end:"02:00",brk:"0"});
  nav(d,"weeks"); d.getElementById("bankBtn").click();
  const cov=JSON.parse(st["shiftPlanner.2"]).weeks[0].coverage;
  const stored=JSON.parse(st["shiftPlanner.2"]).outgoings.map(o=>o.label);

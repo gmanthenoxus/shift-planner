@@ -541,3 +541,48 @@ it; until he does, two copywriter skills will compete for the same trigger.
 Touched: index.html, README.md, CLAUDE.md, SCOPE.md, ARCHITECTURE.md, QA-REPORT.md, docs/FILING.md,
 docs/process/RELEASE-CHECKLIST.md, docs/design/COPY-DECK.md, docs/design/DESIGN-TOKENS.md,
 HANDOVER.md
+
+## Session 2026-08-27b (entry model, visualisation, goal progress)
+Done: Scope amended and re-frozen (FROZEN: 2026-08-27) with three approved changes: the settled-row
+plus sheet entry model, the keep-an-hour figure and bar, and goal progress with the mid-week figure.
+Fixed the phone overflow at its cause: the job meta row packed a button, two labels, two fields and
+a unit into one non-wrapping flex line, roughly 405px of unshrinkable content on a 393px screen, and
+one row wider than its card clips every value to the card's right. Added a structural rule so a
+future row cannot repeat it rather than patching only the rows I knew about.
+Built one reusable sheet serving every add and edit in the app. Values enter through DOM properties,
+never innerHTML. Save is now the only thing that writes to storage; before today every keystroke
+wrote, which is why nothing ever read as decided. Escape closes, backdrop closes, focus is trapped
+and returned, Enter saves from a text field.
+Jobs, rates, outgoings, goals and shifts all render as read-only rows and open the sheet on tap.
+Rewrote "What you keep an hour" as a headline figure plus a segmented bar, with a 3% minimum
+segment width so a low rate with no pension does not render a slice too thin to read as a number.
+Added cumulative goal progress from banked weeks and the mid-week hours figure.
+Copy pass run through evenweek-copywriter. Decisions C14, C15 and C16 recorded in COPY-DECK.md.
+Assumed: none. Two things I would have assumed I instead put to the human as a choice (the job card
+layout and how to handle the frozen scope), and one I caught mid-build and did not assume my way
+past: see Risky.
+Risky:
+- I nearly shipped a silent regression. My first job sheet edited only rates[0], which would have
+  removed multi-rate support, one of the eight things the app exists to answer, with no error and no
+  failing test. Caught by reading my own diff, not by the suite. Rates are now separate rows with
+  their own sheet, and visual-tests section 7 covers it, but a regression that only a human eye
+  caught means the suite had a hole that size.
+- A duplicate renderTakehome existed for part of this session: the old table-based one was defined
+  after the new one and silently won. Tests passed throughout, because they asserted on text that
+  both versions produced. Fixed, but it means function-level duplication is invisible to this suite.
+- Still not measured on a real phone. Chrome MCP rewrites file:// to https://file/, the sandbox has
+  no Chrome binary and the puppeteer download is network-blocked. The overflow fix is reasoned from
+  the CSS and from the human's screenshots, not observed. This is the fifth session carrying this.
+- The mobile CSS from session 2026-08-27a plus everything today is post-SHIP-READY. The Breaker's
+  verdict covers a build that no longer exists.
+- docs/design/DESIGN-TOKENS.md contradicts itself on --c-tax: the token block says #4A443C, the
+  "Verified contrast" section says it was corrected to #6E665C. I used #4A443C, the darker of the
+  two, so contrast is safe either way. I am read-only on that document; the design seat should
+  reconcile it.
+Open: 1) Breaker must re-verdict before any deploy. 2) The blended-rate deviation from ARCHITECTURE
+section 3 is still unruled. 3) SCOPE f3 still lists the removed limit refinement (BUG-2).
+4) Moses still needs to delete the superseded shift-planner-copywriter skill from his account.
+5) Typical hours is per job, not per rate, so a job with day and night rates blends on an assumption.
+Touched: index.html, SCOPE.md, docs/design/COPY-DECK.md, docs/process/v2-tests.js,
+docs/process/cruelty-pass.js, docs/process/goals-tests.js, docs/process/visual-tests.js (new),
+HANDOVER.md
